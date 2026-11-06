@@ -1,0 +1,112 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign heading = section.settings.headline
+  if heading == blank
+    assign heading = 'customer.activate.title' | t
+  endif
+  assign problem = 'general.form.problem' | t
+  assign pass_label = 'customer.activate.password' | t
+  assign confirm_label = 'customer.activate.password_confirm' | t
+  assign pass_msg = 'customer.activate.password_error' | t
+  assign confirm_msg = 'customer.activate.confirm_error' | t
+  assign submit_label = 'customer.activate.submit' | t
+  assign busy = 'customer.activate.activating' | t
+-%}
+<div class="band tight {{ scheme }}" data-section="activate-account" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="wrap-n" style="display:grid;justify-items:center;gap:32px">
+    <div style="text-align:center;display:grid;gap:8px">
+      <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+      {%- if section.settings.sub != blank %}<p class="t-lead">{{ section.settings.sub }}</p>{% endif -%}
+    </div>
+    <div style="width:100%;max-width:420px;display:grid;gap:16px">
+      {%- form 'activate_customer_password', id: 'activate-form', class: 'dl-form', novalidate: 'novalidate', data-validate: '', data-form: 'activate' -%}
+        {%- liquid
+          assign pass_err = ''
+          assign confirm_err = ''
+          assign summary_text = ''
+          if form.errors
+            assign summary_text = form.errors | default_errors | strip_html | strip
+            if form.errors contains 'password'
+              assign pass_err = pass_msg
+            endif
+            if form.errors contains 'password_confirmation'
+              assign confirm_err = confirm_msg
+            endif
+          endif
+        -%}
+        <div data-summary{% if form.errors %} data-server{% endif %}>
+          {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: summary_text -%}{%- endif -%}
+        </div>
+        {%- capture pass_attrs %}minlength="5" data-msg-required="{{ pass_msg | escape }}" data-msg-invalid="{{ pass_msg | escape }}"{% endcapture -%}
+        {%- render 'field', label: pass_label, name: 'customer[password]', id: 'act-pass', type: 'password', autocomplete: 'new-password', required: true, error: pass_err, attrs: pass_attrs -%}
+        {%- capture confirm_attrs %}data-msg-required="{{ confirm_msg | escape }}"{% endcapture -%}
+        {%- render 'field', label: confirm_label, name: 'customer[password_confirmation]', id: 'act-confirm', type: 'password', autocomplete: 'new-password', required: true, error: confirm_err, attrs: confirm_attrs -%}
+        {%- capture busy_attrs %}name="activate" data-busy-label="{{ busy | escape }}"{% endcapture -%}
+        {%- render 'button', label: submit_label, type: 'submit', size: 'lg', block: true, attrs: busy_attrs -%}
+        <div class="inline" style="justify-content:center">
+          <button type="submit" name="decline" value="1" class="fc-btn fc-btn-link no-chev" style="font-size:14px" formnovalidate><span>{{ 'customer.activate.decline' | t }}</span></button>
+        </div>
+      {%- endform -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Activate account",
+  "tag": "section",
+  "class": "dl-section dl-activate-account",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Activate your account"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Create a password to activate your account."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "customers/activate_account"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

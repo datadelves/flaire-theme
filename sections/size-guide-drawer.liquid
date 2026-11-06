@@ -1,0 +1,263 @@
+{%- liquid
+  assign tab_names = 'rings,bracelets,necklaces' | split: ','
+  assign tabs = ''
+  for name in tab_names
+    for block in section.blocks
+      if block.type == 'conversion-table' or block.type == 'how-to'
+        assign block_tab = block.settings.tab | default: 'rings'
+        if block_tab == name
+          assign tabs = tabs | append: name | append: ','
+          break
+        endif
+      endif
+    endfor
+  endfor
+  assign tab_list = tabs | split: ','
+  assign active_tab = tab_list.first
+  if tab_list contains section.settings.default_tab
+    assign active_tab = section.settings.default_tab
+  endif
+  assign visit_block = section.blocks | where: 'type', 'book-visit' | first
+  assign title_id = 'ov-title-size-guide'
+-%}
+<div class="app-ov" data-ov="size-guide" data-section="size-guide-drawer" data-section-id="{{ section.id }}" hidden>
+  <div class="dl-scrim" data-act="scrim"></div>
+  <aside class="dl-drawer right scheme-1" data-place="right" data-place-mobile="bottom" role="dialog" aria-modal="true" aria-labelledby="{{ title_id }}" data-ov-panel>
+    <span class="dl-grab"></span>
+    {%- assign drawer_title = section.settings.title | default: '' | escape -%}
+    {%- if drawer_title == blank %}{% assign drawer_title = 'products.product.size_guide' | t %}{% endif -%}
+    {%- render 'drawer-head', title: drawer_title, id: title_id -%}
+    <div class="bd">
+      {%- if tab_list.size > 1 -%}
+        <div class="fc-chips" role="tablist" aria-label="{{ drawer_title }}" data-tabs style="margin-bottom:24px">
+          {%- for name in tab_list -%}
+            {%- assign tab_key = 'products.size_guide.' | append: name -%}
+            <button role="tab" type="button" class="dl-chip{% if name == active_tab %} is-on{% endif %}" id="sg-tab-{{ section.id }}-{{ name }}" aria-selected="{% if name == active_tab %}true{% else %}false{% endif %}" aria-controls="sg-panel-{{ section.id }}-{{ name }}" tabindex="{% if name == active_tab %}0{% else %}-1{% endif %}" data-tab="{{ name }}">{{ tab_key | t }}</button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      {%- for name in tab_list -%}
+        <div role="tabpanel" class="dl-sg-panel" id="sg-panel-{{ section.id }}-{{ name }}"{% if tab_list.size > 1 %} aria-labelledby="sg-tab-{{ section.id }}-{{ name }}"{% endif %}{% unless name == active_tab %} hidden{% endunless %}>
+          {%- for block in section.blocks -%}
+            {%- assign block_tab = block.settings.tab | default: 'rings' -%}
+            {%- if block_tab != name %}{% continue %}{% endif -%}
+            {%- case block.type -%}
+              {%- when 'how-to' -%}
+                <section style="display:grid;gap:12px" {{ block.shopify_attributes }}>
+                  {%- if block.settings.title != blank %}<h3 class="t-title" style="margin:0">{{ block.settings.title | escape }}</h3>{% endif -%}
+                  {%- if block.settings.steps != blank -%}
+                    {{- block.settings.steps | replace: '<ol>', '<ol class="t-body muted" style="margin:0;padding-left:24px;display:grid;gap:8px">' | replace: '<ul>', '<ul class="t-body muted" style="margin:0;padding-left:24px;display:grid;gap:8px">' -}}
+                  {%- endif -%}
+                  {%- if block.settings.image != blank -%}
+                    {{ block.settings.image | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 800', sizes: '392px', alt: '', style: 'max-width:100%;height:auto' }}
+                  {%- endif -%}
+                </section>
+              {%- when 'conversion-table' -%}
+                {%- if block.settings.title != blank or block.settings.rows != blank -%}
+                  <section style="display:grid;gap:8px" {{ block.shopify_attributes }}>
+                    {%- if block.settings.title != blank %}<h3 class="t-title" style="margin:0">{{ block.settings.title | escape }}</h3>{% endif -%}
+                    {%- if block.settings.rows != blank -%}
+                      <dl class="fc-facts">
+                        {%- assign lines = block.settings.rows | newline_to_br | split: '<br />' -%}
+                        {%- for line in lines -%}
+                          {%- assign line = line | strip -%}
+                          {%- if line == blank %}{% continue %}{% endif -%}
+                          {%- assign cells = line | split: '|' -%}
+                          {%- capture row_value -%}
+                            {%- for cell in cells offset: 1 -%}{{ cell | strip | escape }}{% unless forloop.last %} · {% endunless %}{%- endfor -%}
+                          {%- endcapture -%}
+                          <div class="fc-fact"><dt>{{ cells.first | strip | escape }}</dt><dd>{{ row_value }}</dd></div>
+                        {%- endfor -%}
+                      </dl>
+                    {%- endif -%}
+                  </section>
+                  {%- if block.settings.note != blank %}<p class="t-fine" style="margin:0">{{ block.settings.note | escape }}</p>{% endif -%}
+                {%- endif -%}
+            {%- endcase -%}
+          {%- endfor -%}
+        </div>
+      {%- endfor -%}
+      {%- if section.settings.guide_page != blank and section.settings.guide_page.content != blank -%}
+        <div class="rte t-body" style="margin-top:32px">{{ section.settings.guide_page.content }}</div>
+      {%- endif -%}
+    </div>
+    {%- if visit_block and visit_block.settings.label != blank and visit_block.settings.link != blank -%}
+      <div class="ft" {{ visit_block.shopify_attributes }}>
+        {%- render 'button', variant: 'secondary', label: visit_block.settings.label, block: true, icon: 'storefront', url: visit_block.settings.link -%}
+        {%- if visit_block.settings.note != blank %}<p class="t-fine" style="text-align:center;margin:0">{{ visit_block.settings.note | escape }}</p>{% endif -%}
+      </div>
+    {%- endif -%}
+  </aside>
+</div>
+
+{% stylesheet %}
+  .dl-sg-panel { display: grid; gap: 32px; }
+  .dl-sg-panel[hidden] { display: none; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Size guide drawer",
+  "tag": "section",
+  "class": "dl-section dl-size-guide-drawer",
+  "settings": [
+    {
+      "type": "page",
+      "id": "guide_page",
+      "label": "Guide page"
+    },
+    {
+      "type": "select",
+      "id": "default_tab",
+      "label": "Default tab",
+      "default": "rings",
+      "options": [
+        {
+          "value": "rings",
+          "label": "Rings"
+        },
+        {
+          "value": "bracelets",
+          "label": "Bracelets"
+        },
+        {
+          "value": "necklaces",
+          "label": "Necklaces"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Size guide"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "conversion-table",
+      "name": "Conversion table",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Ring size conversion"
+        },
+        {
+          "type": "textarea",
+          "id": "rows",
+          "label": "Rows (US | circumference mm | diameter mm | EU)",
+          "default": "5 | 49.3 | 15.7 | 49\n6 | 51.9 | 16.5 | 52\n7 | 54.4 | 17.3 | 54.5\n8 | 57.0 | 18.2 | 57",
+          "info": "One row per line. The first cell is the row label; the other cells are joined with a middle dot."
+        },
+        {
+          "type": "checkbox",
+          "id": "striped",
+          "label": "Use striped rows",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "tab",
+          "label": "Tab",
+          "default": "rings",
+          "options": [
+            {
+              "value": "rings",
+              "label": "Rings"
+            },
+            {
+              "value": "bracelets",
+              "label": "Bracelets"
+            },
+            {
+              "value": "necklaces",
+              "label": "Necklaces"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note under the table",
+          "default": "Measurements are approximate."
+        }
+      ]
+    },
+    {
+      "type": "how-to",
+      "name": "How to measure",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Measure at home"
+        },
+        {
+          "type": "richtext",
+          "id": "steps",
+          "label": "Steps",
+          "default": "<ol><li>Wrap a strip of paper around the base of the finger.</li><li>Mark where it overlaps.</li><li>Measure the length in millimetres.</li></ol>"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Illustration"
+        },
+        {
+          "type": "select",
+          "id": "tab",
+          "label": "Tab",
+          "default": "rings",
+          "options": [
+            {
+              "value": "rings",
+              "label": "Rings"
+            },
+            {
+              "value": "bracelets",
+              "label": "Bracelets"
+            },
+            {
+              "value": "necklaces",
+              "label": "Necklaces"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "book-visit",
+      "name": "Book a visit",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Book a ring-sizing visit"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "default": "Contact us to arrange a visit."
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

@@ -1,0 +1,44 @@
+{%- comment -%}
+  Facet article card: image on the canvas-alt ground, tag overline, title, date.
+
+  Accepts:
+  - article {Object} (blank renders a placeholder for the theme editor)
+  - size {Number} image px (default 160)
+  - show_tag {Boolean} (default true)
+  - show_date {Boolean} (default true)
+  - show_excerpt {Boolean} (default false)
+  - heading_level {Number} (default 3)
+  - title {String} replaces the article title
+{%- endcomment -%}
+{%- liquid
+  assign size = size | default: 160
+  assign heading_level = heading_level | default: 3
+  if show_tag == nil
+    assign show_tag = true
+  endif
+  if show_date == nil
+    assign show_date = true
+  endif
+-%}
+{%- if article != blank -%}
+  <a class="dl-acard" href="{{ article.url }}">
+    <div class="art">{% render 'product-photo', image: article.image, size: size, alt: article.image.alt, kind: 'ring', metal: 'yellow-gold' %}</div>
+    {%- if show_tag and article.tags.size > 0 -%}
+      <p class="t-overline" style="margin:0">{{ article.tags.first | escape }}</p>
+    {%- endif -%}
+    <h{{ heading_level }}>{{ title | default: article.title | escape }}</h{{ heading_level }}>
+    {%- if show_excerpt and article.excerpt_or_content != blank -%}
+      <p class="t-body muted" style="margin:0">{{ article.excerpt_or_content | strip_html | truncatewords: 22 }}</p>
+    {%- endif -%}
+    {%- if show_date -%}
+      <p class="t-caption" style="margin:0"><time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: '%B %-d' }}</time></p>
+    {%- endif -%}
+  </a>
+{%- else -%}
+  <span class="dl-acard">
+    <div class="art">{% render 'specimen', kind: 'ring', metal: 'yellow-gold', size: size, label: '' %}</div>
+    <p class="t-overline" style="margin:0">{{ 'blogs.article.placeholder_tag' | t }}</p>
+    <h{{ heading_level }}>{{ 'blogs.article.placeholder_title' | t }}</h{{ heading_level }}>
+    <p class="t-caption" style="margin:0">{{ 'now' | date: '%B %-d' }}</p>
+  </span>
+{%- endif -%}

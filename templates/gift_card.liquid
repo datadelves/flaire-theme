@@ -1,0 +1,32 @@
+{%- layout none -%}
+{%- comment -%}
+  Standalone gift card page (no header, footer or overlays, like the prototype). The head mirrors
+  layout/theme.liquid so the page gets the same CSS, color schemes and kernel; Shopify's qrcode.js draws the QR.
+{%- endcomment -%}
+<!doctype html>
+<html class="no-js{% unless settings.animations_enabled %} no-motion{% endunless %}" lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    {%- if settings.favicon != blank %}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+    {%- endif %}
+    <title>{{ 'gift_cards.title' | t }} &ndash; {{ shop.name }}</title>
+
+    {% render 'head-assets' %}
+    <script src="{{ 'vendor/qrcode.js' | shopify_asset_url }}" defer></script>
+
+    {{ content_for_header }}
+  </head>
+
+  <body class="template-gift-card">
+    <a class="skip-link" href="#main">{{ 'accessibility.skip_to_content' | t }}</a>
+    <main id="main" role="main" tabindex="-1">
+      {% section 'gift-card-main' %}
+    </main>
+    <p id="app-live" class="fc-sr" role="status" aria-live="polite"></p>
+    <div id="app-toast" class="app-toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

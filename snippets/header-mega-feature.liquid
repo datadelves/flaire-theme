@@ -1,0 +1,45 @@
+{%- comment -%}
+  Featured product tile at the end of a mega panel (prototype chrome.mjs megaPanel): image on the canvas-alt
+  ground, overline, name and From price. With no product it renders the specimen placeholder tile
+  (theme editor only; callers skip it on the storefront).
+
+  Accepts:
+  - product {Object}
+  - eyebrow {String} overline text (omitted when blank)
+  - attrs {String} raw extra attributes on the link (e.g. block.shopify_attributes)
+
+  Usage: {% render 'header-mega-feature', product: block.settings.product, eyebrow: block.settings.eyebrow %}
+{%- endcomment -%}
+{%- if product != blank -%}
+  {%- liquid
+    capture kind
+      render 'product-data', product: product, field: 'kind'
+    endcapture
+    assign kind = kind | strip | default: 'ring'
+    assign art_alt = product.title
+    capture material
+      render 'product-data', product: product, field: 'material', fallback: false
+    endcapture
+    assign material = material | strip
+    if material != blank
+      assign art_alt = product.title | append: ', ' | append: material
+    endif
+  -%}
+  <a href="{{ product.url }}" style="color:var(--ink)"{% if attrs != blank %} {{ attrs }}{% endif %}>
+    <div style="background:var(--canvas-alt);border-radius:var(--radius-lg);display:grid;place-items:center;aspect-ratio:1">
+      {%- render 'product-photo', image: product.featured_media, size: 92, alt: art_alt, kind: kind -%}
+    </div>
+    {%- if eyebrow != blank %}<p class="t-overline" style="margin:8px 0 0"><span>{{ eyebrow | escape }}</span></p>{% endif -%}
+    <p class="t-caption" style="color:var(--ink);font-weight:600;margin:0">{{ product.title | escape }}</p>
+    <p class="t-caption" style="margin:0"><span>{{ 'general.from' | t }}</span> <span>{{ product.price | money }}</span></p>
+  </a>
+{%- else -%}
+  <a href="{{ routes.all_products_collection_url }}" style="color:var(--ink)"{% if attrs != blank %} {{ attrs }}{% endif %}>
+    <div style="background:var(--canvas-alt);border-radius:var(--radius-lg);display:grid;place-items:center;aspect-ratio:1">
+      {%- render 'specimen', kind: 'ring', metal: 'rose-gold', size: 92, label: '' -%}
+    </div>
+    {%- if eyebrow != blank %}<p class="t-overline" style="margin:8px 0 0"><span>{{ eyebrow | escape }}</span></p>{% endif -%}
+    <p class="t-caption" style="color:var(--ink);font-weight:600;margin:0">{{ 'products.product.placeholder_title' | t }}</p>
+    <p class="t-caption" style="margin:0"><span>{{ 'general.from' | t }}</span> <span>{{ 129000 | money }}</span></p>
+  </a>
+{%- endif -%}

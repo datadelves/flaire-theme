@@ -1,0 +1,449 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign per_page = section.settings.products_per_page | default: 24
+  assign grid_class = 'g4'
+  if section.settings.columns_desktop == '3'
+    assign grid_class = 'g3'
+  endif
+
+  assign card_opts = section.blocks | where: 'type', 'card-options' | first
+  assign show_quick = true
+  assign show_dots = true
+  assign show_rating = settings.show_card_rating
+  if card_opts
+    assign show_quick = card_opts.settings.show_quick_view
+    assign show_dots = card_opts.settings.show_swatches
+    assign show_rating = card_opts.settings.show_rating
+  endif
+  assign merch_blocks = section.blocks | where: 'type', 'merch-tile'
+  assign link_blocks = section.blocks | where: 'type', 'empty-links'
+
+  assign filters_active = false
+  assign active_finishes = ''
+  for filter in collection.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value != nil or filter.max_value.value != nil
+        assign filters_active = true
+      endif
+    elsif filter.active_values.size > 0
+      assign filters_active = true
+      if filter.param_name contains 'option.finish'
+        assign active_finishes = filter.active_values | map: 'label' | join: '|'
+      endif
+    endif
+  endfor
+  assign active_finishes = active_finishes | split: '|'
+
+  assign clear_url = collection.url
+  if collection.sort_by != blank
+    assign clear_url = clear_url | append: '?sort_by=' | append: collection.sort_by
+  endif
+-%}
+{%- paginate collection.products by per_page -%}
+<div class="band tight {{ scheme }}" data-section="collection-grid" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}" data-grid-section data-section-id="{{ section.id }}" data-count="{{ collection.products_count }}" data-total="{{ paginate.items }}">
+  <div class="wrap">
+    {%- if collection.products.size == 0 -%}
+      {%- liquid
+        comment
+          Filters (or a tag URL) that match nothing get the section's copy and Clear filters; a collection with no
+          products at all gets the empty-collection message.
+        endcomment
+        assign clear_label = ''
+        assign empty_title = section.settings.empty_title | escape
+        assign empty_text = section.settings.empty_text | escape
+        assign shop_all_label = ''
+        if filters_active or current_tags != blank
+          assign clear_label = 'products.facets.clear_filters' | t
+        elsif collection.all_products_count == 0
+          assign empty_title = 'templates.collection.empty_title' | t
+          assign empty_text = 'templates.collection.empty_text' | t
+          if collection.url != routes.all_products_collection_url
+            assign shop_all_label = 'general.shop_all' | t
+          endif
+        endif
+      -%}
+      <div class="dl-empty">
+        {%- if empty_title != blank %}<h2 class="t-title-lg">{{ empty_title }}</h2>{% endif -%}
+        {%- if empty_text != blank %}<p class="t-body muted" style="margin:0">{{ empty_text }}</p>{% endif -%}
+        {%- if clear_label != blank -%}
+          {%- render 'button', label: clear_label, variant: 'secondary', url: clear_url, attrs: 'data-facet-link' -%}
+        {%- elsif shop_all_label != blank -%}
+          {%- render 'button', label: shop_all_label, variant: 'secondary', url: routes.all_products_collection_url -%}
+        {%- endif -%}
+        {%- for block in link_blocks -%}
+          {%- if block.settings.show and block.settings.label != blank -%}
+            {%- assign el_url = block.settings.collection.url -%}
+            {%- if el_url == blank and request.design_mode -%}{%- assign el_url = routes.all_products_collection_url -%}{%- endif -%}
+            {%- if el_url != blank -%}
+              {%- assign el_label = block.settings.label | escape -%}
+              {%- capture el_attrs -%}{{ block.shopify_attributes }}{%- endcapture -%}
+              {%- render 'button', label: el_label, variant: 'link', url: el_url, attrs: el_attrs -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- else -%}
+      <div class="grid {{ grid_class }}" data-grid>
+        {%- for product in collection.products -%}
+          {%- if paginate.current_page == 1 and filters_active == false -%}
+            {%- for block in merch_blocks -%}
+              {%- assign pos = block.settings.position | default: 6 | plus: 0 -%}
+              {%- if pos == forloop.parentloop.index and block.settings.link != collection.url -%}
+                {%- liquid
+                  assign tile_bg = 'var(--canvas-alt)'
+                  if block.settings.tone == 'light'
+                    assign tile_bg = 'var(--canvas)'
+                  endif
+                  assign engr_text = block.settings.engraving_text
+                -%}
+                <div class="dl-tile-card" style="grid-column: span 2;justify-content:space-between;align-items:flex-start;padding:32px;min-height:340px;background:{{ tile_bg }}" {{ block.shopify_attributes }}>
+                  <div>
+                    {%- if block.settings.eyebrow != blank %}<p class="t-overline">{{ block.settings.eyebrow | escape }}</p>{% endif -%}
+                    {%- if block.settings.headline != blank %}<h3 class="t-title-lg" style="margin:8px 0">{{ block.settings.headline | escape }}</h3>{% endif -%}
+                    {%- if block.settings.text != blank %}<p class="t-caption" style="max-width:300px">{{ block.settings.text | escape }}</p>{% endif -%}
+                  </div>
+                  {%- if engr_text != blank or block.settings.image != blank -%}
+                    <div style="width:100%;max-width:300px;align-self:center">
+                      {%- if engr_text != blank -%}
+                        {%- assign engr_label = 'products.engraving.preview_label' | t: text: engr_text -%}
+                        <figure class="fc-engr" data-engr style="--m:var(--metal-rose-gold)">
+                          <div class="fc-engr-stage" role="img" aria-label="{{ engr_label | escape }}">
+                            <span class="fc-engr-tag">{{ 'products.engraving.sample' | t }}</span>
+                            {%- if block.settings.image != blank -%}
+                              {%- render 'product-photo', image: block.settings.image, size: 300, alt: '' -%}
+                            {%- else -%}
+                              {%- render 'specimen', kind: 'band', metal: 'rose-gold', size: 300, label: '' -%}
+                            {%- endif -%}
+                            <p class="fc-engr-text" data-engr-text>{{ engr_text | escape }}</p>
+                          </div>
+                          <figcaption class="fc-engr-cap" data-engr-cap>{{ 'products.engraving.count' | t: count: engr_text.size, max: 16 }} · {{ 'products.engraving.sample_note' | t }}</figcaption>
+                        </figure>
+                      {%- else -%}
+                        {%- render 'product-photo', image: block.settings.image, size: 300, alt: '' -%}
+                      {%- endif -%}
+                    </div>
+                  {%- endif -%}
+                  {%- if block.settings.link_label != blank and block.settings.link != blank -%}
+                    {%- assign tile_link_label = block.settings.link_label | escape -%}
+                    {%- render 'button', variant: 'link', label: tile_link_label, url: block.settings.link -%}
+                  {%- endif -%}
+                </div>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {%- liquid
+            assign card_metal = ''
+            if active_finishes.size > 0
+              assign finish_option = product.options_with_values | where: 'name', 'Finish' | first
+              assign finish_names = finish_option.values | map: 'name'
+              for f in active_finishes
+                if card_metal == blank and finish_names contains f
+                  assign card_metal = f | handleize
+                endif
+              endfor
+            endif
+          -%}
+          {%- render 'product-card', product: product, quick: show_quick, rating: show_rating, dots: show_dots, metal: card_metal -%}
+        {%- endfor -%}
+      </div>
+
+      {%- liquid
+        assign shown = paginate.current_offset | plus: collection.products.size
+        assign total = paginate.items
+        assign pct = 100
+        if total > 0
+          assign pct = shown | times: 100 | divided_by: total
+        endif
+      -%}
+      {%- if section.settings.pagination == 'numbered' -%}
+        {%- render 'pagination', paginate: paginate -%}
+      {%- else -%}
+        <div class="dl-pager" data-more-slot>
+          {%- if paginate.next -%}
+            <span class="t-caption" role="status">{{ 'products.facets.showing_of' | t: shown: shown, total: total }}</span><div class="bar"><i style="width:{{ pct }}%"></i></div>
+            {%- if section.settings.load_more_label != blank -%}
+              {%- assign more_label = section.settings.load_more_label | escape -%}
+              {%- capture more_attrs -%}data-act="more" data-next-url="{{ paginate.next.url }}"{%- endcapture -%}
+              {%- render 'button', label: more_label, variant: 'secondary', class: 'js-only', attrs: more_attrs -%}
+            {%- endif -%}
+          {%- else -%}
+            <span class="t-caption" role="status">{{ 'general.showing_all' | t: total: total }}</span><div class="bar"><i style="width:100%"></i></div>
+          {%- endif -%}
+        </div>
+        <div class="no-js-only">{%- render 'pagination', paginate: paginate -%}</div>
+      {%- endif -%}
+    {%- endif -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == '@app' -%}{%- render block -%}{%- endif -%}
+    {%- endfor -%}
+  </div>
+  <template data-grid-skeleton>
+    <div class="grid {{ grid_class }}" aria-busy="true">
+      {%- for i in (1..8) -%}
+        <div class="fc-card skeleton"><div class="fc-card-art"><div class="dl-skel" style="width:70%;aspect-ratio:1;border-radius:50%"></div></div><div class="fc-card-body"><div class="dl-skel" style="height:14px;width:60%;margin-bottom:8px"></div><div class="dl-skel" style="height:12px;width:80%;margin-bottom:8px"></div><div class="dl-skel" style="height:14px;width:30%"></div></div></div>
+      {%- endfor -%}
+    </div>
+  </template>
+</div>
+{%- endpaginate -%}
+
+{% schema %}
+{
+  "name": "Product grid",
+  "tag": "section",
+  "class": "dl-section dl-collection-grid",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "default": 24,
+      "min": 8,
+      "max": 48,
+      "step": 4
+    },
+    {
+      "type": "select",
+      "id": "pagination",
+      "label": "Pagination",
+      "default": "load_more",
+      "options": [
+        {
+          "value": "load_more",
+          "label": "Load more"
+        },
+        {
+          "value": "numbered",
+          "label": "Numbered pages"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "columns_desktop",
+      "label": "Columns",
+      "default": "4",
+      "options": [
+        {
+          "value": "3",
+          "label": "3"
+        },
+        {
+          "value": "4",
+          "label": "4"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "empty_title",
+      "label": "Empty headline",
+      "default": "No pieces match"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty text",
+      "default": "Remove a filter to see more."
+    },
+    {
+      "type": "text",
+      "id": "load_more_label",
+      "label": "Load more label",
+      "default": "Show more"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "merch-tile",
+      "name": "Merchandising tile",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "number",
+          "id": "position",
+          "label": "Position in grid",
+          "default": 6
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "Engrave"
+        },
+        {
+          "type": "text",
+          "id": "headline",
+          "label": "Headline",
+          "default": "Made yours"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "alt",
+          "options": [
+            {
+              "value": "alt",
+              "label": "Alt"
+            },
+            {
+              "value": "light",
+              "label": "Light"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Caption",
+          "default": "Add a few words before you order."
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "Engrave"
+        },
+        {
+          "type": "text",
+          "id": "engraving_text",
+          "label": "Sample engraving",
+          "default": "Always, M.",
+          "info": "Shows the engraving preview. Leave blank to show only the image."
+        }
+      ]
+    },
+    {
+      "type": "empty-links",
+      "name": "Empty-state link",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop all rings"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "card-options",
+      "name": "Card options",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_quick_view",
+          "label": "Show quick view link",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_swatches",
+          "label": "Show finish dots",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_rating",
+          "label": "Show rating",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "collection"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Product grid",
+      "blocks": [
+        {
+          "type": "merch-tile"
+        },
+        {
+          "type": "merch-tile"
+        },
+        {
+          "type": "merch-tile"
+        },
+        {
+          "type": "merch-tile"
+        },
+        {
+          "type": "empty-links"
+        },
+        {
+          "type": "empty-links"
+        },
+        {
+          "type": "empty-links"
+        },
+        {
+          "type": "card-options"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

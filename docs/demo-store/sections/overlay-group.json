@@ -1,0 +1,387 @@
+{
+  "type": "custom.overlay",
+  "name": "Overlays",
+  "sections": {
+    "cart-drawer": {
+      "type": "cart-drawer",
+      "settings": {
+        "show_recommendations": true,
+        "show_discount": true,
+        "show_gift_notice": true,
+        "empty_title": "Your Bag is empty",
+        "empty_text": "Pieces you add will wait here."
+      },
+      "blocks": {
+        "line-details-1": {
+          "type": "line-details",
+          "settings": {
+            "show_material": true,
+            "show_engraving": true,
+            "show_delivery": true,
+            "delivery_text": "Arrives Thursday"
+          }
+        },
+        "summary-row-1": {
+          "type": "summary-row",
+          "settings": {
+            "kind": "delivery",
+            "label": "Delivery",
+            "value": "Free overnight"
+          }
+        },
+        "trust-note-1": {
+          "type": "trust-note",
+          "settings": {
+            "icon": "seal-check",
+            "text": "30-day returns. Engraved pieces are final sale."
+          }
+        }
+      },
+      "block_order": [
+        "line-details-1",
+        "summary-row-1",
+        "trust-note-1"
+      ]
+    },
+    "quick-view": {
+      "type": "quick-view",
+      "settings": {
+        "desktop_presentation": "drawer",
+        "show_description": true,
+        "show_specs": true,
+        "show_pickup": true,
+        "open_cart_after_add": true
+      },
+      "blocks": {
+        "gallery-1": {
+          "type": "gallery",
+          "settings": {
+            "max_images": 4,
+            "show_dots": true,
+            "zoom_link": true
+          }
+        },
+        "options-1": {
+          "type": "options",
+          "settings": {
+            "use_variant_sheet": true,
+            "require_selection": true,
+            "show_size_guide": true
+          }
+        }
+      },
+      "block_order": [
+        "gallery-1",
+        "options-1"
+      ]
+    },
+    "variant-sheet": {
+      "type": "variant-sheet",
+      "settings": {
+        "show_sku": true,
+        "show_engraving": true,
+        "show_selling_plans": true,
+        "confirm_label": "Done",
+        "unavailable_text": "This combination is sold out. Choose another finish or size."
+      },
+      "blocks": {
+        "option-group-1": {
+          "type": "option-group",
+          "settings": {
+            "style": "swatch",
+            "option_name": "Finish",
+            "show_guide": false
+          }
+        },
+        "live-summary-1": {
+          "type": "live-summary",
+          "settings": {
+            "show_price": true,
+            "show_image": true,
+            "show_availability": true
+          }
+        },
+        "engraving-1": {
+          "type": "engraving",
+          "settings": {
+            "max_length": 16,
+            "label": "Engraving (optional)",
+            "final_sale": "Engraved pieces are final sale."
+          }
+        },
+        "option-group-2": {
+          "type": "option-group",
+          "settings": {
+            "style": "chips",
+            "option_name": "Ring size",
+            "show_guide": true
+          }
+        }
+      },
+      "block_order": [
+        "option-group-1",
+        "option-group-2",
+        "live-summary-1",
+        "engraving-1"
+      ]
+    },
+    "predictive-search": {
+      "type": "predictive-search",
+      "settings": {
+        "product_limit": 4,
+        "show_collections": true,
+        "show_articles": true,
+        "show_pages": true,
+        "show_price": true,
+        "empty_text": "No results for “{terms}”. Try a metal, a stone or a collection name."
+      },
+      "blocks": {
+        "popular-1": {
+          "type": "popular",
+          "settings": {
+            "heading": "Popular searches",
+            "limit": 6,
+            "terms": "Engagement rings | diamond ring\nRose gold | rose gold\nPearl earrings | pearl\nGift under $500 | gift"
+          }
+        },
+        "featured-product-1": {
+          "type": "featured-product",
+          "settings": {
+            "product": "aurora-band",
+            "eyebrow": "Most loved",
+            "show_price": true
+          }
+        },
+        "help-link-1": {
+          "type": "help-link",
+          "settings": {
+            "label": "Ring size guide",
+            "link": "shopify://pages/ring-sizing",
+            "icon": "ruler",
+            "size_guide_tab": "rings"
+          }
+        }
+      },
+      "block_order": [
+        "popular-1",
+        "featured-product-1",
+        "help-link-1"
+      ]
+    },
+    "mobile-nav-drawer": {
+      "type": "mobile-nav-drawer",
+      "settings": {
+        "menu": "main-menu",
+        "show_account": true,
+        "show_localization": true,
+        "close_label": "Close menu"
+      },
+      "blocks": {
+        "featured-link-1": {
+          "type": "featured-link",
+          "settings": {
+            "label": "Engrave",
+            "link": "shopify://pages/engraving",
+            "badge": ""
+          }
+        },
+        "promo-1": {
+          "type": "promo",
+          "settings": {
+            "headline": "Light, held.",
+            "link": "shopify://collections/all",
+            "link_label": "Shop new"
+          }
+        },
+        "utility-1": {
+          "type": "utility",
+          "settings": {
+            "label": "Book a visit",
+            "link": "shopify://pages/contact",
+            "icon": "storefront"
+          }
+        }
+      },
+      "block_order": [
+        "featured-link-1",
+        "promo-1",
+        "utility-1"
+      ]
+    },
+    "filters-drawer": {
+      "type": "filters-drawer",
+      "settings": {
+        "desktop_drawer": false,
+        "apply_label": "Show results",
+        "clear_label": "Clear all",
+        "show_counts": true
+      },
+      "blocks": {
+        "facet-group-1": {
+          "type": "facet-group",
+          "settings": {
+            "filter_label": "Finish",
+            "style": "swatch",
+            "open": true
+          }
+        },
+        "facet-group-2": {
+          "type": "facet-group",
+          "settings": {
+            "filter_label": "Stone",
+            "style": "list",
+            "open": true
+          }
+        },
+        "price-range-1": {
+          "type": "price-range",
+          "settings": {
+            "label": "Price",
+            "show_inputs": true,
+            "step": 50
+          }
+        },
+        "availability-1": {
+          "type": "availability",
+          "settings": {
+            "label": "",
+            "in_stock": "",
+            "engravable": "Engravable"
+          }
+        }
+      },
+      "block_order": [
+        "facet-group-1",
+        "facet-group-2",
+        "price-range-1",
+        "availability-1"
+      ]
+    },
+    "size-guide-drawer": {
+      "type": "size-guide-drawer",
+      "settings": {
+        "default_tab": "rings",
+        "title": "Size guide"
+      },
+      "blocks": {
+        "how-to-1": {
+          "type": "how-to",
+          "settings": {
+            "title": "Measure at home",
+            "steps": "<ol><li>Wrap a strip of paper around the base of the finger.</li><li>Mark where it overlaps.</li><li>Measure the length in millimetres and match it below.</li></ol>",
+            "tab": "rings"
+          }
+        },
+        "conversion-table-1": {
+          "type": "conversion-table",
+          "settings": {
+            "title": "Ring size conversion",
+            "rows": "US 5 | 49.3 mm · EU 49\nUS 6 | 51.9 mm · EU 52\nUS 7 | 54.4 mm · EU 54.5\nUS 8 | 57.0 mm · EU 57\nUS 9 | 59.5 mm · EU 59.5",
+            "striped": false,
+            "tab": "rings",
+            "note": "Demo values. A real store would use its own measured sizing table."
+          }
+        },
+        "how-to-2": {
+          "type": "how-to",
+          "settings": {
+            "title": "Measure your wrist",
+            "steps": "<ol><li>Wrap a soft tape measure around the wrist bone.</li><li>Add 1.5 cm for a close fit, or 2.5 cm for a relaxed fit.</li><li>Match the total to the length below.</li></ol>",
+            "tab": "bracelets"
+          }
+        },
+        "conversion-table-2": {
+          "type": "conversion-table",
+          "settings": {
+            "title": "Bracelet length",
+            "rows": "Small | 15 cm · fits wrists to 13.5 cm\nMedium | 17 cm · fits wrists to 15.5 cm\nLarge | 19 cm · fits wrists to 17.5 cm",
+            "striped": false,
+            "tab": "bracelets",
+            "note": "Demo values. A real store would use its own measured sizing table."
+          }
+        },
+        "how-to-3": {
+          "type": "how-to",
+          "settings": {
+            "title": "Choose a length",
+            "steps": "<ol><li>Hold a string at the length you like against the collarbone.</li><li>Measure the string against a ruler.</li><li>Match it to the chain length below.</li></ol>",
+            "tab": "necklaces"
+          }
+        },
+        "conversion-table-3": {
+          "type": "conversion-table",
+          "settings": {
+            "title": "Chain length",
+            "rows": "40 cm | Choker, sits at the base of the neck\n45 cm | Princess, sits at the collarbone\n50 cm | Matinee, sits just below the collarbone",
+            "striped": false,
+            "tab": "necklaces",
+            "note": "Demo values. A real store would use its own measured sizing table."
+          }
+        },
+        "book-visit-1": {
+          "type": "book-visit",
+          "settings": {
+            "label": "Book a sizing visit",
+            "link": "shopify://pages/contact",
+            "note": ""
+          }
+        }
+      },
+      "block_order": [
+        "how-to-1",
+        "conversion-table-1",
+        "how-to-2",
+        "conversion-table-2",
+        "how-to-3",
+        "conversion-table-3",
+        "book-visit-1"
+      ]
+    },
+    "pickup-drawer": {
+      "type": "pickup-drawer",
+      "settings": {
+        "title": "Pickup availability",
+        "show_address": true
+      },
+      "blocks": {
+        "location-note-1": {
+          "type": "location-note",
+          "settings": {
+            "location_name": "",
+            "note": "Appointments recommended for ring sizing."
+          }
+        },
+        "ready-time-1": {
+          "type": "ready-time",
+          "settings": {
+            "label": "Ready in 24 hours",
+            "icon": "package",
+            "prefer_native": true
+          }
+        },
+        "help-1": {
+          "type": "help",
+          "settings": {
+            "text": "<p>Bring photo ID. Engraved pieces need two working days.</p>",
+            "link_label": "Pickup policy"
+          }
+        }
+      },
+      "block_order": [
+        "location-note-1",
+        "ready-time-1",
+        "help-1"
+      ]
+    }
+  },
+  "order": [
+    "cart-drawer",
+    "quick-view",
+    "variant-sheet",
+    "predictive-search",
+    "mobile-nav-drawer",
+    "filters-drawer",
+    "size-guide-drawer",
+    "pickup-drawer"
+  ]
+}

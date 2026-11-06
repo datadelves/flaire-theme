@@ -1,0 +1,182 @@
+{%- comment -%}
+  Product reviews. The summary (average, stars, count) comes from the standard product rating metafields
+  (reviews.rating, reviews.rating_count) that review apps write; the reviews themselves come from the review
+  app's block or a Custom Liquid block. With no rating and no block content the section is hidden on the
+  storefront; the theme editor shows a hint instead.
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign summary_block = section.blocks | where: 'type', 'summary' | first
+  assign average = ''
+  assign review_count = 0
+  if product != blank
+    assign rating = product.metafields.reviews.rating.value
+    if rating != blank
+      assign average = rating.rating | round: 1
+      assign review_count = product.metafields.reviews.rating_count.value | default: 0
+    endif
+  else
+    comment
+      Theme editor without a product: the prototype's demo summary.
+    endcomment
+    assign average = 4.8
+    assign review_count = 51
+  endif
+
+  assign has_blocks = false
+  for block in section.blocks
+    if block.type == '@app'
+      assign has_blocks = true
+    elsif block.type == 'liquid' and block.settings.custom_liquid != blank
+      assign has_blocks = true
+    endif
+  endfor
+-%}
+{%- if average != blank or has_blocks or request.design_mode -%}
+<div class="band {{ scheme }}" data-section="product-reviews" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap" id="reviews">
+    {%- if has_blocks %}<div class="split split-12" style="align-items:start">{% endif -%}
+      <div class="stack-lg">
+        {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, left: true -%}
+        {%- if summary_block and average != blank -%}
+          <div class="dl-stat" {{ summary_block.shopify_attributes }}>
+            <p class="t-headline" style="margin:0">{{ average }}{% if summary_block.settings.label != blank %}<span class="fc-sr"> {{ summary_block.settings.label | escape }}</span>{% endif %}</p>
+            <div class="dl-rating">{% render 'icon', icon: 'star', size: 16 %}{% if review_count > 0 %}<span>{{ 'reviews.count' | t: count: review_count }}</span>{% endif %}</div>
+          </div>
+        {%- endif -%}
+        {%- if request.design_mode and average == blank and has_blocks == false -%}
+          <p class="t-caption" style="margin:0">{{ 'reviews.editor.hint' | t }}</p>
+        {%- endif -%}
+      </div>
+    {%- if has_blocks -%}
+      <div class="stack-lg">
+        <div class="dl-reviews-host" data-product-id="{{ product.id }}">
+          {%- for block in section.blocks -%}
+            {%- case block.type -%}
+              {%- when '@app' -%}
+                {% render block %}
+              {%- when 'liquid' -%}
+                {%- if block.settings.custom_liquid != blank -%}
+                  <div {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>
+                {%- endif -%}
+            {%- endcase -%}
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+    {%- endif -%}
+  </div>
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Reviews",
+  "tag": "section",
+  "class": "dl-section dl-product-reviews",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Shows the product rating from your review app and the app's review block. Hidden when a product has no rating and no block content."
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Reviews"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "What wearers say"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "summary",
+      "name": "Rating summary",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Average and count from the product's rating metafields (reviews.rating and reviews.rating_count)."
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label for screen readers",
+          "default": "average rating"
+        }
+      ]
+    },
+    {
+      "type": "liquid",
+      "name": "Custom Liquid",
+      "settings": [
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Custom Liquid",
+          "info": "Add a review widget snippet or other Liquid code."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Reviews",
+      "blocks": [
+        {
+          "type": "summary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

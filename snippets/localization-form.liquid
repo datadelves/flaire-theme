@@ -1,0 +1,82 @@
+{%- comment -%}
+  Country or region selector.
+
+  - style 'button' (default; footer, announcement bar): a button with the current flag, country and currency
+    that opens the selector drawer. Without JavaScript a native select and Update button post Shopify's
+    localization form instead.
+  - style 'sheet': the selector drawer itself, rendered once in layout/theme.liquid. It slides in from the
+    right with a search field and every available country (flag, name, currency). The page behind it does
+    not scroll. Picking a country posts the localization form (the kernel's `data-act="country"`).
+
+  Flags come from Shopify's CDN (`country | image_url`), so nothing loads from outside the store.
+
+  Accepts:
+  - style {String} 'button' | 'sheet'
+  - id {String} base id for the button form (default 'loc'); keeps ids unique when the button appears twice
+
+  Usage:
+  {% render 'localization-form' %}
+  {% render 'localization-form', id: 'loc-announce' %}
+  {% render 'localization-form', style: 'sheet' %}
+{%- endcomment -%}
+{%- liquid
+  assign style = style | default: 'button'
+  assign current = localization.country
+  assign region_label = 'localization.country' | t
+  assign form_id = 'form-loc'
+  if id != blank
+    assign form_id = 'form-' | append: id
+  endif
+-%}
+{%- capture current_label -%}{{ current.name }} ({{ current.currency.iso_code }} {{ current.currency.symbol }}){%- endcapture -%}
+{%- if style == 'sheet' -%}
+  <div class="app-ov" data-ov="loc" hidden>
+    <div class="dl-scrim" data-act="scrim"></div>
+    <aside class="dl-drawer right dl-loc-drawer scheme-1" data-place="right" role="dialog" aria-modal="true" aria-labelledby="ov-title-loc" data-ov-panel>
+      {%- assign heading = 'localization.heading' | t -%}
+      {%- render 'drawer-head', title: heading, id: 'ov-title-loc' -%}
+      <div class="dl-loc-find">
+        <label class="fc-sr" for="loc-search">{{ 'localization.search' | t }}</label>
+        {%- render 'icon', icon: 'magnifying-glass', size: 18 -%}
+        <input id="loc-search" type="search" placeholder="{{ 'localization.search' | t | escape }}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-controls="loc-list" data-loc-search>
+      </div>
+      <div class="bd">
+        {%- form 'localization', id: 'form-loc-sheet' -%}
+          <input type="hidden" name="country_code" value="{{ current.iso_code }}">
+          <ul class="dl-loc-list" id="loc-list" role="list">
+            {%- for c in localization.available_countries -%}
+              <li data-loc-row data-code="{{ c.iso_code | downcase }}" data-currency="{{ c.currency.iso_code | downcase }}">
+                <button type="button" class="dl-loc-opt" data-act="country" data-code="{{ c.iso_code }}"{% if c.iso_code == current.iso_code %} aria-current="true"{% endif %}>
+                  <img class="dl-flag" src="{{ c | image_url: width: 40 }}" alt="" width="20" height="15" loading="lazy">
+                  <span class="n">{{ c.name }}</span>
+                  <span class="cur">{{ c.currency.iso_code }} {{ c.currency.symbol }}</span>
+                  {%- if c.iso_code == current.iso_code %}{% render 'icon', icon: 'check', size: 16 %}{% endif -%}
+                </button>
+              </li>
+            {%- endfor -%}
+          </ul>
+          <p class="dl-loc-empty" data-loc-empty hidden>{{ 'localization.no_results' | t }}</p>
+        {%- endform -%}
+      </div>
+    </aside>
+  </div>
+{%- else -%}
+  {%- form 'localization', id: form_id -%}
+    <div class="dl-loc">
+      <button type="button" class="js-only" aria-haspopup="dialog" data-open="loc">
+        <img class="dl-flag" src="{{ current | image_url: width: 40 }}" alt="" width="20" height="15" loading="lazy">
+        <span><span class="fc-sr">{{ region_label }}: </span>{{ current_label }}</span>
+        {%- render 'icon', icon: 'caret-down', size: 12 -%}
+      </button>
+      <noscript>
+        <label class="fc-sr" for="{{ form_id }}-select">{{ region_label }}</label>
+        <select id="{{ form_id }}-select" name="country_code">
+          {%- for c in localization.available_countries -%}
+            <option value="{{ c.iso_code }}"{% if c.iso_code == current.iso_code %} selected{% endif %}>{{ c.name }} ({{ c.currency.iso_code }} {{ c.currency.symbol }})</option>
+          {%- endfor -%}
+        </select>
+        <button type="submit">{{ 'localization.update' | t }}</button>
+      </noscript>
+    </div>
+  {%- endform -%}
+{%- endif -%}

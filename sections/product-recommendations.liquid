@@ -1,0 +1,375 @@
+{%- comment -%}
+  Rendered empty on the product page; the kernel fetches the Recommendations API with this section's id
+  ([data-recommendations][data-url]) and swaps in the response. Cards sit in [data-type] wrappers for the
+  filter chips (data-act="recs" data-f="..."); types are the product type, its collections and its kind.
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign limit = section.settings.limit | default: 8
+  assign performed = false
+  if recommendations.performed
+    assign performed = true
+  endif
+  assign chip_blocks = section.blocks | where: 'type', 'filter-chip'
+  assign default_filter = 'all'
+  for chip in chip_blocks
+    if chip.settings.default and chip.settings.product_type != blank
+      assign default_filter = chip.settings.product_type | handleize
+    endif
+  endfor
+-%}
+
+{%- capture cards -%}
+  {%- if performed -%}
+    {%- liquid
+      comment
+        Order: pinned hand-picked products, then the API results, then unpinned picks; no duplicates.
+      endcomment
+      assign handles = ''
+      for block in section.blocks
+        if block.type == 'manual-product' and block.settings.pin and block.settings.product != blank
+          assign handles = handles | append: block.settings.product.handle | append: ','
+        endif
+      endfor
+      for rec in recommendations.products
+        assign handles = handles | append: rec.handle | append: ','
+      endfor
+      for block in section.blocks
+        if block.type == 'manual-product' and block.settings.pin == false and block.settings.product != blank
+          assign handles = handles | append: block.settings.product.handle | append: ','
+        endif
+      endfor
+      assign handle_list = handles | split: ',' | uniq
+      assign all_types = ' '
+    -%}
+    {%- for handle in handle_list limit: limit -%}
+      {%- liquid
+        assign card_product = all_products[handle]
+        if card_product == blank
+          continue
+        endif
+        capture kind
+          render 'product-data', product: card_product, field: 'kind'
+        endcapture
+        assign kind = kind | strip
+        case kind
+          when 'ring', 'band'
+            assign kind_type = 'rings'
+          when 'earring'
+            assign kind_type = 'earrings'
+          when 'pendant', 'chain'
+            assign kind_type = 'necklaces'
+          when 'bracelet'
+            assign kind_type = 'bracelets'
+          else
+            assign kind_type = ''
+        endcase
+        assign type_handle = card_product.type | handleize
+        assign types = type_handle
+        if type_handle != blank
+          assign types = types | append: ' ' | append: type_handle | append: 's'
+        endif
+        assign collection_handles = card_product.collections | map: 'handle' | join: ' '
+        assign types = types | append: ' ' | append: kind_type | append: ' ' | append: collection_handles | strip
+        assign type_token = ' ' | append: types | append: ' '
+        assign filter_token = ' ' | append: default_filter | append: ' '
+        assign all_types = all_types | append: types | append: ' '
+      -%}
+      <div data-type="{{ types | escape }}"{% unless default_filter == 'all' or type_token contains filter_token %} hidden{% endunless %}>
+        {%- render 'product-card', product: card_product, size: 150 -%}
+      </div>
+    {%- endfor -%}
+    {%- comment -%} Up to four pieces per chip from the matching collection, shown only when that chip is on. {%- endcomment -%}
+    {%- if section.settings.show_filters -%}
+      {%- for chip in chip_blocks -%}
+        {%- assign f = chip.settings.product_type | handleize -%}
+        {%- assign chip_collection = collections[f] -%}
+        {%- if chip.settings.label != blank and chip_collection != blank -%}
+          {%- for card_product in chip_collection.products limit: 5 -%}
+            {%- assign key = card_product.handle | append: ',' -%}
+            {%- unless handles contains key -%}
+              <div data-type="{{ f }}" data-filter-only{% unless default_filter == f %} hidden{% endunless %}>
+                {%- render 'product-card', product: card_product, size: 150 -%}
+              </div>
+            {%- endunless -%}
+          {%- endfor -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+  {%- elsif request.design_mode and product == blank -%}
+    {%- for i in (1..4) -%}
+      <div data-type="all">{% render 'product-card', product: blank, size: 150 %}</div>
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- liquid
+  assign chips_shown = false
+  if section.settings.show_filters and chip_blocks.size > 0
+    assign matched = 0
+    for chip in chip_blocks
+      assign f = chip.settings.product_type | handleize
+      assign f_token = ' ' | append: f | append: ' '
+      if all_types contains f_token
+        assign matched = matched | plus: 1
+      endif
+    endfor
+    comment
+      Every chip can fill its own view from its collection, so the row shows whenever filters are on.
+    endcomment
+    assign chips_shown = true
+  endif
+  assign show_content = false
+  if cards != blank
+    assign show_content = true
+  endif
+-%}
+<div class="band {{ scheme }}" data-section="product-recommendations" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"
+  {%- if product != blank and performed == false %} data-recommendations data-url="{{ routes.product_recommendations_url }}?product_id={{ product.id }}&limit={{ limit }}&section_id={{ section.id }}&intent={{ section.settings.intent }}"{% elsif performed %} data-recommendations{% endif %}
+>
+  {%- if show_content -%}
+    <div class="wrap">
+      {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub -%}
+      {%- if chips_shown -%}
+        <div class="fc-chips" style="justify-content:center;margin-bottom:32px" role="group" aria-label="{{ 'products.recommendations.filter_label' | t | escape }}">
+          <button type="button" class="dl-chip{% if default_filter == 'all' %} is-on{% endif %}" aria-pressed="{% if default_filter == 'all' %}true{% else %}false{% endif %}" data-act="recs" data-f="all">{{ 'products.recommendations.all' | t }}</button>
+          {%- for chip in chip_blocks -%}
+            {%- if chip.settings.label != blank and chip.settings.product_type != blank -%}
+              {%- assign f = chip.settings.product_type | handleize -%}
+              <button type="button" class="dl-chip{% if f == default_filter %} is-on{% endif %}" aria-pressed="{% if f == default_filter %}true{% else %}false{% endif %}" data-act="recs" data-f="{{ f }}" {{ chip.shopify_attributes }}>{{ chip.settings.label | escape }}</button>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      <div class="grid g4 dl-recs-grid">{{ cards }}</div>
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'bundle-note' -%}
+          {%- if block.settings.title != blank or block.settings.text != blank -%}
+            {%- capture note_attrs %}style="margin-top:32px" {{ block.shopify_attributes }}{% endcapture -%}
+            {%- render 'notice', tone: block.settings.tone, title: block.settings.title, text: block.settings.text, attrs: note_attrs -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .band[data-recommendations]:empty { padding: 0; }
+  .dl-recs-grid > [data-type] { display: grid; }
+  .dl-recs-grid > [data-type][hidden] { display: none; }
+  .dl-recs-grid > [data-type]:nth-child(n+5 of :not([hidden])) { display: none; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Complete the set",
+  "tag": "section",
+  "class": "dl-section dl-product-recommendations",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Complete the set"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "select",
+      "id": "intent",
+      "label": "Recommendation type",
+      "default": "complementary",
+      "options": [
+        {
+          "value": "complementary",
+          "label": "Complementary"
+        },
+        {
+          "value": "related",
+          "label": "Related"
+        }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Products",
+      "default": 8,
+      "min": 4,
+      "max": 10,
+      "step": 1
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filter chips",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "filter-chip",
+      "name": "Filter chip",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Earrings"
+        },
+        {
+          "type": "text",
+          "id": "product_type",
+          "label": "Product type",
+          "default": "Earrings"
+        },
+        {
+          "type": "checkbox",
+          "id": "default",
+          "label": "Selected by default",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "manual-product",
+      "name": "Hand-picked product",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Badge"
+        },
+        {
+          "type": "checkbox",
+          "id": "pin",
+          "label": "Show first",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "bundle-note",
+      "name": "Bundle note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Wear them together"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Matching finishes across the set."
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "info",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Complete the set",
+      "blocks": [
+        {
+          "type": "filter-chip"
+        },
+        {
+          "type": "filter-chip"
+        },
+        {
+          "type": "filter-chip"
+        },
+        {
+          "type": "filter-chip"
+        },
+        {
+          "type": "manual-product"
+        },
+        {
+          "type": "manual-product"
+        },
+        {
+          "type": "manual-product"
+        },
+        {
+          "type": "manual-product"
+        },
+        {
+          "type": "bundle-note"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

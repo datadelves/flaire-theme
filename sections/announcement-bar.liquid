@@ -1,0 +1,230 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign msg_count = 0
+  assign util_count = 0
+  assign dismiss_key = ''
+  for block in section.blocks
+    case block.type
+      when 'message'
+        if block.settings.text != blank
+          assign msg_count = msg_count | plus: 1
+          assign dismiss_key = dismiss_key | append: block.settings.text
+        endif
+      when 'countdown'
+        if block.settings.label != blank or block.settings.cutoff != blank or block.settings.suffix != blank
+          assign msg_count = msg_count | plus: 1
+          assign dismiss_key = dismiss_key | append: block.settings.cutoff
+        endif
+      when 'utility-link'
+        if block.settings.label != blank and block.settings.link != blank
+          assign util_count = util_count | plus: 1
+        endif
+    endcase
+  endfor
+  assign show_loc = false
+  if section.settings.show_localization and settings.show_country_selector and localization.available_countries.size > 1
+    assign show_loc = true
+  endif
+-%}
+{%- if msg_count > 0 or show_loc or util_count > 0 -%}
+<div class="dl-announce {{ scheme }}" data-section="announcement-bar" role="region" aria-label="{{ 'accessibility.announcement' | t | escape }}" data-dismiss-key="{{ dismiss_key | md5 | slice: 0, 8 }}">
+  <div class="dl-announce-in"{% if msg_count > 1 %} data-rotate="{{ section.settings.rotate_seconds }}"{% endif %}>
+    {%- if util_count > 0 -%}
+      <span class="util">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'utility-link' and block.settings.label != blank and block.settings.link != blank -%}
+            <a href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</a>
+          {%- endif -%}
+        {%- endfor -%}
+      </span>
+    {%- else -%}
+      <span class="util" style="display:none"></span>
+    {%- endif -%}
+    {%- assign shown = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+        {%- when 'message' -%}
+          {%- if block.settings.text != blank -%}
+            <p style="margin:0" data-msg {{ block.shopify_attributes }}{% if shown > 0 %} hidden{% endif %}>
+              <span>{{ block.settings.text }}</span>
+              {%- if block.settings.link_label != blank and block.settings.link != blank %} <a href="{{ block.settings.link }}" class="fc-btn-link" style="font-size:12px">{{ block.settings.link_label | escape }}</a>{% endif -%}
+            </p>
+            {%- assign shown = shown | plus: 1 -%}
+          {%- endif -%}
+        {%- when 'countdown' -%}
+          {%- if block.settings.label != blank or block.settings.cutoff != blank or block.settings.suffix != blank -%}
+            {%- liquid
+              assign cutoff_text = ''
+              if block.settings.cutoff != blank
+                assign cut_parts = block.settings.cutoff | strip | split: ':'
+                assign cut_h = cut_parts[0] | plus: 0
+                assign cut_m = cut_parts[1] | default: '0' | plus: 0
+                assign cut_ampm = 'am'
+                if cut_h >= 12
+                  assign cut_ampm = 'pm'
+                endif
+                assign cut_h12 = cut_h | modulo: 12
+                if cut_h12 == 0
+                  assign cut_h12 = 12
+                endif
+                assign cutoff_text = cut_h12 | append: ''
+                if cut_m > 0
+                  assign cut_mm = cut_m | prepend: '0' | slice: -2, 2
+                  assign cutoff_text = cutoff_text | append: ':' | append: cut_mm
+                endif
+                assign cutoff_text = cutoff_text | append: ' ' | append: cut_ampm
+              endif
+            -%}
+            <p style="margin:0" data-msg {{ block.shopify_attributes }}{% if shown > 0 %} hidden{% endif %}>
+              <span data-countdown data-cutoff="{{ block.settings.cutoff | escape }}" data-utc-offset="{{ 'now' | date: '%z' }}" data-after="{{ block.settings.suffix_after | escape }}">
+                {%- if block.settings.label != blank %}{{ block.settings.label | escape }} {% endif -%}
+                {%- if cutoff_text != blank %}<span data-countdown-time>{{ cutoff_text }}</span>{% endif -%}
+                {%- if block.settings.suffix != blank %} <span data-countdown-suffix>{{ block.settings.suffix | escape }}</span>{% endif -%}
+                .
+              </span>
+            </p>
+            {%- assign shown = shown | plus: 1 -%}
+          {%- endif -%}
+      {%- endcase -%}
+    {%- endfor -%}
+    {%- if show_loc -%}
+      <div class="dl-announce-loc">{% render 'localization-form', id: 'loc-announce' %}</div>
+    {%- endif -%}
+    {%- if section.settings.dismissible -%}
+      <button type="button" class="fc-btn fc-btn-icon x" style="min-height:32px;width:32px" aria-label="{{ 'accessibility.dismiss_announcement' | t | escape }}" data-act="dismiss-announce">{% render 'icon', icon: 'x', size: 16 %}</button>
+    {%- endif -%}
+  </div>
+</div>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Shopify glue: utility links and the optional country selector sit at the ends of the bar on desktop only */
+  .dl-announce .util a { color: inherit; }
+  .dl-announce-loc { position: absolute; right: var(--space-5); top: 50%; transform: translateY(-50%); z-index: 25; }
+  .dl-announce-in:has(> .x) .dl-announce-loc { right: 48px; }
+  .dl-announce-loc .dl-loc button { font-size: 12px; min-height: 32px; padding: 4px; }
+  @media (max-width: 1068px) {
+    .dl-announce .util, .dl-announce-loc { display: none; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Announcement bar",
+  "tag": "section",
+  "class": "dl-section dl-announcement-bar",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "dismissible",
+      "label": "Dismissible",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "rotate_seconds",
+      "label": "Rotate every",
+      "default": 6,
+      "min": 4,
+      "max": 12,
+      "step": 1,
+      "unit": "s"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_localization",
+      "label": "Show country selector",
+      "default": false
+    }
+  ],
+  "blocks": [
+    {
+      "type": "message",
+      "name": "Message",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Message",
+          "default": "Welcome to our store."
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "Learn more"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "countdown",
+      "name": "Cut-off time",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Order by"
+        },
+        {
+          "type": "text",
+          "id": "cutoff",
+          "label": "Cut-off time (HH:MM, shop timezone)",
+          "default": "15:00"
+        },
+        {
+          "type": "text",
+          "id": "suffix",
+          "label": "Suffix",
+          "default": "to ship today"
+        },
+        {
+          "type": "text",
+          "id": "suffix_after",
+          "label": "Suffix after the cut-off",
+          "default": "to ship on the next business day",
+          "info": "Shown instead of the suffix once the cut-off time has passed (needs the live countdown script)."
+        }
+      ]
+    },
+    {
+      "type": "utility-link",
+      "name": "Utility link",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Book a ring-sizing visit"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "header"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

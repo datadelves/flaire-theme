@@ -1,0 +1,292 @@
+{%- comment -%}
+  Bag recommendations (pages-shop.mjs cartHtml). With pieces in the Bag and no manual collection, the section
+  renders a loading grid with [data-recommendations][data-url]; the kernel fetches the product recommendations
+  for the first Bag line through this same section and swaps the content (BUILD.md 8.6). With a manual
+  collection, or an empty Bag, the cards render directly. Pieces already in the Bag are skipped.
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign limit = section.settings.limit | default: 4
+  assign show_quick = true
+  assign show_material = nil
+  assign show_price = true
+  for block in section.blocks
+    if block.type == 'card-options'
+      assign show_quick = block.settings.show_quick_view
+      assign show_material = block.settings.show_material
+      assign show_price = block.settings.show_price
+    endif
+  endfor
+
+  assign in_bag = cart.items | map: 'product_id' | join: ','
+  assign in_bag = ',' | append: in_bag | append: ','
+
+  assign mode = 'static'
+  if recommendations.performed?
+    assign source = recommendations.products
+    assign mode = 'performed'
+  elsif section.settings.collection != blank
+    assign source = section.settings.collection.products
+  elsif cart.item_count == 0
+    assign source = collections.all.products
+  else
+    assign mode = 'deferred'
+  endif
+
+  if cart.item_count == 0
+    assign heading = section.settings.empty_headline
+  else
+    assign heading = section.settings.headline
+  endif
+
+  assign fetch_limit = limit | plus: cart.item_count
+  if fetch_limit > 10
+    assign fetch_limit = 10
+  endif
+-%}
+{%- capture cards -%}
+  {%- assign shown = 0 -%}
+  {%- assign shown_ids = ',' -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'manual' and block.settings.pin and block.settings.product != blank and shown < limit -%}
+      {%- assign rec = block.settings.product -%}
+      {%- assign rec_key = ',' | append: rec.id | append: ',' -%}
+      {%- unless in_bag contains rec_key or shown_ids contains rec_key -%}
+        {%- render 'product-card', product: rec, size: 130, quick: show_quick, show_material: show_material, show_price: show_price, badge: block.settings.badge, attrs: block.shopify_attributes -%}
+        {%- assign shown = shown | plus: 1 -%}
+        {%- assign shown_ids = shown_ids | append: rec.id | append: ',' -%}
+      {%- endunless -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- unless mode == 'deferred' -%}
+    {%- for rec in source limit: 24 -%}
+      {%- if shown >= limit %}{% break %}{% endif -%}
+      {%- assign rec_key = ',' | append: rec.id | append: ',' -%}
+      {%- unless in_bag contains rec_key or shown_ids contains rec_key -%}
+        {%- render 'product-card', product: rec, size: 130, quick: show_quick, show_material: show_material, show_price: show_price -%}
+        {%- assign shown = shown | plus: 1 -%}
+        {%- assign shown_ids = shown_ids | append: rec.id | append: ',' -%}
+      {%- endunless -%}
+    {%- endfor -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'manual' and block.settings.pin == false and block.settings.product != blank and shown < limit -%}
+        {%- assign rec = block.settings.product -%}
+        {%- assign rec_key = ',' | append: rec.id | append: ',' -%}
+        {%- unless in_bag contains rec_key or shown_ids contains rec_key -%}
+          {%- render 'product-card', product: rec, size: 130, quick: show_quick, show_material: show_material, show_price: show_price, badge: block.settings.badge, attrs: block.shopify_attributes -%}
+          {%- assign shown = shown | plus: 1 -%}
+          {%- assign shown_ids = shown_ids | append: rec.id | append: ',' -%}
+        {%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- if shown == 0 and request.design_mode -%}
+      {%- for i in (1..limit) -%}
+        {%- render 'product-card', product: nil, size: 130 -%}
+      {%- endfor -%}
+      {%- assign shown = limit -%}
+    {%- endif -%}
+  {%- else -%}
+    {%- assign skeletons = limit | minus: shown -%}
+    {%- if skeletons > 0 -%}
+      {%- for i in (1..skeletons) -%}
+        <div class="dl-skel" style="aspect-ratio:3/4;border-radius:var(--radius-lg)" aria-hidden="true"></div>
+      {%- endfor -%}
+    {%- endif -%}
+  {%- endunless -%}
+{%- endcapture -%}
+{%- capture body -%}
+  <div class="wrap">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: heading, sub: section.settings.sub, role: 't-title-lg', left: true -%}
+    <div class="grid g4"{% if mode == 'deferred' %} aria-busy="true"{% endif %}>{{ cards }}</div>
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'note' and block.settings.show and block.settings.text != blank -%}
+        <p class="t-caption" style="margin:24px 0 0;text-align:{{ block.settings.align }}" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}</p>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+{%- endcapture -%}
+{%- case mode -%}
+  {%- when 'deferred' -%}
+    <div class="band tight {{ scheme }}" data-section="cart-recommendations" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}" data-recommendations data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ cart.items.first.product_id }}&limit={{ fetch_limit }}&intent=related">
+      {{- body -}}
+    </div>
+  {%- when 'performed' -%}
+    <div class="band tight {{ scheme }}" data-section="cart-recommendations" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}" data-recommendations>
+      {%- if shown > 0 %}{{ body }}{% endif -%}
+    </div>
+  {%- else -%}
+    {%- if shown > 0 -%}
+      <div class="band tight {{ scheme }}" data-section="cart-recommendations" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+        {{- body -}}
+      </div>
+    {%- endif -%}
+{%- endcase -%}
+
+{% schema %}
+{
+  "name": "Cart recommendations",
+  "tag": "section",
+  "class": "dl-section dl-cart-recommendations",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Often worn together"
+    },
+    {
+      "type": "text",
+      "id": "empty_headline",
+      "label": "Heading when the cart is empty",
+      "default": "Start with a favorite"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Manual collection",
+      "info": "Shown instead of automatic recommendations. When the cart is empty and no collection is chosen, all products are used."
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Products",
+      "default": 4,
+      "min": 3,
+      "max": 8,
+      "step": 1
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "manual",
+      "name": "Pinned product",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Badge"
+        },
+        {
+          "type": "checkbox",
+          "id": "pin",
+          "label": "Show first",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "card-options",
+      "name": "Card options",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_quick_view",
+          "label": "Show quick view",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_material",
+          "label": "Show material",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "start",
+          "options": [
+            {
+              "value": "start",
+              "label": "Start"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "cart"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

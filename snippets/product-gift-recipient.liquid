@@ -1,0 +1,58 @@
+{%- comment -%}
+  Gift card recipient, for gift card products only: a checkbox that reveals the recipient's email, name, a
+  message and a send date, sent as Shopify's gift card line item properties. While the box is unchecked the
+  fields are disabled, so neither the native form nor the kernel's AJAX add sends them. The kernel's
+  product-form checks them before adding and shows the cart's field errors under each field.
+
+  Accepts:
+  - product {Object}
+  - ctx {String} pdp | qv (keeps the ids unique)
+  - form {Object} the product form, so values come back after a native submit
+{%- endcomment -%}
+{%- if product.gift_card? -%}
+  {%- liquid
+    assign uid = 'gc-' | append: ctx
+    assign today = 'now' | date: '%Y-%m-%d'
+    assign last_day = 'now' | date: '%s' | plus: 7776000 | date: '%Y-%m-%d'
+    assign started = false
+    if form.email != blank
+      assign started = true
+    endif
+    assign email_label = 'products.gift_card_recipient.email' | t
+    assign name_label = 'products.gift_card_recipient.name' | t
+    assign message_label = 'products.gift_card_recipient.message' | t
+    assign send_label = 'products.gift_card_recipient.send_on' | t
+    assign send_hint = 'products.gift_card_recipient.send_on_hint' | t
+    assign msg_required = 'products.gift_card_recipient.email_required' | t
+    assign msg_invalid = 'products.gift_card_recipient.email_invalid' | t
+    assign msg_date = 'products.gift_card_recipient.send_on_invalid' | t
+    assign msg_long = 'products.gift_card_recipient.message_too_long' | t: max: 200
+    assign message_value = form.message | default: ''
+    assign message_count = message_value | size | append: ' / 200'
+    assign off = ' disabled'
+    if started
+      assign off = ''
+    endif
+    assign id_email = uid | append: '-email'
+    assign id_name = uid | append: '-name'
+    assign id_message = uid | append: '-message'
+    assign id_send = uid | append: '-send-on'
+  -%}
+  <div class="stack dl-gc-recipient" style="gap:16px" data-gc-recipient data-ctx="{{ ctx }}">
+    <label class="fc-check" for="{{ uid }}-to">
+      <input type="checkbox" id="{{ uid }}-to" name="properties[__shopify_send_gift_card_to_recipient]" value="on" aria-controls="{{ uid }}-fields" data-gc-toggle{% if started %} checked{% endif %}>
+      <span>{{ 'products.gift_card_recipient.send_to_recipient' | t }}</span>
+    </label>
+    <div class="stack" style="gap:16px" id="{{ uid }}-fields" data-gc-fields{% unless started %} hidden{% endunless %}>
+      {%- capture email_attrs %}autocomplete="off" data-gc-field="email" data-msg-required="{{ msg_required | escape }}" data-msg-invalid="{{ msg_invalid | escape }}"{{ off }}{% endcapture -%}
+      {%- render 'field', label: email_label, name: 'properties[Recipient email]', id: id_email, type: 'email', value: form.email, required: true, attrs: email_attrs -%}
+      {%- capture name_attrs %}autocomplete="off" maxlength="255" data-gc-field="name"{{ off }}{% endcapture -%}
+      {%- render 'field', label: name_label, name: 'properties[Recipient name]', id: id_name, value: form.name, attrs: name_attrs -%}
+      {%- capture message_attrs %}maxlength="200" data-gc-field="message" data-msg-invalid="{{ msg_long | escape }}"{{ off }}{% endcapture -%}
+      {%- render 'field', label: message_label, name: 'properties[Message]', id: id_message, textarea: true, rows: 3, value: message_value, counter: message_count, attrs: message_attrs -%}
+      {%- capture send_attrs %}min="{{ today }}" max="{{ last_day }}" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" data-gc-field="send_on" data-msg-invalid="{{ msg_date | escape }}"{{ off }}{% endcapture -%}
+      {%- render 'field', label: send_label, name: 'properties[Send on]', id: id_send, type: 'date', value: form.send_on, hint: send_hint, attrs: send_attrs -%}
+    </div>
+    <input type="hidden" name="properties[__shopify_offset]" value="" data-gc-offset{{ off }}>
+  </div>
+{%- endif -%}

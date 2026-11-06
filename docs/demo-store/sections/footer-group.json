@@ -1,0 +1,109 @@
+{
+  "type": "footer",
+  "name": "Footer group",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": {
+        "color_scheme": "scheme-2",
+        "show_localization": true,
+        "show_payment_icons": true,
+        "show_social": true,
+        "legal": "",
+        "legal_menu": "legal"
+      },
+      "blocks": {
+        "brand-note-1": {
+          "type": "brand-note",
+          "settings": {
+            "text": "Fine jewelry, made to be worn every day.",
+            "show_logo": true
+          }
+        },
+        "newsletter-inline-1": {
+          "type": "newsletter-inline",
+          "settings": {
+            "heading": "Stay in the light",
+            "button": "Subscribe",
+            "success": "Thank you. You are on the list."
+          }
+        },
+        "link-list-1": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Shop",
+            "menu": "footer-shop"
+          }
+        },
+        "link-list-2": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Make it yours",
+            "menu": "footer-make"
+          }
+        },
+        "link-list-3": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Help",
+            "menu": "footer-help"
+          }
+        },
+        "link-list-4": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Company",
+            "menu": "footer-company"
+          }
+        },
+        "promise-1": {
+          "type": "promise",
+          "settings": {
+            "icon": "truck",
+            "title": "Free overnight delivery",
+            "text": "Signature required."
+          }
+        },
+        "promise-2": {
+          "type": "promise",
+          "settings": {
+            "icon": "arrow-counter-clockwise",
+            "title": "30-day returns",
+            "text": "Engraved pieces excepted."
+          }
+        },
+        "promise-3": {
+          "type": "promise",
+          "settings": {
+            "icon": "gift",
+            "title": "Gift wrap, free",
+            "text": "Add a note at check out."
+          }
+        },
+        "promise-4": {
+          "type": "promise",
+          "settings": {
+            "icon": "ruler",
+            "title": "Complimentary sizing",
+            "text": "Book a visit at our studio."
+          }
+        }
+      },
+      "block_order": [
+        "brand-note-1",
+        "newsletter-inline-1",
+        "link-list-1",
+        "link-list-2",
+        "link-list-3",
+        "link-list-4",
+        "promise-1",
+        "promise-2",
+        "promise-3",
+        "promise-4"
+      ]
+    }
+  },
+  "order": [
+    "footer"
+  ]
+}

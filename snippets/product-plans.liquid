@@ -1,0 +1,34 @@
+{%- comment -%}
+  Purchase option (Facet SellingPlanPicker): one-time purchase or a selling plan, as radio rows.
+  Renders only when the product has selling plans and the theme setting allows them.
+
+  Accepts:
+  - product {Object}
+  - variant {Object} variant whose prices are shown
+  - ctx {String} pdp | qv | sheet
+  - one_time_label {String}
+  - heading {String} caption key (default "Purchase option")
+{%- endcomment -%}
+{%- if settings.selling_plans_enabled and product.selling_plan_groups.size > 0 -%}
+  {%- liquid
+    assign one_time = one_time_label
+    if one_time == blank
+      assign one_time = 'products.product.one_time' | t
+    endif
+    assign input_name = 'selling_plan'
+    if ctx != 'pdp'
+      assign input_name = 'selling_plan_' | append: ctx
+    endif
+    assign selected_plan = product.selected_selling_plan
+  -%}
+  <div class="stack" style="gap:12px" role="radiogroup" aria-label="{{ 'products.product.purchase_option' | t }}" data-plans data-ctx="{{ ctx }}">
+    <p class="fc-size-cap"><span class="fc-swatch-k">{{ 'products.product.purchase_option' | t }}. </span><span class="fc-swatch-v" data-plan-caption>{% if selected_plan %}{{ selected_plan.name | escape }}{% else %}{{ one_time | escape }}{% endif %}</span></p>
+    <label class="fc-radio-row{% unless selected_plan %} is-on{% endunless %}"><input type="radio" name="{{ input_name }}" value="" data-act="plan" data-ctx="{{ ctx }}" data-label="{{ one_time | escape }}"{% unless selected_plan %} checked{% endunless %}><span><b>{{ one_time | escape }}</b><span data-plan-price="">{{ variant.price | money }}</span></span></label>
+    {%- for group in product.selling_plan_groups -%}
+      {%- for plan in group.selling_plans -%}
+        {%- assign allocation = variant.selling_plan_allocations | where: 'selling_plan_id', plan.id | first -%}
+        <label class="fc-radio-row{% if selected_plan.id == plan.id %} is-on{% endif %}"><input type="radio" name="{{ input_name }}" value="{{ plan.id }}" data-act="plan" data-ctx="{{ ctx }}" data-label="{{ plan.name | escape }}"{% if selected_plan.id == plan.id %} checked{% endif %}><span><b>{{ plan.name | escape }}</b><span>{% if plan.description != blank %}{{ plan.description | escape }}{% elsif allocation %}<span data-plan-price="{{ plan.id }}">{{ allocation.price | money }}</span>{% endif %}</span></span></label>
+      {%- endfor -%}
+    {%- endfor -%}
+  </div>
+{%- endif -%}

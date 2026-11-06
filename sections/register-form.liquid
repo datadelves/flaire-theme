@@ -1,0 +1,408 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign fields = section.blocks | where: 'type', 'field'
+  assign consent = section.blocks | where: 'type', 'consent' | first
+  assign heading = section.settings.headline
+  if heading == blank
+    assign heading = 'customer.register.title' | t
+  endif
+  assign submit_label = section.settings.button_label
+  if submit_label == blank
+    assign submit_label = 'customer.register.submit' | t
+  endif
+  assign problem = 'general.form.problem' | t
+  assign fix_text = 'customer.register.error_text' | t
+  assign creating = 'customer.register.creating' | t
+  assign email_default_msg = 'general.email_invalid' | t
+-%}
+<div class="band tight {{ scheme }}" data-section="register-form" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="wrap-n" style="display:grid;justify-items:center;gap:32px">
+    {%- if section.settings.eyebrow != blank or section.settings.sub != blank -%}
+      <div style="text-align:center;display:grid;gap:8px">
+        {%- if section.settings.eyebrow != blank %}<p class="t-overline">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+        <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+        {%- if section.settings.sub != blank %}<p class="t-lead">{{ section.settings.sub }}</p>{% endif -%}
+      </div>
+    {%- else -%}
+      <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+    {%- endif -%}
+
+    <div style="width:100%;max-width:420px" data-register>
+      {%- form 'create_customer', id: 'register-form', class: 'dl-form', novalidate: 'novalidate', data-validate: '', data-form: 'register' -%}
+        <div data-summary{% if form.errors %} data-server{% endif %}>
+          {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: fix_text -%}{%- endif -%}
+        </div>
+
+        {%- assign two_open = false -%}
+        {%- comment -%} Field blocks in order: first name, last name (one row), email, password, then any extra fields as customer notes. {%- endcomment -%}
+        {%- for block in fields -%}
+          {%- liquid
+            assign f_label = block.settings.label
+            assign f_msg = block.settings.error
+            assign f_type = 'text'
+            assign f_auto = ''
+            assign f_value = ''
+            assign f_err = ''
+            assign f_hint = ''
+            assign f_extra = ''
+            case forloop.index
+              when 1
+                assign f_name = 'customer[first_name]'
+                assign f_key = 'first_name'
+                assign f_auto = 'given-name'
+                assign f_value = form.first_name
+              when 2
+                assign f_name = 'customer[last_name]'
+                assign f_key = 'last_name'
+                assign f_auto = 'family-name'
+                assign f_value = form.last_name
+              when 3
+                assign f_name = 'customer[email]'
+                assign f_key = 'email'
+                assign f_type = 'email'
+                assign f_auto = 'email'
+                assign f_value = form.email
+                if f_msg == blank
+                  assign f_msg = email_default_msg
+                endif
+              when 4
+                assign f_name = 'customer[password]'
+                assign f_key = 'password'
+                assign f_type = 'password'
+                assign f_auto = 'new-password'
+                assign f_hint = 'customer.register.password_hint' | t
+                assign f_extra = ' minlength="8"'
+                if f_msg == blank
+                  assign f_msg = 'customer.register.password_error' | t
+                endif
+              else
+                assign f_name = 'customer[note][' | append: f_label | append: ']'
+                assign f_key = 'note'
+            endcase
+            if f_label == blank
+              continue
+            endif
+            if form.errors contains f_key
+              if f_key == 'email'
+                assign f_err = form.errors.translated_fields['email'] | append: ' ' | append: form.errors.messages['email']
+              else
+                assign f_err = f_msg | default: form.errors.messages[f_key]
+              endif
+            endif
+            assign f_id = 'g-' | append: block.id
+            assign f_msg_e = f_msg | escape
+            capture f_attrs
+              if f_msg != blank
+                echo 'data-msg-required="' | append: f_msg_e | append: '" '
+                if f_type == 'email' or f_type == 'password'
+                  echo 'data-msg-invalid="' | append: f_msg_e | append: '" '
+                endif
+              endif
+              echo f_extra
+              echo ' '
+              echo block.shopify_attributes
+            endcapture
+          -%}
+          {%- if forloop.index == 1 and fields[1].settings.label != blank %}{% assign two_open = true %}<div class="two">{% endif -%}
+          {%- render 'field', label: f_label, name: f_name, id: f_id, type: f_type, value: f_value, autocomplete: f_auto, required: block.settings.required, hint: f_hint, error: f_err, attrs: f_attrs -%}
+          {%- if forloop.index == 2 and two_open %}{% assign two_open = false %}</div>{% endif -%}
+        {%- endfor -%}
+
+        {%- if section.settings.show_marketing -%}
+          <label class="fc-check"><input type="checkbox" name="customer[accepts_marketing]" value="true"><span>{{ 'customer.register.marketing' | t }}</span></label>
+        {%- endif -%}
+
+        {%- liquid
+          assign consent_html = ''
+          if consent
+            assign consent_html = consent.settings.text | remove: '<p>' | remove: '</p>' | strip
+            assign terms_url = consent.settings.link
+            if terms_url == blank
+              assign terms_url = shop.terms_of_service.url
+            endif
+            if terms_url != blank and consent_html contains 'terms'
+              unless consent_html contains '<a'
+                assign terms_link = '<a href="' | append: terms_url | append: '">terms</a>'
+                assign consent_html = consent_html | replace: 'terms', terms_link
+              endunless
+            endif
+          endif
+        -%}
+        {%- if consent and consent.settings.required and consent_html != blank -%}
+          {%- assign consent_msg = 'customer.register.consent_error' | t -%}
+          <div class="fc-field" {{ consent.shopify_attributes }}>
+            <label class="fc-check"><input type="checkbox" id="g-consent" required aria-required="true" data-msg-required="{{ consent_msg | escape }}"><span>{{ consent_html }}</span></label>
+          </div>
+        {%- endif -%}
+
+        {%- capture busy_attrs %}data-busy-label="{{ creating | escape }}"{% endcapture -%}
+        {%- render 'button', label: submit_label, type: 'submit', size: 'lg', block: true, attrs: busy_attrs -%}
+
+        {%- if consent and consent.settings.required == false and consent_html != blank -%}
+          <p class="t-fine" style="margin:0" {{ consent.shopify_attributes }}>{{ consent_html }}</p>
+        {%- endif -%}
+      {%- endform -%}
+    </div>
+
+    {%- capture benefits -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'benefit' and block.settings.show and block.settings.text != blank -%}
+          <div class="inline" style="gap:12px;align-items:flex-start" {{ block.shopify_attributes }}>
+            {%- render 'icon', icon: block.settings.icon, size: 20 -%}
+            <p class="t-caption" style="margin:0">{{ block.settings.text | escape }}</p>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if benefits != blank -%}
+      <div class="stack" style="width:100%;max-width:420px">{{ benefits }}</div>
+    {%- endif -%}
+
+    {%- if section.settings.login_label != blank -%}
+      {%- render 'button', label: section.settings.login_label, variant: 'link', url: routes.account_login_url, attrs: 'style="font-size:14px"' -%}
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Create account",
+  "tag": "section",
+  "class": "dl-section dl-register-form",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Create an account"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Create account"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_marketing",
+      "label": "Show marketing checkbox",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "login_label",
+      "label": "Sign-in link",
+      "default": "Already have an account?"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "field",
+      "name": "Field",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "First name"
+        },
+        {
+          "type": "text",
+          "id": "error",
+          "label": "Error",
+          "default": "Enter your first name."
+        },
+        {
+          "type": "checkbox",
+          "id": "required",
+          "label": "Required",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "consent",
+      "name": "Consent",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>By creating an account you agree to our terms.</p>"
+        },
+        {
+          "type": "checkbox",
+          "id": "required",
+          "label": "Required checkbox",
+          "default": false
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Terms link"
+        }
+      ]
+    },
+    {
+      "type": "benefit",
+      "name": "Benefit",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "package",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Track orders and save addresses."
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "customers/register"
+    ]
+  },
+  "limit": 1,
+  "default": {
+    "blocks": [
+      {
+        "type": "field",
+        "settings": {
+          "label": "First name",
+          "error": "Enter your first name.",
+          "required": true
+        }
+      },
+      {
+        "type": "field",
+        "settings": {
+          "label": "Last name",
+          "error": "Enter your last name.",
+          "required": false
+        }
+      },
+      {
+        "type": "field",
+        "settings": {
+          "label": "Email address",
+          "error": "Enter an email address like name@example.com.",
+          "required": true
+        }
+      },
+      {
+        "type": "field",
+        "settings": {
+          "label": "Password",
+          "error": "Enter a password of at least 8 characters.",
+          "required": true
+        }
+      },
+      {
+        "type": "consent",
+        "settings": {
+          "text": "<p>By creating an account you agree to our terms.</p>",
+          "required": false
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

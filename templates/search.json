@@ -1,0 +1,66 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-search",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Search",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "per_page": 24,
+        "show_types": true,
+        "empty_title": "Nothing matched",
+        "empty_text": "Check the spelling or try a metal, a stone or a collection name."
+      },
+      "blocks": {
+        "popular-1": {
+          "type": "popular",
+          "settings": {
+            "heading": "Popular searches",
+            "show_empty": true,
+            "terms": "Sapphire, Rose gold, Pearl earrings, Gift"
+          }
+        },
+        "filters-1": {
+          "type": "filters",
+          "settings": {
+            "enable": true,
+            "enable_sort": true,
+            "label": "Filter and sort"
+          }
+        }
+      },
+      "block_order": [
+        "popular-1",
+        "filters-1"
+      ]
+    },
+    "search-journal-results": {
+      "type": "search-journal-results",
+      "settings": {
+        "eyebrow": "",
+        "headline": "From the journal and pages",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "limit": 6
+      },
+      "blocks": {
+        "row-options-1": {
+          "type": "row-options",
+          "settings": {
+            "show_excerpt": true,
+            "show_date": true,
+            "show_image": false
+          }
+        }
+      },
+      "block_order": [
+        "row-options-1"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "search-journal-results"
+  ]
+}

@@ -1,0 +1,379 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign orders_block = section.blocks | where: 'type', 'orders' | first
+  assign details_block = section.blocks | where: 'type', 'details' | first
+  assign help_blocks = section.blocks | where: 'type', 'help'
+  assign heading = section.settings.headline
+  if heading == blank
+    assign heading = 'customer.account.title' | t
+  endif
+
+  assign greeting = customer.name | escape
+  if details_block == blank or details_block.settings.show_email
+    if greeting != blank
+      assign greeting = greeting | append: ' · ' | append: customer.email
+    else
+      assign greeting = customer.email
+    endif
+  endif
+-%}
+{%- if customer -%}
+<div class="band {{ scheme }}" data-section="account-main" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-c">
+    {%- if section.settings.eyebrow != blank %}<p class="t-overline" style="margin-bottom:8px">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+    <div class="inline" style="justify-content:space-between;align-items:flex-end">
+      <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+      {%- assign logout = 'customer.account.log_out' | t -%}
+      {%- render 'button', label: logout, variant: 'link', no_chev: true, url: routes.account_logout_url -%}
+    </div>
+    {%- if section.settings.sub != blank %}<p class="t-lead" style="margin:8px 0 0">{{ section.settings.sub }}</p>{% endif -%}
+    <p class="t-lead" style="margin:8px 0 48px">{{ greeting }}</p>
+
+    {%- if orders_block -%}
+      <div {{ orders_block.shopify_attributes }}>
+        <h2 class="t-title-lg" style="margin-bottom:16px">{{ 'customer.account.orders' | t }}</h2>
+        {%- paginate customer.orders by section.settings.orders_per_page -%}
+          {%- if customer.orders.size > 0 -%}
+            <div style="overflow-x:auto">
+              <table class="dl-table">
+                <thead>
+                  <tr>
+                    <th>{{ 'customer.account.order_number' | t }}</th>
+                    <th>{{ 'customer.account.date' | t }}</th>
+                    {%- if orders_block.settings.show_status %}<th>{{ 'customer.account.status' | t }}</th>{% endif -%}
+                    <th style="text-align:right">{{ 'customer.account.total' | t }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {%- for order in customer.orders -%}
+                    {%- liquid
+                      if order.cancelled
+                        assign status = 'customer.order.cancelled_title' | t
+                      elsif order.financial_status == 'refunded' or order.financial_status == 'partially_refunded' or order.financial_status == 'voided'
+                        assign status = order.financial_status_label
+                      else
+                        assign status = order.fulfillment_status_label
+                      endif
+                      assign track_url = ''
+                      if orders_block.settings.show_tracking
+                        for li in order.line_items
+                          if li.fulfillment.tracking_url != blank
+                            assign track_url = li.fulfillment.tracking_url
+                            break
+                          endif
+                        endfor
+                      endif
+                      assign reorder_url = ''
+                      if orders_block.settings.show_reorder
+                        assign reorder_parts = ''
+                        for li in order.line_items
+                          if li.variant_id and li.variant.available
+                            assign reorder_parts = reorder_parts | append: li.variant_id | append: ':' | append: li.quantity | append: ','
+                          endif
+                        endfor
+                        if reorder_parts != blank
+                          assign reorder_url = reorder_parts | split: ',' | join: ',' | prepend: '/' | prepend: routes.cart_url
+                        endif
+                      endif
+                    -%}
+                    <tr>
+                      <td><a href="{{ order.customer_url }}">{{ order.name }}</a></td>
+                      <td><time datetime="{{ order.created_at | date: '%Y-%m-%d' }}">{{ order.created_at | date: '%B %-d' }}</time></td>
+                      {%- if orders_block.settings.show_status -%}
+                        <td>
+                          {{- status -}}
+                          {%- if track_url != blank %} · <a href="{{ track_url }}" target="_blank" rel="noopener">{{ 'customer.account.track' | t }}</a>{% endif -%}
+                          {%- if reorder_url != blank %} · <a href="{{ reorder_url }}">{{ 'customer.account.buy_again' | t }}</a>{% endif -%}
+                        </td>
+                      {%- endif -%}
+                      <td style="text-align:right">{{ order.total_price | money }}</td>
+                    </tr>
+                  {%- endfor -%}
+                </tbody>
+              </table>
+            </div>
+            {%- render 'pagination', paginate: paginate -%}
+          {%- else -%}
+            <div class="dl-empty" style="padding:32px 0">
+              {%- if section.settings.empty_orders != blank %}<p class="t-body muted" style="margin:0">{{ section.settings.empty_orders | escape }}</p>{% endif -%}
+              {%- assign shop_label = 'customer.account.shop_rings' | t -%}
+              {%- assign shop_url = collections.rings.url | default: routes.all_products_collection_url -%}
+              {%- render 'button', label: shop_label, variant: 'link', url: shop_url -%}
+            </div>
+          {%- endif -%}
+        {%- endpaginate -%}
+      </div>
+    {%- endif -%}
+
+    {%- if details_block or help_blocks.size > 0 -%}
+      <div class="split" style="margin-top:48px;align-items:start">
+        {%- if details_block -%}
+          <div {{ details_block.shopify_attributes }}>
+            <h2 class="t-title-lg" style="margin-bottom:16px">{{ 'customer.account.default_address' | t }}</h2>
+            {%- assign addr = customer.default_address -%}
+            {%- if addr -%}
+              <p class="t-body muted" style="margin:0">
+                <span>{{ addr.first_name | escape }} {{ addr.last_name | escape }}</span><br>
+                <span>{{ addr.address1 | escape }}{% if addr.address2 != blank %}, {{ addr.address2 | escape }}{% endif %}</span><br>
+                <span>{{ addr.city | escape }}, {{ addr.zip | escape }}</span>
+              </p>
+            {%- else -%}
+              <p class="t-body muted" style="margin:0">{{ 'customer.account.no_default_address' | t }}</p>
+            {%- endif -%}
+            {%- if details_block.settings.show_addresses_link -%}
+              {%- assign manage = 'customer.account.manage_addresses' | t -%}
+              {%- render 'button', label: manage, variant: 'link', url: routes.account_addresses_url -%}
+            {%- endif -%}
+            {%- if details_block.settings.show_marketing -%}
+              <p class="t-caption" style="margin-top:16px">
+                {%- if customer.accepts_marketing %}{{ 'customer.account.marketing_on' | t }}{% else %}{{ 'customer.account.marketing_off' | t }}{% endif -%}
+              </p>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+        {%- if help_blocks.size > 0 -%}
+          <div class="stack">
+            <h2 class="t-title-lg" style="margin-bottom:8px">{{ 'customer.account.help' | t }}</h2>
+            {%- for block in help_blocks -%}
+              {%- liquid
+                assign help_url = block.settings.link
+                if help_url == blank
+                  assign help_url = pages.contact.url
+                endif
+              -%}
+              {%- if block.settings.label != blank and help_url != blank -%}
+                {%- capture help_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+                {%- render 'button', label: block.settings.label, variant: 'link', url: help_url, attrs: help_attrs -%}
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Account",
+  "tag": "section",
+  "class": "dl-section dl-account-main",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Your account"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "orders_per_page",
+      "label": "Orders per page",
+      "default": 10,
+      "min": 5,
+      "max": 20,
+      "step": 5
+    },
+    {
+      "type": "text",
+      "id": "empty_orders",
+      "label": "Empty orders text",
+      "default": "No orders yet. Start with a ring."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "orders",
+      "name": "Orders",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_status",
+          "label": "Show status",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_tracking",
+          "label": "Show tracking link",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_reorder",
+          "label": "Show reorder link",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "details",
+      "name": "Account details",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_email",
+          "label": "Show email",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_addresses_link",
+          "label": "Show addresses link",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_marketing",
+          "label": "Show marketing consent",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "help",
+      "name": "Help link",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "chat-circle-dots",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Ask a jeweler"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "customers/account"
+    ]
+  },
+  "limit": 1,
+  "default": {
+    "blocks": [
+      {
+        "type": "orders",
+        "settings": {
+          "show_status": true,
+          "show_tracking": true,
+          "show_reorder": false
+        }
+      },
+      {
+        "type": "details",
+        "settings": {
+          "show_email": true,
+          "show_addresses_link": true,
+          "show_marketing": false
+        }
+      },
+      {
+        "type": "help",
+        "settings": {
+          "icon": "chat-circle-dots",
+          "label": "Ask a jeweler"
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

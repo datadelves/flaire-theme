@@ -1,0 +1,454 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign title_block = section.blocks | where: 'type', 'title' | first
+  assign share_block = section.blocks | where: 'type', 'share' | first
+
+  assign body = article.content
+  assign toc = ''
+  if section.settings.show_toc and body contains '<h2'
+    assign parts = body | split: '<h2'
+    assign body = ''
+    for part in parts
+      if forloop.first
+        assign body = part
+        continue
+      endif
+      assign head = part | split: '</h2>' | first | prepend: '<h2' | strip_html | strip
+      assign anchor = head | handleize | prepend: 'h-'
+      assign body = body | append: '<h2 id="' | append: anchor | append: '"' | append: part
+      assign toc = toc | append: '<li><a href="#' | append: anchor | append: '">' | append: head | append: '</a></li>'
+    endfor
+  endif
+
+  assign align = 'center'
+  if title_block and title_block.settings.align == 'start'
+    assign align = 'start'
+  endif
+-%}
+{%- capture article_image -%}
+  {%- if section.settings.show_image -%}
+    <div style="background:var(--canvas-alt);border-radius:var(--radius-xl);aspect-ratio:16/9;display:grid;place-items:center;margin:40px 0;overflow:hidden">
+      {%- if article.image != blank -%}
+        {%- assign article_alt = article.image.alt | default: article.title -%}
+        {{- article.image | image_url: width: 1400 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '390, 692, 1040, 1400', sizes: '(min-width: 760px) 692px, 100vw', alt: article_alt, style: 'width:100%;height:100%;object-fit:cover' -}}
+      {%- else -%}
+        {%- render 'specimen', kind: 'ring', metal: 'yellow-gold', size: 300, label: '' -%}
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture tags_row -%}
+  {%- if section.settings.show_tags -%}
+    {%- for tag in article.tags -%}
+      <a class="fc-btn fc-btn-secondary fc-btn-sm" href="{{ blog.url }}/tagged/{{ tag | handle }}">{{ tag | escape }}</a>
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+<div class="band {{ scheme }}" data-section="main-article" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <article class="wrap-n">
+    <div style="display:flex;justify-content:{% if align == 'start' %}flex-start{% else %}center{% endif %};margin-bottom:24px">
+      {%- render 'breadcrumb' -%}
+    </div>
+
+    {%- unless title_block -%}{{ article_image }}{%- endunless -%}
+
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+        {%- when 'title' -%}
+          <header style="text-align:{% if align == 'start' %}left{% else %}center{% endif %}" {{ block.shopify_attributes }}>
+            {%- if block.settings.show_eyebrow and article.tags.size > 0 -%}
+              <p class="t-overline">{{ article.tags.first | escape }}</p>
+            {%- endif -%}
+            <h1 class="{% if block.settings.size == 'display' %}t-display{% else %}t-headline{% endif %}" style="margin:8px 0 16px">{{ article.title | escape }}</h1>
+            {%- liquid
+              assign by_author = false
+              if section.settings.show_author and article.author != blank
+                assign by_author = true
+              endif
+            -%}
+            {%- if by_author or section.settings.show_date -%}
+              <p class="t-caption">
+                {%- if by_author -%}
+                  {{ 'blogs.article.by' | t: author: article.author }}
+                {%- endif -%}
+                {%- if by_author and section.settings.show_date %} · {% endif -%}
+                {%- if section.settings.show_date -%}
+                  <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: '%B %-d' }}</time>
+                {%- endif -%}
+              </p>
+            {%- endif -%}
+          </header>
+          {{- article_image -}}
+
+          {%- if toc != blank -%}
+            <nav class="dl-toc" aria-label="{{ 'general.on_this_page' | t }}" style="margin-bottom:32px">
+              <p class="t-overline">{{ 'general.on_this_page' | t }}</p>
+              <ul class="stack" style="gap:8px;list-style:none;margin:8px 0 0;padding:0">{{ toc }}</ul>
+            </nav>
+          {%- endif -%}
+
+        {%- when 'content' -%}
+          <div class="stack-lg dl-rich" style="gap:20px" {{ block.shopify_attributes }}>
+            <div class="dl-prose rte{% if block.settings.drop_lead %} has-lead{% endif %}{% if block.settings.size == 'lead' %} is-lead{% endif %}{% if block.settings.hairline %} has-rule{% endif %}" style="display:contents">
+              {{- body -}}
+            </div>
+          </div>
+
+        {%- when 'featured-product' -%}
+          {%- assign fp = block.settings.product -%}
+          {%- if fp != blank or request.design_mode -%}
+            <div class="stack" style="gap:12px;max-width:300px;margin-top:20px" {{ block.shopify_attributes }}>
+              {%- if block.settings.eyebrow != blank %}<p class="t-overline">{{ block.settings.eyebrow | escape }}</p>{% endif -%}
+              {%- render 'product-card', product: fp, size: 130, quick: block.settings.show_quick_view -%}
+            </div>
+          {%- endif -%}
+
+        {%- when 'share' -%}
+          <div class="inline" style="margin-top:40px;justify-content:space-between;border-top:1px solid var(--hairline);padding-top:24px" {{ block.shopify_attributes }}>
+            <div class="inline" style="gap:8px">{{ tags_row }}</div>
+            {%- if block.settings.copy or block.settings.native -%}
+              {%- liquid
+                assign share_label = block.settings.label
+                if share_label == blank
+                  assign share_label = 'blogs.article.share' | t
+                endif
+                assign share_title = article.title | escape
+                capture share_attrs
+                  echo 'data-act="share" data-url="' | append: shop.url | append: article.url | append: '" data-title="' | append: share_title | append: '"'
+                  if block.settings.native
+                    echo ' data-native'
+                  endif
+                endcapture
+              -%}
+              {%- render 'button', label: share_label, variant: 'link', no_chev: true, icon: 'share-network', class: 'js-only', attrs: share_attrs -%}
+            {%- endif -%}
+          </div>
+
+        {%- when '@app' -%}
+          {%- render block -%}
+      {%- endcase -%}
+    {%- endfor -%}
+
+    {%- if share_block == blank and tags_row != blank -%}
+      <div class="inline" style="margin-top:40px;gap:8px;border-top:1px solid var(--hairline);padding-top:24px">{{ tags_row }}</div>
+    {%- endif -%}
+
+    {%- if section.settings.enable_comments and blog.comments_enabled? -%}
+      <div id="comments" class="stack-lg" style="margin-top:48px;border-top:1px solid var(--hairline);padding-top:32px">
+        {%- if article.comments_count > 0 -%}
+          <h2 class="t-title-lg">{{ 'blogs.article.comments_count' | t: count: article.comments_count }}</h2>
+          {%- paginate article.comments by 20 -%}
+            <div style="border-top:1px solid var(--hairline)">
+              {%- for comment in article.comments -%}
+                <div id="comment-{{ comment.id }}" style="padding:24px 0;border-bottom:1px solid var(--hairline)">
+                  <p class="t-strong" style="margin:0">{{ comment.author | escape }}</p>
+                  <p class="t-caption" style="margin:0 0 8px"><time datetime="{{ comment.created_at | date: '%Y-%m-%d' }}">{{ comment.created_at | date: '%B %-d' }}</time></p>
+                  <div class="dl-prose t-body muted">{{ comment.content }}</div>
+                </div>
+              {%- endfor -%}
+            </div>
+            {%- render 'pagination', paginate: paginate -%}
+          {%- endpaginate -%}
+        {%- endif -%}
+
+        {%- assign comment_form_id = 'comment-' | append: section.id -%}
+        {%- form 'new_comment', article, id: comment_form_id, class: 'dl-form wide', novalidate: 'novalidate', data-validate: '', data-form: 'comment' -%}
+          <h2 class="t-title-lg" style="margin:0">{{ 'blogs.article.comment_form_title' | t }}</h2>
+          {%- if form.posted_successfully? -%}
+            {%- liquid
+              if blog.moderated?
+                assign ok_text = 'blogs.article.success_moderated' | t
+              else
+                assign ok_text = 'blogs.article.success' | t
+              endif
+            -%}
+            {%- render 'notice', tone: 'success', text: ok_text, attrs: 'tabindex="-1" autofocus' -%}
+          {%- endif -%}
+          {%- liquid
+            assign problem = 'general.form.problem' | t
+            assign fix_text = 'blogs.article.comment_error' | t
+            if form.errors contains 'form'
+              assign fix_text = form.errors.messages['form']
+            endif
+            assign name_msg = 'blogs.article.name_error' | t
+            assign email_msg = 'general.email_invalid' | t
+            assign body_msg = 'blogs.article.body_error' | t
+            assign name_err = ''
+            assign email_err = ''
+            assign body_err = ''
+            if form.errors contains 'author'
+              assign name_err = name_msg
+            endif
+            if form.errors contains 'email'
+              assign email_err = email_msg
+            endif
+            if form.errors contains 'body'
+              assign body_err = body_msg
+            endif
+          -%}
+          <div data-summary{% if form.errors %} data-server{% endif %}>
+            {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: fix_text, attrs: 'tabindex="-1" autofocus' -%}{%- endif -%}
+          </div>
+          <div class="two">
+            {%- capture name_attrs %}data-msg-required="{{ name_msg | escape }}"{% endcapture -%}
+            {%- assign name_label = 'blogs.article.name' | t -%}
+            {%- assign name_id = 'cm-name-' | append: section.id -%}
+            {%- render 'field', label: name_label, name: 'comment[author]', id: name_id, value: form.author, autocomplete: 'name', required: true, error: name_err, attrs: name_attrs -%}
+            {%- capture email_attrs %}data-msg-required="{{ email_msg | escape }}" data-msg-invalid="{{ email_msg | escape }}"{% endcapture -%}
+            {%- assign email_label = 'blogs.article.email' | t -%}
+            {%- assign email_id = 'cm-email-' | append: section.id -%}
+            {%- render 'field', label: email_label, name: 'comment[email]', id: email_id, type: 'email', value: form.email, autocomplete: 'email', required: true, error: email_err, attrs: email_attrs -%}
+          </div>
+          {%- capture body_attrs %}data-msg-required="{{ body_msg | escape }}"{% endcapture -%}
+          {%- assign body_label = 'blogs.article.message' | t -%}
+          {%- assign body_id = 'cm-body-' | append: section.id -%}
+          {%- render 'field', label: body_label, name: 'comment[body]', id: body_id, textarea: true, value: form.body, required: true, error: body_err, attrs: body_attrs -%}
+          {%- if blog.moderated? %}<p class="t-fine" style="margin:0">{{ 'blogs.article.moderated' | t }}</p>{% endif -%}
+          {%- liquid
+            assign post_label = 'blogs.article.post' | t
+            assign posting = 'blogs.article.posting' | t
+          -%}
+          {%- capture post_attrs %}data-busy-label="{{ posting | escape }}"{% endcapture -%}
+          <div>{%- render 'button', label: post_label, type: 'submit', size: 'lg', attrs: post_attrs -%}</div>
+        {%- endform -%}
+      </div>
+    {%- endif -%}
+  </article>
+</div>
+
+{% stylesheet %}
+  /* article.content is merchant HTML: give its elements the prototype's type roles */
+  .dl-main-article .dl-prose > * { margin: 0; }
+  .dl-main-article .dl-prose > p, .dl-main-article .dl-prose > ul, .dl-main-article .dl-prose > ol { font: 400 17px/1.47 var(--font-sans); color: var(--ink-muted); }
+  .dl-main-article .dl-prose > ul, .dl-main-article .dl-prose > ol { padding-left: 20px; }
+  .dl-main-article .dl-prose > h2 { font: 600 var(--type-title-lg-size)/var(--type-title-lg-lh) var(--font-heading); letter-spacing: var(--type-title-lg-ls); color: var(--ink); margin: 16px 0 0; scroll-margin-top: calc(var(--nav-offset, 0px) + 24px); }
+  .dl-main-article .dl-prose > h3 { font: 600 var(--type-title-size)/var(--type-title-lh) var(--font-heading); letter-spacing: var(--type-title-ls); color: var(--ink); margin: 8px 0 0; }
+  /* h1, h4-h6, blockquote and tables take the shared .rte scale (theme.css) */
+  .dl-main-article .dl-prose > h1 { margin: 16px 0 0; }
+  .dl-main-article .dl-prose > h4, .dl-main-article .dl-prose > h5, .dl-main-article .dl-prose > h6 { margin: 8px 0 0; }
+  .dl-main-article .dl-prose.has-lead > p:first-child, .dl-main-article .dl-prose.is-lead > p { font: 400 var(--type-lead-size)/var(--type-lead-lh) var(--font-sans); letter-spacing: var(--type-lead-ls); color: var(--ink); }
+  .dl-main-article .dl-prose.has-rule > h2 { padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
+  .dl-main-article .dl-prose a { text-decoration: underline; text-underline-offset: 3px; }
+  .dl-main-article .dl-prose img { max-width: 100%; height: auto; border-radius: var(--radius-xl); }
+  .dl-main-article .dl-toc a { font-size: 14px; }
+  .dl-main-article #comments .dl-prose > * { margin: 0; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Article",
+  "tag": "section",
+  "class": "dl-section dl-main-article",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "Show featured image",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "Show author",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show date",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_comments",
+      "label": "Show comments",
+      "info": "Comments appear when the blog allows them (Online Store > Blog posts > Manage blogs).",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_toc",
+      "label": "Show table of contents",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "title",
+      "name": "Title",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "select",
+          "id": "size",
+          "label": "Size",
+          "default": "headline",
+          "options": [
+            {
+              "value": "headline",
+              "label": "Large (48px)"
+            },
+            {
+              "value": "display",
+              "label": "Extra large (64px)"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_eyebrow",
+          "label": "Show tag as eyebrow",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "center",
+          "options": [
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "start",
+              "label": "Start"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "name": "Content",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "select",
+          "id": "size",
+          "label": "Body size",
+          "default": "body",
+          "options": [
+            {
+              "value": "body",
+              "label": "Regular (17px)"
+            },
+            {
+              "value": "lead",
+              "label": "Large (21px)"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "drop_lead",
+          "label": "First paragraph as lead",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "hairline",
+          "label": "Show dividers under headings",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "featured-product",
+      "name": "Featured product",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "In this article"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_quick_view",
+          "label": "Show quick view",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "share",
+      "name": "Share",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Share"
+        },
+        {
+          "type": "checkbox",
+          "id": "copy",
+          "label": "Show copy link button",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "native",
+          "label": "Use the device share menu on phones",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "article"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

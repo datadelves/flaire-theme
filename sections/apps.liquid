@@ -1,0 +1,228 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  case s.width
+    when 'narrow'
+      assign wrap = 'wrap-n'
+    when 'wide'
+      assign wrap = 'wrap'
+    else
+      assign wrap = 'wrap-c'
+  endcase
+  assign app_blocks = section.blocks | where: 'type', '@app'
+-%}
+{%- capture body -%}
+  {%- for block in section.blocks -%}
+    {%- case block.type -%}
+      {%- when '@app' -%}
+        {% render block %}
+      {%- when 'heading' -%}
+        {%- if block.settings.text != blank or block.settings.eyebrow != blank -%}
+          {%- liquid
+            assign head_left = true
+            if block.settings.center
+              assign head_left = false
+            endif
+          -%}
+          <div {{ block.shopify_attributes }}>{% render 'section-head', eyebrow: block.settings.eyebrow, heading: block.settings.text, left: head_left %}</div>
+        {%- endif -%}
+      {%- when 'divider' -%}
+        {%- if block.settings.line -%}
+          <hr class="ap-rule{% if block.settings.full %} ap-full{% endif %}" style="margin:{{ block.settings.space }}px 0" {{ block.shopify_attributes }}>
+        {%- else -%}
+          <div style="height:{{ block.settings.space }}px" aria-hidden="true" {{ block.shopify_attributes }}></div>
+        {%- endif -%}
+      {%- when 'note' -%}
+        {%- if block.settings.text != blank -%}
+          <div class="t-fine rte{% if block.settings.muted %} muted{% endif %}" style="text-align:{{ block.settings.align | default: 'center' }};margin-top:16px" {{ block.shopify_attributes }}>{{ block.settings.text }}</div>
+        {%- endif -%}
+    {%- endcase -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if app_blocks.size > 0 -%}
+  <div data-section="apps" data-app-host="true" class="{{ scheme }}" data-pad style="padding-left:var(--space-5);padding-right:var(--space-5);{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}"><div class="{{ wrap }}">{{ body }}</div></div>
+{%- endif -%}
+
+{% stylesheet %}
+  .ap-rule { border: 0; border-top: 1px solid var(--hairline); }
+  .ap-rule.ap-full { margin-left: calc(50% - 50vw) !important; margin-right: calc(50% - 50vw) !important; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Apps",
+  "tag": "section",
+  "class": "dl-section dl-apps",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Container width",
+      "default": "content",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "Narrow (692px)"
+        },
+        {
+          "value": "content",
+          "label": "Medium (980px)"
+        },
+        {
+          "value": "wide",
+          "label": "Wide (1260px)"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "@app"
+    },
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow"
+        },
+        {
+          "type": "checkbox",
+          "id": "center",
+          "label": "Center",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "divider",
+      "name": "Divider",
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "line",
+          "label": "Show divider",
+          "default": true
+        },
+        {
+          "type": "range",
+          "id": "space",
+          "label": "Space",
+          "default": 32,
+          "min": 0,
+          "max": 80,
+          "step": 8,
+          "unit": "px"
+        },
+        {
+          "type": "checkbox",
+          "id": "full",
+          "label": "Full bleed",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "muted",
+          "label": "Use muted text",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Apps",
+      "blocks": [
+        {
+          "type": "heading"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "note"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

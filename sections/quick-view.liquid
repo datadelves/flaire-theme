@@ -1,0 +1,396 @@
+{%- comment -%}
+  Quick view: shopping without leaving the page. The overlay shell renders on every page; the kernel fetches
+  {{ product.url }}?section_id={{ section.id }} and swaps the panel content, so everything inside
+  [data-ov-panel] renders from the product in context. Desktop: 560px right drawer. Phones: full-screen sheet.
+{%- endcomment -%}
+{%- liquid
+  assign title_text = 'products.product.quick_view' | t
+  assign close_text = 'accessibility.close_quick_view' | t
+  assign options_block = section.blocks | where: 'type', 'options' | first
+  assign use_sheet = true
+  if options_block and options_block.settings.use_variant_sheet == false
+    assign use_sheet = false
+  endif
+
+  # performance: the panel renders only when the kernel fetches it (Section Rendering API, where section.index is
+  # nil) or in the theme editor, so product pages don't carry an unused copy of the product form
+  assign show_panel = false
+  if product != blank and request.page_type == 'product'
+    if section.index == blank or request.design_mode
+      assign show_panel = true
+    endif
+  endif
+-%}
+{%- capture skeleton -%}
+      <div class="bd" aria-busy="true">
+        <div class="dl-qv-gallery"><div class="dl-skel" style="position:absolute;inset:0;border-radius:28px"></div></div>
+        <div class="dl-skel" style="height:24px;width:30%"></div>
+        <div class="dl-skel" style="height:40px;width:70%;margin-top:14px"></div>
+        <div class="dl-skel" style="height:18px;width:90%;margin-top:14px"></div>
+        <div class="dl-skel" style="height:28px;width:30%;margin-top:24px"></div>
+        <div class="inline" style="margin-top:24px">{%- for i in (1..4) -%}<div class="dl-skel" style="width:44px;height:44px;border-radius:50%"></div>{%- endfor -%}</div>
+      </div>
+      <div class="ft"><div class="dl-skel" style="height:52px;border-radius:980px"></div></div>
+{%- endcapture -%}
+<div class="app-ov" data-ov="qv" data-section-id="{{ section.id }}" data-open-cart="{{ section.settings.open_cart_after_add }}" hidden>
+  <div class="dl-scrim" data-act="scrim"></div>
+  <aside class="dl-drawer right w560 scheme-1" data-place="right w560" data-place-mobile="bottom bag-full" role="dialog" aria-modal="true" aria-labelledby="ov-title-qv" data-ov-panel>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: title_text, close_label: close_text, id: 'ov-title-qv', initial: true -%}
+    {%- if show_panel -%}
+      {%- liquid
+        assign form_id = 'product-form-qv-' | append: section.id
+        assign finish_index = -1
+        assign other_option = false
+        assign other_name = ''
+        assign other_index = -1
+        for option in product.options_with_values
+          assign option_name = option.name | downcase
+          if option_name == 'finish' or option_name == 'metal'
+            assign finish_index = forloop.index0
+          elsif other_option == false
+            assign other_option = true
+            assign other_name = option_name
+            assign other_index = forloop.index0
+          endif
+        endfor
+        if product.has_only_default_variant
+          assign other_option = false
+        endif
+        assign base = product.selected_or_first_available_variant
+        capture base_id
+          render 'product-base-variant', product: product, prefer_available: true
+        endcapture
+        assign base_id = base_id | strip
+        for v in product.variants
+          assign vid = v.id | append: ''
+          if vid == base_id
+            assign base = v
+            break
+          endif
+        endfor
+        assign selected_variant = product.selected_variant
+        if selected_variant == blank and other_option == false
+          assign selected_variant = base
+        endif
+        assign finish = ''
+        if finish_index >= 0
+          assign finish = base.options[finish_index]
+        endif
+        assign stock_text = 'products.product.order_by' | t
+        capture lead
+          render 'product-data', product: product, field: 'summary', words: 18
+        endcapture
+        assign lead = lead | strip
+        capture badge_text
+          render 'product-data', product: product, field: 'badge'
+        endcapture
+        assign badge_text = badge_text | strip
+        if other_name contains 'ring' or other_name contains 'size'
+          assign row_title = 'products.product.finish_and_size' | t
+          assign need_text = 'products.product.select_size' | t
+          assign need_error = 'products.product.select_size_to_add' | t
+        elsif other_name contains 'length' or other_name contains 'chain'
+          assign row_title = 'products.product.finish_and_length' | t
+          assign need_text = 'products.product.select_length' | t
+          assign need_error = 'products.product.select_length_to_add' | t
+        else
+          assign row_title = product.options | join: ', '
+          assign need_text = 'products.product.select_option' | t: option: other_name
+          assign need_error = need_text | append: '.'
+        endif
+        if other_option == false
+          assign row_title = 'products.product.finish' | t
+        elsif finish_index < 0
+          assign row_title = product.options | join: ', '
+        endif
+        assign row_label = finish
+        if other_option
+          if selected_variant == blank
+            assign row_label = finish | append: ' · ' | append: need_text
+          else
+            assign size_value = selected_variant.options[other_index]
+            if other_name contains 'ring'
+              assign size_value = 'products.product.size_value_cap' | t: value: size_value
+            endif
+            assign row_label = finish | append: ' · ' | append: size_value
+          endif
+          if finish == blank
+            assign row_label = row_label | remove_first: ' · '
+          endif
+        endif
+        assign finish_count = 0
+        if finish_index >= 0
+          assign finish_count = product.options_with_values[finish_index].values.size
+        endif
+        capture stone
+          render 'product-data', product: product, field: 'stone'
+        endcapture
+        assign stone = stone | strip
+        if stone == blank and settings.product_stone_metafield != blank
+          assign stone = 'products.product.stone_none' | t
+        endif
+      -%}
+      {%- form 'product', product, id: form_id, class: 'dl-qv-form', style: 'display:contents', novalidate: 'novalidate', data-product-form: '', data-ctx: 'qv' -%}
+        {%- render 'product-json', product: product -%}
+        {%- render 'product-templates', stock_text: stock_text -%}
+        <input type="hidden" name="id" value="{{ base.id }}" data-variant-input>
+        <div class="bd">
+          {%- render 'product-gallery', product: product, finish: finish, ctx: 'qv', views: true -%}
+          <div class="stack" style="gap:12px">
+            {%- if badge_text != blank -%}{% render 'badge', text: badge_text, tone: 'accent' %}{%- endif -%}
+            <h3 class="t-headline" style="margin:0;font-size:34px">{{ product.title | escape }}</h3>
+            {%- if section.settings.show_description and lead != blank -%}
+              <p class="t-lead" style="font-size:19px">{{ lead | escape }}</p>
+            {%- endif -%}
+            {%- render 'price', product: product, variant: base, lg: true, show_unit: settings.show_unit_price, show_compare: settings.show_compare_at -%}
+            {%- if section.settings.show_installments -%}{{ form | payment_terms }}{%- endif -%}
+            {%- if section.settings.show_tax_note -%}{%- render 'product-price-notes' -%}{%- endif -%}
+          </div>
+          <div class="stack-lg" style="margin-top:24px">
+            {%- if use_sheet -%}
+              {%- if other_option or finish_count > 1 -%}
+                <button type="button" class="dl-opt-row{% if selected_variant != blank %} is-on{% endif %}" data-open="variant-sheet" data-mode="qv" data-url="{{ product.url }}" aria-haspopup="dialog"><span>{{ row_title }}<small data-opt-row-label>{{ row_label | escape }}</small></span>{% render 'icon', icon: 'caret-right' %}</button>
+              {%- endif -%}
+            {%- else -%}
+              {%- render 'product-options', product: product, ctx: 'qv', finish: finish, selected_variant: selected_variant, show_size_guide: options_block.settings.show_size_guide -%}
+            {%- endif -%}
+            {%- if section.settings.show_specs -%}
+              <dl class="fc-facts">
+                {%- if finish != blank -%}<div class="fc-fact"><dt>{{ 'products.product.spec_metal' | t }}</dt><dd data-spec-finish>{{ finish | escape }}</dd></div>{%- endif -%}
+                {%- if stone != blank -%}<div class="fc-fact"><dt>{{ 'products.product.spec_stone' | t }}</dt><dd>{{ stone | escape }}</dd></div>{%- endif %}
+                <div class="fc-fact"><dt>{{ 'products.product.spec_sku' | t }}</dt><dd data-sku-cell>{%- liquid
+                  assign sku_text = base.sku
+                  if selected_variant == blank and base.sku contains '-'
+                    assign sku_tail = base.sku | split: '-' | last
+                    assign sku_text = base.sku | remove_last: sku_tail | append: 'OS'
+                  endif
+                  echo sku_text | escape
+                -%}</dd></div>
+              </dl>
+            {%- endif -%}
+            {%- render 'product-gift-recipient', product: product, ctx: 'qv', form: form -%}
+            <p class="fc-field-msg is-error" role="alert" style="margin:0" data-need-error hidden>{% render 'icon', icon: 'warning-circle', size: 16 %}<span>{{ need_error }}</span></p>
+            {%- render 'product-buy', product: product, ctx: 'qv', finish: finish, variant: selected_variant, stock_text: stock_text, part: 'stock' -%}
+            {%- for block in section.blocks -%}
+              {%- case block.type -%}
+                {%- when 'reassurance' -%}
+                  <div class="dl-pickup" {{ block.shopify_attributes }}>{% render 'icon', icon: block.settings.icon %}<p style="margin:0">{% if block.settings.link != blank %}<a href="{{ block.settings.link }}">{{ block.settings.text | escape }}</a>{% else %}{{ block.settings.text | escape }}{% endif %}</p></div>
+                {%- when '@app' -%}
+                  {%- render block -%}
+              {%- endcase -%}
+            {%- endfor -%}
+          </div>
+        </div>
+        <div class="ft">
+          {%- render 'product-buy', product: product, ctx: 'qv', finish: finish, variant: selected_variant, part: 'add' -%}
+          {%- if section.settings.show_dynamic_checkout -%}
+            {%- liquid
+              assign pay_hidden = false
+              if product.available == false or selected_variant.available == false
+                assign pay_hidden = true
+              endif
+            -%}
+            <div class="dl-pay{% if selected_variant == blank %} is-blocked{% endif %}" data-payment-button data-act="pay-blocked"{% if pay_hidden %} hidden{% endif %}><div data-pay-inner{% if selected_variant == blank %} inert{% endif %}>{{ form | payment_button }}</div></div>
+          {%- endif -%}
+          <div style="display:contents" data-qv-success hidden>
+            {%- assign added_title = 'products.product.added' | t -%}
+            {%- render 'notice', tone: 'success', title: added_title, text: ' ', attrs: 'data-qv-success-notice' -%}
+            {%- assign view_bag = 'products.product.view_bag' | t -%}
+            {%- render 'button', variant: 'secondary', label: view_bag, block: true, url: routes.cart_url, attrs: 'data-open="cart"' -%}
+          </div>
+          {%- assign full_label = 'products.product.view_full_details' | t -%}
+          {%- capture full_url %}{{ product.url }}{% if selected_variant != blank %}?variant={{ selected_variant.id }}{% endif %}{% endcapture -%}
+          {%- render 'button', variant: 'link', label: full_label, block: true, no_chev: true, url: full_url, attrs: 'data-full-link' -%}
+        </div>
+      {%- endform -%}
+    {%- else -%}
+      {{ skeleton }}
+    {%- endif -%}
+  </aside>
+  <template data-ov-loading>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: title_text, close_label: close_text, id: 'ov-title-qv', initial: true -%}
+    {{ skeleton }}
+  </template>
+  <template data-ov-error>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: title_text, close_label: close_text, id: 'ov-title-qv', initial: true -%}
+    <div class="bd" style="padding-top:24px">
+      <div class="fc-notice fc-notice-danger" role="alert">{% render 'icon', icon: 'warning-circle', size: 20, class: 'fc-notice-icon' %}<div><p class="fc-notice-title">{{ 'products.product.qv_error_title' | t }}</p><p class="fc-notice-text">{{ 'general.errors.network' | t }}</p><a href="#" data-act="ov-retry">{{ 'general.errors.try_again' | t }}</a></div></div>
+      <div style="margin-top:24px">{%- assign view_product = 'products.product.view_product' | t -%}{% render 'button', variant: 'secondary', label: view_product, block: true, url: '#', attrs: 'data-ov-product-link' %}</div>
+    </div>
+  </template>
+</div>
+
+{% schema %}
+{
+  "name": "Quick view",
+  "tag": "section",
+  "class": "dl-section dl-quick-view",
+  "settings": [
+    {
+      "type": "select",
+      "id": "desktop_presentation",
+      "label": "Desktop presentation",
+      "default": "drawer",
+      "options": [
+        {
+          "value": "drawer",
+          "label": "Right drawer (560px)"
+        },
+        {
+          "value": "dialog",
+          "label": "Centered dialog (980px)"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_description",
+      "label": "Show short description",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_specs",
+      "label": "Show mini spec list",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pickup",
+      "label": "Show pickup row",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "open_cart_after_add",
+      "label": "Open cart after adding",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dynamic_checkout",
+      "label": "Show dynamic checkout buttons",
+      "default": true,
+      "info": "Customers see the payment methods your store offers, like Shop Pay or Apple Pay."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_installments",
+      "label": "Show Shop Pay Installments banner",
+      "default": true,
+      "info": "Shows when your store offers Shop Pay Installments."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tax_note",
+      "label": "Show tax and shipping note",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "gallery",
+      "name": "Gallery",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "range",
+          "id": "max_images",
+          "label": "Max images",
+          "default": 4,
+          "min": 1,
+          "max": 8,
+          "step": 1
+        },
+        {
+          "type": "checkbox",
+          "id": "show_dots",
+          "label": "Show dots",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "zoom_link",
+          "label": "Show zoom link",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "options",
+      "name": "Options",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "use_variant_sheet",
+          "label": "Use variant sheet",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "require_selection",
+          "label": "Require size",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_size_guide",
+          "label": "Show size guide link",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "reassurance",
+      "name": "Reassurance",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "truck",
+          "options": [
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "storefront",
+              "label": "Pickup"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Secure checkout"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

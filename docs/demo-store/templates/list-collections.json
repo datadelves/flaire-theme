@@ -1,0 +1,121 @@
+{
+  "sections": {
+    "collections-hero": {
+      "type": "collections-hero",
+      "settings": {
+        "eyebrow": "Collections",
+        "headline": "Every collection",
+        "sub": "Named for the light they catch.",
+        "color_scheme": "scheme-2",
+        "image_alt": ""
+      }
+    },
+    "main": {
+      "type": "main-list-collections",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "sort": "manual",
+        "columns": "3",
+        "show_count": true
+      },
+      "blocks": {
+        "collection-tile-1": {
+          "type": "collection-tile",
+          "settings": {
+            "collection": "rings",
+            "line": ""
+          }
+        },
+        "collection-tile-2": {
+          "type": "collection-tile",
+          "settings": {
+            "collection": "necklaces",
+            "line": ""
+          }
+        },
+        "collection-tile-3": {
+          "type": "collection-tile",
+          "settings": {
+            "collection": "earrings",
+            "line": ""
+          }
+        },
+        "collection-tile-4": {
+          "type": "collection-tile",
+          "settings": {
+            "collection": "bracelets",
+            "line": ""
+          }
+        },
+        "collection-tile-5": {
+          "type": "collection-tile",
+          "settings": {
+            "collection": "gifts",
+            "line": ""
+          }
+        },
+        "collection-tile-6": {
+          "type": "collection-tile",
+          "settings": {
+            "collection": "engravable",
+            "line": ""
+          }
+        }
+      },
+      "block_order": [
+        "collection-tile-1",
+        "collection-tile-2",
+        "collection-tile-3",
+        "collection-tile-4",
+        "collection-tile-5",
+        "collection-tile-6"
+      ]
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "eyebrow": "Journal",
+        "headline": "Notes on light",
+        "sub": "New pieces and care notes, once a month.",
+        "color_scheme": "scheme-1",
+        "button_label": "Subscribe",
+        "fine_print": "<p>Unsubscribe at any time.</p>",
+        "success_text": "Thank you. You are on the list."
+      },
+      "blocks": {
+        "heading-1": {
+          "type": "heading",
+          "settings": {
+            "text": "Notes on light",
+            "size": "display"
+          }
+        },
+        "email-field-1": {
+          "type": "email-field",
+          "settings": {
+            "label": "Email address",
+            "placeholder": "name@example.com",
+            "error": "Enter an email address like name@example.com."
+          }
+        },
+        "consent-1": {
+          "type": "consent",
+          "settings": {
+            "text": "<p>By subscribing you agree to our privacy policy.</p>",
+            "required": false
+          }
+        }
+      },
+      "block_order": [
+        "heading-1",
+        "email-field-1",
+        "consent-1"
+      ]
+    }
+  },
+  "order": [
+    "collections-hero",
+    "main",
+    "newsletter"
+  ]
+}

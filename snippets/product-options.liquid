@@ -1,0 +1,159 @@
+{%- comment -%}
+  Product configurator: Finish swatches and size chips (Facet MaterialSwatch + SizeSelector).
+  The kernel's product-form keeps the selection; this renders the first state.
+  A swatch shows the option value's own swatch (Shopify's value.swatch image or color) when it has one,
+  else the theme's metal color. Any option whose values carry swatches is drawn as swatches too.
+
+  Accepts:
+  - product {Object}
+  - ctx {String} pdp | qv | sheet
+  - finish {String} selected finish value name
+  - selected_variant {Object} the chosen variant, blank while a size is still needed
+  - show_size_guide {Boolean} (default true)
+  - size_error {Boolean} render the "Select a size" error
+{%- endcomment -%}
+{%- liquid
+  if show_size_guide == nil
+    assign show_size_guide = true
+  endif
+  assign finish_index = -1
+  for option in product.options_with_values
+    assign option_name = option.name | downcase
+    if option_name == 'finish' or option_name == 'metal'
+      assign finish_index = forloop.index0
+    endif
+  endfor
+  assign sold_out_suffix = 'products.product.sold_out_suffix' | t
+  capture kind
+    render 'product-data', product: product, field: 'kind'
+  endcapture
+  assign kind = kind | strip
+-%}
+{%- unless product.has_only_default_variant -%}
+  {%- for option in product.options_with_values -%}
+    {%- liquid
+      assign oi = forloop.index0
+      assign as_swatch = false
+      if oi == finish_index
+        assign as_swatch = true
+      else
+        for value in option.values
+          if value.swatch.color or value.swatch.image
+            assign as_swatch = true
+            break
+          endif
+        endfor
+      endif
+      assign swatch_value = finish
+      if oi != finish_index
+        assign swatch_value = selected_variant.options[oi] | default: ''
+      endif
+    -%}
+    {%- if as_swatch -%}
+      <div class="fc-swatch"><p class="fc-swatch-cap"><span class="fc-swatch-k">{{ option.name | escape }}. </span><span class="fc-swatch-v" data-opt-caption="{{ oi }}">{% if swatch_value != blank %}{{ swatch_value | escape }}{% else %}{{ 'products.product.select' | t }}{% endif %}</span></p>
+        <div role="radiogroup" aria-label="{{ option.name | escape }}" class="fc-swatch-row" data-group="{{ oi }}" data-ctx="{{ ctx }}">
+          {%- for value in option.values -%}
+            {%- liquid
+              assign on = false
+              if value.name == swatch_value
+                assign on = true
+              endif
+              assign off = true
+              for v in product.variants
+                if v.options[oi] == value.name and v.available
+                  if selected_variant == blank
+                    assign off = false
+                  else
+                    assign v_match = true
+                    for opt_value in v.options
+                      if forloop.index0 != oi and opt_value != selected_variant.options[forloop.index0]
+                        assign v_match = false
+                      endif
+                    endfor
+                    if v_match
+                      assign off = false
+                    endif
+                  endif
+                endif
+              endfor
+              if value.swatch.image
+                assign dot_style = value.swatch.image | image_url: width: 96 | prepend: 'background:var(--canvas-alt) url(' | append: ') center / cover no-repeat'
+              elsif value.swatch.color
+                assign dot_style = value.swatch.color | prepend: 'background:'
+              else
+                assign dot_style = value.name | handleize | prepend: 'background:var(--metal-' | append: ', var(--canvas-alt))'
+              endif
+              assign tab_on = on
+              if swatch_value == blank and forloop.first
+                assign tab_on = true
+              endif
+            -%}
+            <button type="button" role="radio" aria-checked="{{ on }}" aria-label="{{ value.name | escape }}{% if off %} {{ sold_out_suffix }}{% endif %}" class="fc-swatch-opt{% if on %} is-on{% endif %}{% if off %} is-off{% endif %}" data-act="opt" data-opt="{{ oi }}" data-value="{{ value.name | escape }}" data-ctx="{{ ctx }}" tabindex="{% if tab_on %}0{% else %}-1{% endif %}"><span class="fc-swatch-dot" style="{{ dot_style }}"></span></button>
+          {%- endfor -%}
+        </div>
+      </div>
+    {%- else -%}
+      {%- liquid
+        assign option_lower = option.name | downcase
+        assign guide = ''
+        if guide == blank
+          if option_lower contains 'ring'
+            assign guide = 'rings'
+          elsif option_lower contains 'chain' or kind == 'pendant' or kind == 'chain'
+            assign guide = 'necklaces'
+          elsif kind == 'bracelet'
+            assign guide = 'bracelets'
+          elsif kind == 'ring' or kind == 'band'
+            assign guide = 'rings'
+          endif
+        endif
+        assign selected_value = ''
+        if selected_variant != blank
+          assign selected_value = selected_variant.options[oi]
+        endif
+        assign first_tab = 0
+        if selected_value != blank
+          for value in option.values
+            if value.name == selected_value
+              assign first_tab = forloop.index0
+            endif
+          endfor
+        endif
+        if option_lower contains 'ring' or option_lower contains 'size'
+          assign error_text = 'products.product.select_size' | t
+        elsif option_lower contains 'length' or option_lower contains 'chain'
+          assign error_text = 'products.product.select_length' | t
+        else
+          assign error_text = 'products.product.select_option' | t: option: option_lower
+        endif
+      -%}
+      <div class="fc-size{% if size_error %} is-error{% endif %}" id="size-{{ ctx }}-{{ oi }}" data-size-block="{{ oi }}">
+        <div class="fc-size-head"><p class="fc-size-cap"><span class="fc-swatch-k">{{ option.name | escape }}. </span><span class="fc-swatch-v" data-opt-caption="{{ oi }}">{% if selected_value != blank %}{{ selected_value | escape }}{% else %}{{ 'products.product.select' | t }}{% endif %}</span></p>
+          {%- if show_size_guide and guide != blank -%}
+            <a class="fc-link" href="#size-guide" data-open="size-guide" data-tab="{{ guide }}">{{ 'products.product.size_guide' | t }}</a>
+          {%- endif -%}
+        </div>
+        <div role="radiogroup" aria-label="{{ option.name | escape }}" class="fc-size-grid" data-group="{{ oi }}" data-ctx="{{ ctx }}"{% if option.values.size <= 5 %} style="grid-template-columns:repeat({{ option.values.size }},minmax(0,1fr))"{% endif %}>
+          {%- for value in option.values -%}
+            {%- liquid
+              assign on = false
+              if value.name == selected_value
+                assign on = true
+              endif
+              assign off = true
+              for v in product.variants
+                if v.options[oi] == value.name and v.available
+                  if finish_index < 0 or v.options[finish_index] == finish
+                    assign off = false
+                  endif
+                endif
+              endfor
+            -%}
+            <button type="button" role="radio" aria-checked="{{ on }}" class="fc-size-opt{% if on %} is-on{% endif %}{% if off %} is-off{% endif %}" data-act="opt" data-opt="{{ oi }}" data-value="{{ value.name | escape }}" data-ctx="{{ ctx }}" tabindex="{% if forloop.index0 == first_tab %}0{% else %}-1{% endif %}">{{ value.name | escape }}<span class="fc-sr" data-off-label{% unless off %} hidden{% endunless %}> {{ sold_out_suffix }}</span></button>
+          {%- endfor -%}
+        </div>
+        <p class="fc-field-msg is-error" role="alert" style="margin-top:8px" data-size-error{% unless size_error %} hidden{% endunless %}>{% render 'icon', icon: 'warning-circle', size: 16 %}<span>{{ error_text }}.</span></p>
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endunless -%}

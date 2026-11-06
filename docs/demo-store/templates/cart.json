@@ -1,0 +1,145 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-cart-items",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Your Bag",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "show_vendor": false,
+        "empty_title": "Your Bag is empty",
+        "empty_text": "Pieces you add will wait here.",
+        "show_engraving_link": true
+      },
+      "blocks": {
+        "line-details-1": {
+          "type": "line-details",
+          "settings": {
+            "show_material": true,
+            "show_engraving": true,
+            "show_delivery": true,
+            "delivery_text": "Arrives Thursday"
+          }
+        },
+        "selling-plan-line-1": {
+          "type": "selling-plan-line",
+          "settings": {
+            "show": true,
+            "label_prefix": "Plan",
+            "allow_change": false
+          }
+        },
+        "empty-action-1": {
+          "type": "empty-action",
+          "settings": {
+            "label": "Continue shopping",
+            "link": "",
+            "use_last_viewed": true
+          }
+        }
+      },
+      "block_order": [
+        "line-details-1",
+        "selling-plan-line-1",
+        "empty-action-1"
+      ]
+    },
+    "summary": {
+      "type": "main-cart-footer",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "show_note": true,
+        "show_discount": true,
+        "show_estimate": true,
+        "checkout_label": "Check Out",
+        "terms": ""
+      },
+      "blocks": {
+        "gift-notice-1": {
+          "type": "gift-notice",
+          "settings": {
+            "text": "Gift wrap is free. Add a note at check out.",
+            "show": true
+          }
+        },
+        "summary-1": {
+          "type": "summary",
+          "settings": {
+            "kind": "subtotal",
+            "label": "Subtotal",
+            "override": ""
+          }
+        },
+        "summary-2": {
+          "type": "summary",
+          "settings": {
+            "kind": "delivery",
+            "label": "Delivery",
+            "override": ""
+          }
+        },
+        "summary-3": {
+          "type": "summary",
+          "settings": {
+            "kind": "total",
+            "label": "Total",
+            "override": ""
+          }
+        },
+        "trust-1": {
+          "type": "trust",
+          "settings": {
+            "icon": "seal-check",
+            "text": "30-day returns; engraved pieces are final sale."
+          }
+        }
+      },
+      "block_order": [
+        "gift-notice-1",
+        "summary-1",
+        "summary-2",
+        "summary-3",
+        "trust-1"
+      ]
+    },
+    "cart-recommendations": {
+      "type": "cart-recommendations",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Often worn together",
+        "empty_headline": "Start with a favorite",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "limit": 4
+      },
+      "blocks": {
+        "card-options-1": {
+          "type": "card-options",
+          "settings": {
+            "show_quick_view": true,
+            "show_material": true,
+            "show_price": true
+          }
+        },
+        "note-1": {
+          "type": "note",
+          "settings": {
+            "text": "",
+            "show": false,
+            "align": "start"
+          }
+        }
+      },
+      "block_order": [
+        "card-options-1",
+        "note-1"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "summary",
+    "cart-recommendations"
+  ]
+}

@@ -1,0 +1,391 @@
+{%- comment -%}
+  Predictive search content (chrome.mjs searchBodyHtml). The panel shell (#ps, [data-ps-input], [data-ps-body])
+  lives in the header section. This section renders nothing visible:
+  - normal page loads: <template data-ps-empty|loading|error>, copied by the kernel into [data-ps-body];
+  - {{ routes.predictive_search_url }}?q=..&section_id={{ section.id }}: <div data-ps-results> with the results
+    (or no-results) layout, which the kernel swaps into [data-ps-body].
+{%- endcomment -%}
+{%- liquid
+  assign search_base = routes.search_url | append: '?q='
+  assign size_guide_url = pages['ring-sizing'].url | default: '#size-guide'
+
+  # Popular searches: popular block menu, else the theme's popular searches menu, else the block's terms
+  assign pop_block = section.blocks | where: 'type', 'popular' | first
+  assign pop_heading = 'search.predictive.popular' | t
+  assign pop_limit = 6
+  assign pop_menu = settings.popular_searches_menu
+  assign pop_terms = ''
+  if pop_block
+    assign pop_heading = pop_block.settings.heading
+    assign pop_limit = pop_block.settings.limit
+    assign pop_terms = pop_block.settings.terms
+    if pop_block.settings.menu.links.size > 0
+      assign pop_menu = pop_block.settings.menu
+    endif
+  endif
+  assign pop_lines = pop_terms | newline_to_br | split: '<br />'
+-%}
+{%- capture caret %}{% render 'icon', icon: 'caret-right', size: 16 %}{% endcapture -%}
+{%- capture pop_rows -%}
+  {%- if pop_menu.links.size > 0 -%}
+    {%- for link in pop_menu.links limit: pop_limit -%}
+      <a href="{{ link.url }}">{{ link.title | escape }}{{ caret }}</a>
+    {%- endfor -%}
+  {%- elsif pop_terms != blank -%}
+    {%- for line in pop_lines limit: pop_limit -%}
+      {%- assign pop_parts = line | split: '|' -%}
+      {%- assign pop_label = pop_parts[0] | strip -%}
+      {%- assign pop_q = pop_parts[1] | strip | default: pop_label -%}
+      {%- if pop_label != blank %}<a href="{{ search_base }}{{ pop_q | url_encode }}&amp;options%5Bprefix%5D=last&amp;type=product,article,page">{{ pop_label | escape }}{{ caret }}</a>{% endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture pop_chips -%}
+  {%- if pop_menu.links.size > 0 -%}
+    {%- for link in pop_menu.links limit: 4 -%}
+      <a class="dl-chip" href="{{ link.url }}">{{ link.title | escape }}</a>
+    {%- endfor -%}
+  {%- elsif pop_terms != blank -%}
+    {%- for line in pop_lines limit: 4 -%}
+      {%- assign pop_parts = line | split: '|' -%}
+      {%- assign pop_label = pop_parts[0] | strip -%}
+      {%- assign pop_q = pop_parts[1] | strip | default: pop_label -%}
+      {%- if pop_label != blank %}<a class="dl-chip" href="{{ search_base }}{{ pop_q | url_encode }}&amp;options%5Bprefix%5D=last&amp;type=product,article,page">{{ pop_label | escape }}</a>{% endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture help_rows -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'help-link' and block.settings.label != blank -%}
+      {%- assign help_tab = block.settings.size_guide_tab | default: 'none' -%}
+      {%- if help_tab != 'none' -%}
+        <a href="{{ block.settings.link | default: size_guide_url }}" data-open="size-guide" data-tab="{{ help_tab }}">{{ block.settings.label | escape }}{{ caret }}</a>
+      {%- elsif block.settings.link != blank -%}
+        <a href="{{ block.settings.link }}">{{ block.settings.label | escape }}{{ caret }}</a>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+<div data-section="predictive-search" data-section-id="{{ section.id }}" hidden>
+  {%- if predictive_search.performed -%}
+    {%- liquid
+      assign ps_terms = predictive_search.terms
+      assign ps_products = predictive_search.resources.products
+      assign ps_count = ps_products.size
+      if ps_count > section.settings.product_limit
+        assign ps_count = section.settings.product_limit
+      endif
+      assign ps_other = 0
+      if section.settings.show_collections
+        assign ps_other = ps_other | plus: predictive_search.resources.collections.size
+      endif
+      if section.settings.show_articles
+        assign ps_other = ps_other | plus: predictive_search.resources.articles.size
+      endif
+      if section.settings.show_pages
+        assign ps_other = ps_other | plus: predictive_search.resources.pages.size
+      endif
+      capture view_all_url
+        echo search_base
+        echo ps_terms | url_encode
+        echo '&options%5Bprefix%5D=last&type=product,article,page'
+      endcapture
+    -%}
+    <div data-ps-results data-count="{{ ps_products.size }}">
+      {%- if ps_products.size > 0 or ps_other > 0 -%}
+        <div class="wrap-c dl-ps{% unless section.settings.show_price %} no-price{% endunless %}" style="margin-top:32px">
+          <div class="inline" style="justify-content:space-between">
+            <p class="t-overline" role="status">{{ 'general.pieces' | t: count: ps_products.size }}</p>
+            {%- assign view_all_label = 'search.predictive.view_all' | t -%}
+            {%- render 'button', variant: 'link', label: view_all_label, url: view_all_url -%}
+          </div>
+          {%- if ps_products.size > 0 -%}
+            <div class="res" id="ps-list" role="listbox" style="margin-top:16px">
+              {%- for p in ps_products limit: ps_count -%}
+                <div role="option" id="ps-opt-{{ forloop.index0 }}" {% if forloop.first %}aria-selected="true" class="opt-active"{% else %}aria-selected="false"{% endif %} data-ps-opt>
+                  {%- render 'product-card', product: p, quick: false, add: false, size: 120 -%}
+                </div>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+          {%- if ps_other > 0 -%}
+            <div class="lists" style="margin-top:24px">
+              {%- if section.settings.show_collections and predictive_search.resources.collections.size > 0 -%}
+                <p class="t-overline" style="margin-bottom:4px">{{ 'search.predictive.collections' | t }}</p>
+                {%- for c in predictive_search.resources.collections -%}
+                  <a href="{{ c.url }}">{{ c.title | escape }}{{ caret }}</a>
+                {%- endfor -%}
+              {%- endif -%}
+              {%- if section.settings.show_articles and predictive_search.resources.articles.size > 0 -%}
+                <p class="t-overline" style="margin:16px 0 4px">{{ 'search.predictive.journal' | t }}</p>
+                {%- for a in predictive_search.resources.articles -%}
+                  <a href="{{ a.url }}">{{ a.title | escape }}{{ caret }}</a>
+                {%- endfor -%}
+              {%- endif -%}
+              {%- if section.settings.show_pages and predictive_search.resources.pages.size > 0 -%}
+                <p class="t-overline" style="margin:16px 0 4px">{{ 'search.predictive.pages' | t }}</p>
+                {%- for pg in predictive_search.resources.pages -%}
+                  <a href="{{ pg.url }}">{{ pg.title | escape }}{{ caret }}</a>
+                {%- endfor -%}
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+      {%- else -%}
+        <div class="wrap-c" style="margin-top:32px">
+          {%- if section.settings.empty_text != blank -%}
+            {%- liquid
+              assign terms_quoted = ps_terms | escape
+              assign empty_line = section.settings.empty_text | escape | replace: '{terms}', terms_quoted
+            -%}
+            <p class="t-body" role="status">{{ empty_line }}</p>
+          {%- endif -%}
+          {%- if pop_chips != blank %}<div class="fc-chips" style="margin-top:16px">{{ pop_chips }}</div>{% endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+  {%- else -%}
+    {%- liquid
+      assign feat_block = section.blocks | where: 'type', 'featured-product' | first
+      assign feat_product = feat_block.settings.product
+    -%}
+    <template data-ps-empty>
+      <div class="wrap-c dl-ps-empty">
+        {%- if pop_rows != blank or help_rows != blank -%}
+          <div>
+            {%- if pop_heading != blank %}<p class="t-overline">{{ pop_heading | escape }}</p>{% endif -%}
+            <div class="lists dl-ps"><div class="lists">{{ pop_rows }}{{ help_rows }}</div></div>
+          </div>
+        {%- endif -%}
+        {%- if feat_block and feat_product != blank or feat_block and request.design_mode -%}
+          <div{% unless feat_block.settings.show_price %} class="no-price"{% endunless %}>
+            {%- if feat_block.settings.eyebrow != blank %}<p class="t-overline">{{ feat_block.settings.eyebrow | escape }}</p>{% endif -%}
+            <div class="ps-card">{% render 'product-card', product: feat_product, quick: false, add: false, size: 140 %}</div>
+            {%- if feat_product != blank -%}
+              {%- liquid
+                capture feat_kind
+                  render 'product-data', product: feat_product, field: 'kind'
+                endcapture
+                assign feat_kind = feat_kind | strip | default: 'ring'
+                capture feat_material
+                  render 'product-data', product: feat_product, field: 'material', fallback: false
+                endcapture
+                assign feat_material = feat_material | strip
+                if feat_material == blank
+                  assign feat_finish = feat_product.options_with_values | where: 'name', 'Finish' | first
+                  if feat_finish
+                    assign feat_material = feat_finish.values | map: 'name' | slice: 0, 2 | join: ', '
+                  endif
+                endif
+              -%}
+              <a class="dl-rec ps-rec" href="{{ feat_product.url }}"><span class="art">{% render 'product-photo', image: feat_product.featured_media, size: 64, alt: '', kind: feat_kind %}</span><span class="tx"><span class="nm">{{ feat_product.title | escape }}</span>{% if feat_material != blank %}<span class="mt">{{ feat_material | escape }}</span>{% endif %}{% if feat_block.settings.show_price %}{% render 'price', product: feat_product %}{% endif %}</span>{% render 'icon', icon: 'caret-right', size: 18 %}</a>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </template>
+    <template data-ps-loading>
+      <div class="wrap-c dl-ps" style="margin-top:32px" aria-busy="true">
+        <p class="t-overline" role="status">{{ 'search.predictive.searching' | t }}</p>
+        <div class="res">
+          {%- for i in (1..4) -%}
+            <div><div class="dl-skel" style="aspect-ratio:1;border-radius:18px"></div><div class="dl-skel" style="height:14px;margin-top:12px;width:70%"></div></div>
+          {%- endfor -%}
+        </div>
+      </div>
+    </template>
+    <template data-ps-error>
+      <div class="wrap-c" style="margin-top:32px">
+        {%- liquid
+          assign error_title = 'search.predictive.error_title' | t
+          assign error_text = 'search.predictive.error_text' | t
+          assign retry_label = 'general.errors.try_again' | t
+        -%}
+        {%- render 'notice', tone: 'danger', title: error_title, text: error_text, link_label: retry_label, link_url: '#', link_attrs: 'data-act="ps-retry"' -%}
+      </div>
+    </template>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  /* Shopify glue: the Prices settings hide the card price in the panel */
+  .dl-ps.no-price .fc-card .fc-price, .dl-ps-empty .no-price .fc-card .fc-price { display: none; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Predictive search",
+  "tag": "section",
+  "class": "dl-section dl-predictive-search",
+  "settings": [
+    {
+      "type": "range",
+      "id": "product_limit",
+      "label": "Product results",
+      "default": 4,
+      "min": 2,
+      "max": 10,
+      "step": 1
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collections",
+      "label": "Show collections",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_articles",
+      "label": "Show articles",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pages",
+      "label": "Show pages",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "Show prices",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "No results text",
+      "default": "No results for “{terms}”. Try a metal, a stone or a collection name."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "popular",
+      "name": "Popular searches",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Popular searches"
+        },
+        {
+          "type": "range",
+          "id": "limit",
+          "label": "Max links",
+          "default": 6,
+          "min": 3,
+          "max": 10,
+          "step": 1
+        },
+        {
+          "type": "textarea",
+          "id": "terms",
+          "label": "Search terms (used when no menu is chosen)",
+          "default": "Engagement rings | diamond ring\nRose gold | rose gold\nPearl earrings | pearl\nGift under $500 | gift",
+          "info": "One per line: label | search query. The query defaults to the label."
+        }
+      ]
+    },
+    {
+      "type": "featured-product",
+      "name": "Featured product",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "Most loved"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "help-link",
+      "name": "Help link",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Ring size guide"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "ruler",
+          "options": [
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            },
+            {
+              "value": "storefront",
+              "label": "Store"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "size_guide_tab",
+          "label": "Opens the size guide on",
+          "default": "rings",
+          "options": [
+            {
+              "value": "none",
+              "label": "Nothing (plain link)"
+            },
+            {
+              "value": "rings",
+              "label": "Rings"
+            },
+            {
+              "value": "bracelets",
+              "label": "Bracelets"
+            },
+            {
+              "value": "necklaces",
+              "label": "Necklaces"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

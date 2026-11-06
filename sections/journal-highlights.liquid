@@ -1,0 +1,267 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-2'
+  assign blog = s.blog | default: blogs.journal
+  assign count = s.count | default: 3
+  assign link_url = s.link
+  if link_url == blank and blog != blank
+    assign link_url = blog.url
+  endif
+  assign picked = 0
+  for block in section.blocks
+    if block.type == 'article' and block.settings.article != blank
+      assign picked = picked | plus: 1
+    endif
+  endfor
+-%}
+{%- capture cards -%}
+  {%- if picked > 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'article' and block.settings.article != blank -%}
+        <div style="display:contents" {{ block.shopify_attributes }}>{% render 'article-card', article: block.settings.article, show_excerpt: block.settings.show_excerpt, title: block.settings.title %}</div>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- elsif blog != blank and blog.articles_count > 0 -%}
+    {%- for article in blog.articles limit: count -%}
+      {%- render 'article-card', article: article -%}
+    {%- endfor -%}
+  {%- elsif request.design_mode -%}
+    {%- for i in (1..count) -%}
+      {%- render 'article-card' -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture topics -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'topic' and block.settings.label != blank and block.settings.link != blank -%}
+      {%- capture topic_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+      {%- if block.settings.style == 'link' -%}
+        {%- render 'button', variant: 'link', label: block.settings.label, url: block.settings.link, attrs: topic_attrs -%}
+      {%- else -%}
+        {%- render 'button', variant: 'secondary', size: 'sm', label: block.settings.label, url: block.settings.link, attrs: topic_attrs -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if cards != blank -%}
+  <div class="band {{ scheme }}" data-section="journal-highlights" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap">
+    {%- capture head -%}{% render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub, left: true %}{%- endcapture -%}
+    <div class="row-head">{{ head }}
+      {%- if s.link_label != blank and link_url != blank %}{% render 'button', variant: 'link', label: s.link_label, url: link_url %}{% endif -%}
+    </div>
+    <div class="grid g3 keep3">{{ cards }}</div>
+    {%- if topics != blank %}<div class="inline center" style="margin-top:32px;gap:12px;justify-content:center">{{ topics }}</div>{% endif -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'feature' and block.settings.title != blank -%}
+        {%- if block.settings.link != blank -%}
+          <a class="dl-tile-card" href="{{ block.settings.link }}" style="margin-top:32px;padding:32px;display:flex;flex-direction:column;gap:8px;color:var(--ink)" {{ block.shopify_attributes }}>
+        {%- else -%}
+          <div class="dl-tile-card" style="margin-top:32px;padding:32px;display:flex;flex-direction:column;gap:8px" {{ block.shopify_attributes }}>
+        {%- endif -%}
+          {%- if block.settings.eyebrow != blank %}<p class="t-overline" style="margin:0">{{ block.settings.eyebrow | escape }}</p>{% endif -%}
+          <h3 class="t-title-lg" style="margin:0">{{ block.settings.title | escape }}</h3>
+        {%- if block.settings.link != blank %}</a>{% else %}</div>{% endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  </div></div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "From the journal",
+  "tag": "section",
+  "class": "dl-section dl-journal-highlights",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Journal"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Notes on light"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "count",
+      "label": "Articles",
+      "default": 3,
+      "min": 2,
+      "max": 6,
+      "step": 1
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "article",
+      "name": "Article",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "article",
+          "id": "article",
+          "label": "Article"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading override"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_excerpt",
+          "label": "Show excerpt",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "topic",
+      "name": "Topic link",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Care"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "secondary",
+          "options": [
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "link",
+              "label": "Link"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "feature",
+      "name": "Feature note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "Guide"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "How to clean gold at home"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "From the journal",
+      "blocks": [
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "feature"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

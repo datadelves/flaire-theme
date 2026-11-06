@@ -1,0 +1,46 @@
+{%- comment -%}
+  Facet ReviewCard: rating, quote, optional photo, name and location, verified mark, studio reply.
+
+  Accepts:
+  - rating {Number} 1-5
+  - body {String}
+  - author {String}
+  - location {String}
+  - verified {Boolean}
+  - image {Object} optional customer photo
+  - response {String} optional reply from the studio
+  - show_photo {Boolean} (default settings.reviews_show_photos)
+  - avatar {Boolean} show the reviewer's initials (product reviews) when there is no photo
+  - attrs {String} raw extra attributes on the <article>
+{%- endcomment -%}
+{%- liquid
+  if show_photo == nil
+    assign show_photo = settings.reviews_show_photos
+  endif
+  assign stars = rating | default: 5
+-%}
+<article class="dl-review"{% if attrs != blank %} {{ attrs }}{% endif %}>
+  <div class="dl-rating">{% render 'icon', icon: 'star', size: 16 %} <span>{{ stars }}</span><span class="fc-sr">{{ 'reviews.out_of_five' | t }}</span></div>
+  <p class="t-body" style="margin:0">{{ body }}</p>
+  {%- if show_photo and image != blank -%}
+    <div class="ph" style="width:96px;height:96px;aspect-ratio:1">{% render 'product-photo', image: image, size: 96, alt: '' %}</div>
+  {%- elsif avatar -%}
+    {%- liquid
+      assign initials = ''
+      assign words = author | split: ' '
+      for word in words
+        assign first_letter = word | slice: 0
+        assign initials = initials | append: first_letter
+      endfor
+    -%}
+    <div class="dl-avatar" aria-hidden="true">{{ initials | upcase | escape }}</div>
+  {%- endif -%}
+  <p class="t-fine" style="margin:0"><b style="color:var(--ink)">{{ author | escape }}</b>
+    {%- if location != blank or verified -%}
+      <span>{% if location != blank %}, {{ location | escape }}{% endif %}{% if verified %} · {{ 'reviews.verified' | t }}{% endif %}</span>
+    {%- endif -%}
+  </p>
+  {%- if response != blank -%}
+    <div class="fc-notice fc-notice-info dl-reply" style="background:var(--canvas-alt)"><div><p class="fc-notice-title">{{ 'reviews.reply' | t }}</p><p class="fc-notice-text">{{ response }}</p></div></div>
+  {%- endif -%}
+</article>

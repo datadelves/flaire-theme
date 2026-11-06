@@ -1,0 +1,48 @@
+{%- comment -%}
+  Fonts, all from the Shopify font library through the three font pickers in Theme settings > Typography.
+  - Body font (--font-sans): the picked style plus 500, 600, bold, italic and bold italic.
+  - Heading font (--font-heading): the picked style plus bold, italic and bold italic.
+  - Engraving font (--font-engraving): the picked style only (engraving previews).
+  Defaults: Figtree (the library's closest match to Facet's Hanken Grotesk) and Cormorant italic 500
+  (the family Cormorant Garamond belongs to). The regular body and heading files are preloaded.
+  assets/tokens.css maps these families onto --font-sans, --font-heading and --font-engraving.
+{%- endcomment -%}
+{%- liquid
+  assign body_font = settings.type_body_font
+  assign body_500 = body_font | font_modify: 'weight', '500'
+  assign body_600 = body_font | font_modify: 'weight', '600'
+  assign body_bold = body_font | font_modify: 'weight', 'bold'
+  assign body_italic = body_font | font_modify: 'style', 'italic'
+  assign body_bold_italic = body_bold | font_modify: 'style', 'italic'
+
+  assign heading_font = settings.type_header_font
+  assign heading_bold = heading_font | font_modify: 'weight', 'bold'
+  assign heading_italic = heading_font | font_modify: 'style', 'italic'
+  assign heading_bold_italic = heading_bold | font_modify: 'style', 'italic'
+
+  assign accent_font = settings.type_accent_font
+-%}
+{%- unless body_font.system? %}
+  {{ body_font | font_url | preload_tag: as: 'font', type: 'font/woff2', crossorigin: true }}
+{%- endunless %}
+{%- unless heading_font.system? %}
+  {{ heading_font | font_url | preload_tag: as: 'font', type: 'font/woff2', crossorigin: true }}
+{%- endunless %}
+<style>
+  {{ body_font | font_face: font_display: 'swap' }}
+  {{ body_500 | font_face: font_display: 'swap' }}
+  {{ body_600 | font_face: font_display: 'swap' }}
+  {{ body_bold | font_face: font_display: 'swap' }}
+  {{ body_italic | font_face: font_display: 'swap' }}
+  {{ body_bold_italic | font_face: font_display: 'swap' }}
+  {{ heading_font | font_face: font_display: 'swap' }}
+  {{ heading_bold | font_face: font_display: 'swap' }}
+  {{ heading_italic | font_face: font_display: 'swap' }}
+  {{ heading_bold_italic | font_face: font_display: 'swap' }}
+  {{ accent_font | font_face: font_display: 'swap' }}
+  :root {
+    --font-body-family: {{ body_font.family }}, {{ body_font.fallback_families }};
+    --font-heading-family: {{ heading_font.family }}, {{ heading_font.fallback_families }};
+    --font-accent-family: {{ accent_font.family }}, {{ accent_font.fallback_families }};
+  }
+</style>

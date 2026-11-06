@@ -1,0 +1,68 @@
+{%- comment -%}
+  Interface colors from the theme color schemes (Theme settings > Colors).
+  Roles are fixed by Facet: scheme-1 Canvas, scheme-2 Canvas alt, scheme-3 Inverse (one dark band per page),
+  scheme-4 Glass (nav and sticky buy bar only). Sections pick a scheme id and never set colors themselves.
+  "Panel and disabled background" is the scheme's alternate ground (tiles, fields, disabled buttons).
+{%- endcomment -%}
+{%- liquid
+  for scheme in settings.color_schemes
+    case scheme.id
+      when 'scheme-1'
+        assign s1 = scheme.settings
+      when 'scheme-2'
+        assign s2 = scheme.settings
+      when 'scheme-3'
+        assign s3 = scheme.settings
+      when 'scheme-4'
+        assign s4 = scheme.settings
+    endcase
+  endfor
+  assign section_space = '120px'
+  assign section_space_tablet = '80px'
+  assign section_space_mobile = '64px'
+  if settings.section_spacing == 'compact'
+    assign section_space = '80px'
+    assign section_space_tablet = '64px'
+    assign section_space_mobile = '48px'
+  endif
+-%}
+<style>
+  :root {
+    --p-canvas: {{ s1.background }}; --p-canvas-alt: {{ s2.background }}; --p-surface-inverse: {{ s3.background }};
+    --p-ink: {{ s1.text }}; --p-ink-muted: {{ s1.text_muted }}; --p-ink-disabled: {{ s1.disabled_text }};
+    --p-on-inverse: {{ s3.text }}; --p-on-inverse-muted: {{ s3.text_muted }};
+    --p-link: {{ s1.link }}; --p-link-on-inverse: {{ s3.link }};
+    --p-action: {{ s1.solid_button_background }}; --p-on-action: {{ s1.solid_button_label }}; --p-action-pressed: {{ s1.solid_button_background_hover }};
+    --p-focus-ring: {{ s1.focus }}; --p-focus-ring-on-inverse: {{ s3.focus }};
+    --p-hairline: {{ s1.border }}; --p-control-border: {{ s1.control_border }}; --p-scrim: {{ s1.scrim }}; --p-nav-glass: {{ s4.background }};
+    --p-success: {{ s1.success }}; --p-caution: {{ s1.caution }}; --p-danger: {{ s1.danger }};
+    --inv-alt: {{ s3.disabled_background }}; --inv-line: {{ s3.border }};
+    --nav-glass: var(--p-nav-glass); --surface-inverse: var(--p-surface-inverse); --on-inverse: var(--p-on-inverse);
+    --on-inverse-muted: var(--p-on-inverse-muted); --link-on-inverse: var(--p-link-on-inverse); --focus-ring-on-inverse: var(--p-focus-ring-on-inverse);
+    --content-wide: {{ settings.page_width | default: '1260' }}px;
+    --space-section: {{ section_space }};
+  }
+  @media (max-width: 1068px) { :root { --space-section: {{ section_space_tablet }}; } }
+  @media (max-width: 734px) { :root { --space-section: {{ section_space_mobile }}; } }
+  {%- for scheme in settings.color_schemes -%}
+    {%- assign c = scheme.settings %}
+  {% if scheme.id == 'scheme-1' %}body, {% endif %}.{{ scheme.id }} {
+    --canvas: {{ c.background }}; --canvas-alt: {{ c.disabled_background }};
+    --ink: {{ c.text }}; --ink-muted: {{ c.text_muted }}; --ink-disabled: {{ c.disabled_text }};
+    --link: {{ c.link }}; --hairline: {{ c.border }}; --control-border: {{ c.control_border }}; --focus-ring: {{ c.focus }};
+    --success: {{ c.success }}; --caution: {{ c.caution }}; --danger: {{ c.danger }};
+    --field-bg: {% if scheme.id == 'scheme-1' %}{{ c.background }}{% else %}{{ c.disabled_background }}{% endif %};
+    --action: {{ c.solid_button_background }}; --on-action: {{ c.solid_button_label }}; --action-pressed: {{ c.solid_button_background_hover }}; --action-border: {{ c.solid_button_border }};
+    --btn2-bg: {{ c.secondary_button_background }}; --btn2-bg-hover: {{ c.secondary_button_background_hover }};
+    --btn2-label: {{ c.secondary_button_label }}; --btn2-label-hover: {{ c.secondary_button_label_hover }}; --btn2-border: {{ c.secondary_button_border }};
+    --btn3-label: {{ c.outline_button }}; --btn3-border: {{ c.outline_button_border }};
+    --scrim: {{ c.scrim }};
+    --shadow-card: 3px 5px 30px 0 {{ c.shadow }};
+  }
+  {%- if scheme.id == 'scheme-4' %}
+  .scheme-4 { background: var(--nav-glass); color: var(--ink); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
+  {%- else %}
+  .{{ scheme.id }} { background: {% if c.background_gradient != blank %}{{ c.background_gradient }}{% else %}var(--canvas){% endif %}; color: var(--ink); }
+  {%- endif -%}
+  {%- endfor %}
+</style>

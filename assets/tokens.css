@@ -1,0 +1,32 @@
+/* Facet tokens: spacing, type, radii, shadows, layout and product colors.
+   Interface colors come from the theme color schemes (snippets/color-schemes.liquid). */
+:root {
+
+  --metal-yellow-gold: #d4af6a; --metal-rose-gold: #deaa9b; --metal-white-gold: #d8dae0; --metal-platinum: #b8bcc4; --gem-diamond: #eaf2f9; --gem-sapphire: #1f3d8f; --gem-emerald: #0d6b4f; --gem-ruby: #a3142b; --gem-pearl: #f1ebe0; --gem-onyx: #19191b;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 120px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px; --radius-xl: 28px; --radius-pill: 980px; --radius-round: 50%;
+  --shadow-card: 3px 5px 30px 0 rgba(0,0,0,0.22); --shadow-sheet: 0 24px 64px 0 rgba(0,0,0,0.32);
+  --content-narrow: 692px; --content: 980px; --content-wide: 1260px; --nav-height: 48px;
+  /* Font families come from the Typography font pickers (snippets/font-faces.liquid sets the --font-*-family values) */
+  --font-sans: var(--font-body-family, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif);
+  --font-engraving: var(--font-accent-family, Georgia, "Times New Roman", serif);
+  --font-heading: var(--font-heading-family, var(--font-sans));
+  --space-section: 120px; --space-inset: 24px;
+  --type-hero-size: 96px; --type-hero-lh: 1; --type-hero-weight: 600; --type-hero-ls: -0.035em;
+  --type-display-size: 64px; --type-display-lh: 1.0625; --type-display-weight: 600; --type-display-ls: -0.03em;
+  --type-headline-size: 48px; --type-headline-lh: 1.083; --type-headline-weight: 600; --type-headline-ls: -0.025em;
+  --type-title-lg-size: 32px; --type-title-lg-lh: 1.125; --type-title-lg-weight: 600; --type-title-lg-ls: -0.02em;
+  --type-title-size: 24px; --type-title-lh: 1.167; --type-title-weight: 600; --type-title-ls: -0.012em;
+  --type-body-strong-size: 17px; --type-body-strong-lh: 1.47; --type-body-strong-weight: 600; --type-body-strong-ls: -0.014em;
+  --type-lead-size: 21px; --type-lead-lh: 1.38; --type-lead-weight: 400; --type-lead-ls: -0.006em;
+  --type-body-size: 17px; --type-body-lh: 1.47; --type-body-weight: 400; --type-body-ls: -0.014em;
+  --type-ui-size: 17px; --type-ui-lh: 1.2; --type-ui-weight: 500; --type-ui-ls: -0.014em;
+  --type-ui-sm-size: 14px; --type-ui-sm-lh: 1.2; --type-ui-sm-weight: 500; --type-ui-sm-ls: -0.008em;
+  --type-nav-size: 12px; --type-nav-lh: 1.33; --type-nav-weight: 400; --type-nav-ls: -0.004em;
+  --type-caption-size: 14px; --type-caption-lh: 1.43; --type-caption-weight: 400; --type-caption-ls: -0.008em;
+  --type-overline-size: 12px; --type-overline-lh: 1.33; --type-overline-weight: 600; --type-overline-ls: 0.01em;
+  --type-fine-print-size: 12px; --type-fine-print-lh: 1.33; --type-fine-print-weight: 400; --type-fine-print-ls: -0.004em;
+  --type-accent-size: 28px; --type-accent-lh: 1.1; --type-accent-weight: 500; --type-accent-ls: 0.02em;
+}
+@media (max-width: 1068px) { :root { --space-section: 80px; } }
+@media (max-width: 734px) { :root { --space-section: 64px; --space-inset: 16px; --type-hero-size: 56px; --type-display-size: 40px; --type-headline-size: 34px; --type-title-lg-size: 28px; --type-title-size: 22px; --type-body-strong-size: 17px; --type-lead-size: 19px; --type-body-size: 17px; --type-ui-size: 17px; --type-ui-sm-size: 14px; --type-nav-size: 12px; --type-caption-size: 14px; --type-overline-size: 12px; --type-fine-print-size: 12px; --type-accent-size: 28px; } }

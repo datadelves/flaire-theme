@@ -1,0 +1,164 @@
+{%- comment -%}
+  Product facts for places with no product template settings (cards, quick view, variant sheet, Bag lines,
+  menus, search): derived from standard product data, plus the optional metafields a merchant names in
+  Theme settings > Product cards and quick view (namespace.key). With no metafield set, every field falls
+  back to standard data or prints nothing. Output is plain text; capture it and strip.
+
+  Accepts:
+  - product {Object}
+  - field {String}
+    kind        ring | band | pendant | chain | earring | bracelet (specimen art, scale view), from the product
+                type, then the tags; blank when nothing matches
+    guide       size guide tab: rings | bracelets | necklaces, from the kind; blank for earrings and other goods
+    engravable  true | false: the product carries the tag in settings.engraving_tag (empty setting: every product)
+    material    card material line: settings.product_material_metafield, else the first two Finish values
+    badge       settings.product_badge_metafield, else Sale (compare-at, when sale is true), else New
+                (settings.badge_new_auto and created within settings.badge_new_days)
+    summary     settings.product_summary_metafield, else the description cut to `words` words
+    stone       settings.product_stone_metafield with settings.product_carat_metafield ("Diamond, 0.50 carat")
+  - fallback {Boolean} material: false prints only the metafield (default true)
+  - sale {Boolean} badge: include the Sale badge (default false)
+  - words {Number} summary length (default 18)
+
+  Usage:
+  {% capture kind %}{% render 'product-data', product: product, field: 'kind' %}{% endcapture %}
+  {% assign kind = kind | strip | default: 'ring' %}
+{%- endcomment -%}
+{%- liquid
+  assign out = ''
+  assign mf_path = ''
+  case field
+    when 'material'
+      assign mf_path = settings.product_material_metafield
+    when 'badge'
+      assign mf_path = settings.product_badge_metafield
+    when 'summary'
+      assign mf_path = settings.product_summary_metafield
+    when 'stone'
+      assign mf_path = settings.product_stone_metafield
+  endcase
+  assign mf_path = mf_path | strip
+  if mf_path contains '.'
+    assign mf_ns = mf_path | split: '.' | first
+    assign mf_key = mf_path | remove_first: mf_ns | remove_first: '.'
+    assign mf = product.metafields[mf_ns][mf_key]
+    if mf != blank
+      if mf.type == 'single_line_text_field' or mf.type == 'multi_line_text_field'
+        assign out = mf.value | strip
+      else
+        assign out = mf | metafield_text | strip
+      endif
+    endif
+  endif
+
+  case field
+    when 'kind', 'guide'
+      assign type_text = product.type | downcase
+      assign tag_text = product.tags | join: ',' | downcase | prepend: ',' | append: ','
+      for pass in (1..2)
+        if pass == 2
+          assign type_text = tag_text
+        endif
+        if type_text contains 'earring' or type_text contains 'stud' or type_text contains 'hoop'
+          assign out = 'earring'
+        elsif type_text contains 'bracelet' or type_text contains 'bangle' or type_text contains 'cuff'
+          assign out = 'bracelet'
+        elsif type_text contains 'necklace' or type_text contains 'pendant'
+          assign out = 'pendant'
+          if tag_text contains ',chain,' or tag_text contains ',chains,'
+            assign out = 'chain'
+          endif
+        elsif type_text contains 'chain'
+          assign out = 'chain'
+        elsif type_text contains 'band'
+          assign out = 'band'
+        elsif type_text contains 'ring'
+          assign out = 'ring'
+          if tag_text contains ',band,' or tag_text contains ',bands,'
+            assign out = 'band'
+          endif
+        endif
+        if out != blank
+          break
+        endif
+      endfor
+      if field == 'guide'
+        case out
+          when 'ring', 'band'
+            assign out = 'rings'
+          when 'bracelet'
+            assign out = 'bracelets'
+          when 'pendant', 'chain'
+            assign out = 'necklaces'
+          else
+            assign out = ''
+        endcase
+      endif
+
+    when 'engravable'
+      assign engraving_tag = settings.engraving_tag | strip | downcase
+      assign out = 'false'
+      if engraving_tag == blank
+        assign out = 'true'
+      else
+        for tag in product.tags
+          assign tag_down = tag | downcase
+          if tag_down == engraving_tag
+            assign out = 'true'
+            break
+          endif
+        endfor
+      endif
+
+    when 'material'
+      if out == blank and fallback != false
+        for option in product.options_with_values
+          assign option_name = option.name | downcase
+          if option_name == 'finish' or option_name == 'metal'
+            assign out = option.values | map: 'name' | slice: 0, 2 | join: ', '
+            break
+          endif
+        endfor
+      endif
+
+    when 'badge'
+      if out == blank and sale and settings.show_compare_at and product.compare_at_price > product.price
+        assign out = 'products.badges.sale' | t
+      endif
+      if out == blank and settings.badge_new_auto
+        assign age_seconds = 'now' | date: '%s' | minus: 0
+        assign created_seconds = product.created_at | date: '%s' | minus: 0
+        assign age_days = age_seconds | minus: created_seconds | divided_by: 86400
+        if age_days <= settings.badge_new_days
+          assign out = 'products.product.new' | t
+        endif
+      endif
+
+    when 'summary'
+      if out == blank
+        assign word_count = words | default: 18
+        assign out = product.description | strip_html | truncatewords: word_count | default: '' | strip
+      endif
+
+    when 'stone'
+      if out != blank
+        assign carat_path = settings.product_carat_metafield | strip
+        if carat_path contains '.'
+          assign carat_ns = carat_path | split: '.' | first
+          assign carat_key = carat_path | remove_first: carat_ns | remove_first: '.'
+          assign carat_mf = product.metafields[carat_ns][carat_key]
+          assign carat = ''
+          if carat_mf != blank
+            assign carat = carat_mf | metafield_text | strip
+          endif
+          if carat != blank
+            assign carat_text = 'products.product.carat' | t: carat: carat
+            assign out = out | append: ', ' | append: carat_text
+          endif
+        endif
+      endif
+  endcase
+  if product != blank
+    echo out
+  endif
+-%}

@@ -1,0 +1,410 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign value_block = section.blocks | where: 'type', 'value' | first
+  assign steps_block = section.blocks | where: 'type', 'instructions' | first
+
+  assign show_balance = true
+  assign show_expiry = true
+  assign note = ''
+  if value_block
+    assign show_balance = value_block.settings.show_balance
+    assign show_expiry = value_block.settings.show_expiry
+    assign note = value_block.settings.note
+  endif
+
+  comment
+    The theme editor previews this template without a real card: fall back to the prototype's sample.
+  endcomment
+  if gift_card
+    assign gc_value = gift_card.initial_value | money_without_trailing_zeros
+    assign gc_balance = gift_card.balance | money_without_trailing_zeros
+    assign gc_partial = false
+    if gift_card.balance != gift_card.initial_value
+      assign gc_partial = true
+    endif
+    assign gc_expired = gift_card.expired
+    assign gc_disabled = false
+    if gift_card.enabled == false
+      assign gc_disabled = true
+    endif
+    assign gc_code = gift_card.code | format_code
+    assign gc_masked = 'XXXX XXXX XXXX ' | append: gift_card.last_four_characters
+    assign gc_qr = gift_card.qr_identifier
+    assign gc_pass = gift_card.pass_url
+    assign gc_expires = gift_card.expires_on
+  else
+    assign gc_value = 25000 | money_without_trailing_zeros
+    assign gc_partial = false
+    assign gc_expired = false
+    assign gc_disabled = false
+    assign gc_code = 'F4K2 9QLM 7XTD'
+    assign gc_qr = ''
+    assign gc_pass = ''
+    assign gc_expires = nil
+  endif
+  assign gc_off = false
+  if gc_expired or gc_disabled
+    assign gc_off = true
+  endif
+
+  if gc_expired
+    if gc_expires
+      assign expiry_date = gc_expires | date: '%B %-d'
+      assign lead = 'gift_cards.expired_on' | t: date: expiry_date
+    else
+      assign lead = 'gift_cards.expired' | t
+    endif
+  elsif gc_disabled
+    assign lead = 'gift_cards.disabled' | t
+  else
+    assign lead = 'gift_cards.lead' | t
+  endif
+
+  assign copy_label = section.settings.copy_label
+  if copy_label == blank
+    assign copy_label = 'gift_cards.copy' | t
+  endif
+-%}
+<div class="band tight {{ scheme }}" data-section="gift-card-main" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="wrap-n center" style="text-align:center">
+    {%- comment -%} The store's logo (Theme settings > Brand), else shop.name, links home. {%- endcomment -%}
+    <p class="gc-brand"><a class="fc-nav-brand" href="{{ routes.root_url }}">
+      {%- if settings.logo != blank -%}
+        {%- liquid
+          assign logo_w = settings.logo_width | default: 96
+          assign logo_h = logo_w | divided_by: settings.logo.aspect_ratio | round
+          assign logo_w2 = logo_w | times: 2
+          assign logo_widths = logo_w | append: ',' | append: logo_w2
+          assign logo_sizes = logo_w | append: 'px'
+        -%}
+        {{- settings.logo | image_url: width: logo_w2 | image_tag: width: logo_w, height: logo_h, widths: logo_widths, sizes: logo_sizes, alt: shop.name, style: 'display:block;height:auto;margin:0 auto' -}}
+      {%- else -%}
+        {{- shop.name | escape -}}
+      {%- endif -%}
+    </a></p>
+    {%- if section.settings.headline != blank %}<h1 class="t-headline">{{ section.settings.headline | escape }}</h1>{% endif -%}
+    <p class="t-lead" style="margin-top:8px">{{ lead }}</p>
+
+    <div class="stack" style="margin:40px 0;align-items:center">
+      <div class="dl-gc" style="background:var(--canvas-alt);border-radius:var(--radius-xl);padding:40px 32px;width:100%"{% if value_block %} {{ value_block.shopify_attributes }}{% endif %}>
+        <p class="t-overline">{{ 'gift_cards.value' | t }}</p>
+        <p class="t-hero" style="font-size:72px;margin:4px 0 24px">{{ gc_value }}</p>
+        {%- if show_balance and gc_partial and gc_off == false -%}
+          <p class="t-lead" style="margin:-16px 0 24px">{{ 'gift_cards.remaining' | t: amount: gc_balance }}</p>
+        {%- endif -%}
+        <div class="dl-gc-code" style="background:var(--canvas){% if gc_off %};opacity:.55{% endif %}" data-gc-code tabindex="0" aria-label="{{ 'gift_cards.code' | t }}">
+          {%- if gc_off %}{{ gc_masked }}{% else %}{{ gc_code }}{% endif -%}
+        </div>
+        <div class="inline center" style="margin-top:16px">
+          {%- unless gc_off -%}
+            {%- capture copy_attrs %}data-act="gc-copy"{% if section.settings.copied_label != blank %} data-copied-label="{{ section.settings.copied_label | escape }}"{% endif %}{% endcapture -%}
+            {%- render 'button', label: copy_label, variant: 'secondary', icon: 'copy', class: 'js-only', attrs: copy_attrs -%}
+          {%- endunless -%}
+        </div>
+        <p class="fc-field-msg" data-gc-msg role="status" style="justify-content:center;margin-top:16px"></p>
+        {%- if show_expiry and gc_expires and gc_off == false -%}
+          {%- assign expires_date = gc_expires | date: '%B %-d, %Y' -%}
+          <p class="t-fine" style="margin:8px 0 0">{{ 'gift_cards.expires_on' | t: date: expires_date }}</p>
+        {%- endif -%}
+        {%- if note != blank %}<p class="t-fine" style="margin:8px 0 0">{{ note | escape }}</p>{% endif -%}
+      </div>
+      {%- if section.settings.show_qr and gc_off == false and gc_qr != blank -%}
+        <div class="dl-qr js-only" role="img" aria-label="{{ 'gift_cards.qr' | t }}" data-qr="{{ gc_qr }}"></div>
+      {%- elsif section.settings.show_qr and gc_off == false and request.design_mode -%}
+        <div class="dl-qr" role="img" aria-label="{{ 'gift_cards.qr' | t }}"></div>
+      {%- endif -%}
+    </div>
+
+    {%- if gc_off -%}
+      {%- liquid
+        if gc_expired
+          assign off_title = 'gift_cards.expired_title' | t
+        else
+          assign off_title = 'gift_cards.disabled_title' | t
+        endif
+        assign off_text = 'gift_cards.help_text' | t
+      -%}
+      {%- render 'notice', tone: 'caution', title: off_title, text: off_text -%}
+    {%- else -%}
+      <div class="inline center" style="gap:20px">
+        {%- if section.settings.use_label != blank -%}
+          {%- render 'button', label: section.settings.use_label, size: 'lg', url: routes.all_products_collection_url -%}
+        {%- endif -%}
+        {%- if section.settings.show_wallet and gc_pass != blank -%}
+          {%- comment -%} Apple's badge, served by Shopify; pass_url is on a Shopify domain, so the link is nofollow. {%- endcomment -%}
+          <a class="gc-wallet" href="{{ gc_pass }}" rel="nofollow">
+            <img src="{{ 'gift-card/add-to-apple-wallet.svg' | shopify_asset_url }}" width="120" height="40" alt="{{ 'templates.gift_card.apple_wallet' | t | escape }}" loading="lazy">
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if steps_block -%}
+      {%- assign steps_text = steps_block.settings.text | strip_html | strip -%}
+      <div {{ steps_block.shopify_attributes }}>
+        {%- if steps_block.settings.title != blank %}<h2 class="fc-sr">{{ steps_block.settings.title | escape }}</h2>{% endif -%}
+        {%- if steps_block.settings.image != blank -%}
+          <div style="max-width:420px;margin:32px auto 0">
+            {{- steps_block.settings.image | image_url: width: 840 | image_tag: loading: 'lazy', widths: '420, 840', sizes: '420px', alt: '', style: 'display:block;width:100%;height:auto;border-radius:var(--radius-lg)' -}}
+          </div>
+        {%- endif -%}
+        {%- if steps_text != blank -%}
+          <div class="t-caption dl-gc-steps" style="text-align:left;max-width:420px;margin:32px auto 0">{{ steps_block.settings.text }}</div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'support' and block.settings.text != blank -%}
+        <p class="t-caption inline center" style="margin-top:24px;gap:8px" {{ block.shopify_attributes }}>
+          {%- render 'icon', icon: block.settings.icon, size: 20 -%}
+          {%- if block.settings.link != blank -%}
+            <a href="{{ block.settings.link }}">{{ block.settings.text | escape }}</a>
+          {%- else -%}
+            <span>{{ block.settings.text | escape }}</span>
+          {%- endif -%}
+        </p>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</div>
+
+{%- if section.settings.show_qr and gc_off == false and gc_qr != blank -%}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.querySelector('[data-qr]');
+      if (!el || !window.QRCode) return;
+      el.classList.add('has-qr');
+      new QRCode(el, { text: el.getAttribute('data-qr'), width: 144, height: 144, colorDark: '#000000', colorLight: '#ffffff', imageAltText: el.getAttribute('aria-label') });
+    });
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .dl-gift-card-main .dl-gc-steps ol, .dl-gift-card-main .dl-gc-steps ul { margin: 0; padding-left: 20px; }
+  .dl-gift-card-main .dl-gc-steps p { margin: 0; }
+  /* Shopify's qrcode.js draws into the box; the prototype's checker pattern is only its placeholder.
+     A white quiet zone keeps the code scannable in both presets. */
+  .dl-gift-card-main .dl-qr.has-qr { background: #fff; padding: 8px; }
+  .dl-gift-card-main .dl-qr.has-qr img, .dl-gift-card-main .dl-qr.has-qr canvas { display: block; width: 100%; height: 100%; }
+  .dl-gift-card-main .gc-brand { margin: 0 0 var(--space-8); }
+  .dl-gift-card-main .gc-brand .fc-nav-brand { display: inline-flex; min-height: 44px; align-items: center; }
+  .dl-gift-card-main .gc-wallet { display: inline-flex; border-radius: 8px; }
+  .dl-gift-card-main .gc-wallet img { display: block; width: 120px; height: 40px; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift card",
+  "tag": "section",
+  "class": "dl-section dl-gift-card-main",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Your gift card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_qr",
+      "label": "Show QR code",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_wallet",
+      "label": "Show Apple Wallet button",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "use_label",
+      "label": "Use label",
+      "default": "Shop now"
+    },
+    {
+      "type": "text",
+      "id": "copy_label",
+      "label": "Copy label",
+      "default": "Copy code"
+    },
+    {
+      "type": "text",
+      "id": "copied_label",
+      "label": "Copied label",
+      "default": "Copied"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "value",
+      "name": "Value",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_balance",
+          "label": "Show balance",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_expiry",
+          "label": "Show expiry",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "default": "Use at checkout."
+        }
+      ]
+    },
+    {
+      "type": "instructions",
+      "name": "Instructions",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<ol><li>Add pieces to your Bag.</li><li>Enter the code at checkout.</li></ol>"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "How to use"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    },
+    {
+      "type": "support",
+      "name": "Support",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "envelope-simple",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Questions? Write to us."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "gift_card"
+    ]
+  },
+  "limit": 1,
+  "default": {
+    "blocks": [
+      {
+        "type": "value",
+        "settings": {
+          "show_balance": true,
+          "show_expiry": true,
+          "note": ""
+        }
+      },
+      {
+        "type": "instructions"
+      }
+    ]
+  }
+}
+{% endschema %}

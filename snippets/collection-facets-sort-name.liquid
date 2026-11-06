@@ -1,0 +1,18 @@
+{%- comment -%}
+  Prototype label for a Shopify sort_by value (falls back to Shopify's own option name).
+
+  Accepts:
+  - value {String} sort_by value
+  - options {Array} collection.sort_options or search.sort_options (fallback names)
+{%- endcomment -%}
+{%- case value -%}
+  {%- when 'manual' -%}{{ 'products.facets.sort_featured' | t }}
+  {%- when 'best-selling' -%}{{ 'products.facets.sort_best_selling' | t }}
+  {%- when 'created-descending' -%}{{ 'products.facets.sort_newest' | t }}
+  {%- when 'price-ascending' -%}{{ 'products.facets.sort_price_ascending' | t }}
+  {%- when 'price-descending' -%}{{ 'products.facets.sort_price_descending' | t }}
+  {%- when 'title-ascending' -%}{{ 'products.facets.sort_title_ascending' | t }}
+  {%- when 'relevance' -%}{{ 'products.facets.sort_relevance' | t }}
+  {%- else -%}
+    {%- for option in options -%}{%- if option.value == value -%}{{ option.name | escape }}{%- endif -%}{%- endfor -%}
+{%- endcase -%}

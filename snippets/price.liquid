@@ -1,0 +1,66 @@
+{%- comment -%}
+  Facet Price: amount with From, Was (compare-at), unit price and a note. JS updates the
+  [data-price-*] parts when the variant changes.
+
+  Accepts:
+  - product {Object}
+  - variant {Object} show this variant's price (default: none, product price range)
+  - lg {Boolean} product-page size
+  - note {String} small line under the price (e.g. financing)
+  - show_from {Boolean} force or suppress "From" (default: product.price_varies when no variant)
+  - show_unit {Boolean} force or suppress the unit price (default: settings.show_unit_price)
+  - show_compare {Boolean} force or suppress the Was price (default: settings.show_compare_at); when
+    passed, the kernel keeps the choice as the variant changes (data-hide-compare, data-hide-unit)
+{%- endcomment -%}
+{%- liquid
+  if variant
+    assign amount = variant.price
+    assign compare = variant.compare_at_price
+    assign unit_source = variant
+    assign from = false
+  else
+    assign amount = product.price
+    assign compare = product.compare_at_price
+    assign unit_source = product.selected_or_first_available_variant
+    assign from = product.price_varies
+  endif
+  if show_from == false
+    assign from = false
+  elsif show_from == true
+    assign from = true
+  endif
+  assign unit_on = settings.show_unit_price
+  if show_unit == true or show_unit == false
+    assign unit_on = show_unit
+  endif
+  assign compare_on = settings.show_compare_at
+  if show_compare == true or show_compare == false
+    assign compare_on = show_compare
+  endif
+  assign on_sale = false
+  if compare_on and compare > amount
+    assign on_sale = true
+  endif
+-%}
+<div class="fc-price{% if lg %} fc-price-lg{% endif %}{% if on_sale %} fc-price-sale{% endif %}" data-price{% if show_compare == false %} data-hide-compare{% endif %}{% if show_unit == false %} data-hide-unit{% endif %}>
+  <div class="fc-price-main">
+    {%- if from %}<span class="fc-price-from">{{ 'general.from' | t }} </span>{% endif -%}
+    <span class="fc-price-amount" data-price-amount>{{ amount | money }}</span>
+    <s class="fc-price-was" data-price-was{% unless on_sale %} hidden{% endunless %}><span class="fc-sr">{{ 'accessibility.was' | t }} </span><span data-price-was-amount>{% if on_sale %}{{ compare | money }}{% endif %}</span></s>
+  </div>
+  {%- if unit_on and unit_source.unit_price_measurement -%}
+    {%- liquid
+      assign ref = unit_source.unit_price_measurement
+      assign ref_value = ''
+      if ref.reference_value != 1
+        assign ref_value = ref.reference_value
+      endif
+    -%}
+    <div class="fc-price-unit" data-price-unit>{{ unit_source.unit_price | money }} / {% if ref_value != blank %}{{ ref_value }} {% else %}1 {% endif %}{{ ref.reference_unit }}</div>
+  {%- else -%}
+    <div class="fc-price-unit" data-price-unit hidden></div>
+  {%- endif -%}
+  {%- if note != blank -%}
+    <div class="fc-price-note" data-price-note>{{ note }}</div>
+  {%- endif -%}
+</div>

@@ -1,0 +1,16 @@
+{%- comment -%}
+  One header for every drawer, sheet and dialog: title on the left, close on the right.
+
+  Accepts:
+  - title {String}
+  - close_label {String} (default "Close")
+  - id {String} heading id, referenced by the panel's aria-labelledby
+  - initial {Boolean} focus the close button when the overlay opens (otherwise the heading)
+{%- endcomment -%}
+{%- liquid
+  assign close_text = close_label
+  if close_text == blank
+    assign close_text = 'general.close' | t
+  endif
+-%}
+<div class="hd"><h2 id="{{ id | default: 'ov-title' }}" tabindex="-1">{{ title }}</h2><button type="button" class="fc-btn fc-btn-icon" aria-label="{{ close_text | escape }}" data-act="close"{% if initial %} data-initial{% endif %}>{% render 'icon', icon: 'x', size: 24 %}</button></div>

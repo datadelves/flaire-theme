@@ -1,0 +1,576 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "gallery_layout": "stacked",
+        "enable_zoom": true,
+        "gallery_sticky": true,
+        "show_sticky_bar": true,
+        "show_breadcrumbs": true,
+        "show_share": false
+      },
+      "blocks": {
+        "badge-1": {
+          "type": "badge",
+          "settings": {
+            "tone": "accent"
+          }
+        },
+        "title-1": {
+          "type": "title",
+          "settings": {
+            "size": "headline",
+            "show_vendor": false,
+            "show_sku_top": false
+          }
+        },
+        "lead-1": {
+          "type": "lead",
+          "settings": {
+            "max_words": 18,
+            "muted": true
+          }
+        },
+        "price-1": {
+          "type": "price",
+          "settings": {
+            "show_compare_at": true,
+            "show_unit_price": true,
+            "financing_min": 600,
+            "show_installments": true,
+            "show_tax_note": true
+          }
+        },
+        "variant-picker-1": {
+          "type": "variant-picker",
+          "settings": {
+            "finish_style": "swatch",
+            "size_style": "chips",
+            "show_size_guide": true,
+            "use_variant_sheet": true
+          }
+        },
+        "engraving-1": {
+          "type": "engraving",
+          "settings": {
+            "max_length": 16,
+            "label": "Engraving (optional)",
+            "final_sale": "Engraved pieces are final sale."
+          }
+        },
+        "purchase-options-1": {
+          "type": "purchase-options",
+          "settings": {
+            "one_time_label": "One-time purchase",
+            "plan_heading": "Add a care plan",
+            "show_savings": true
+          }
+        },
+        "quantity-1": {
+          "type": "quantity",
+          "settings": {
+            "min": 1,
+            "max": 5,
+            "show": true
+          }
+        },
+        "buy-buttons-1": {
+          "type": "buy-buttons",
+          "settings": {
+            "label": "Add to Bag",
+            "show_dynamic_checkout": true,
+            "helper": "Select a size"
+          }
+        },
+        "availability-1": {
+          "type": "availability",
+          "settings": {
+            "show_stock": true,
+            "show_pickup": true
+          }
+        },
+        "gift-note-1": {
+          "type": "gift-note",
+          "settings": {
+            "title": "Gift notes",
+            "text": "Add a note at checkout.",
+            "show": true
+          }
+        },
+        "share-1": {
+          "type": "share",
+          "settings": {
+            "label": "Share",
+            "copy_link": true,
+            "native": true
+          }
+        }
+      },
+      "block_order": [
+        "badge-1",
+        "title-1",
+        "lead-1",
+        "price-1",
+        "variant-picker-1",
+        "engraving-1",
+        "purchase-options-1",
+        "quantity-1",
+        "buy-buttons-1",
+        "availability-1",
+        "gift-note-1",
+        "share-1"
+      ]
+    },
+    "product-details-tiles": {
+      "type": "product-details-tiles",
+      "settings": {
+        "eyebrow": "Details",
+        "headline": "Look closer",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "use_media": false
+      },
+      "blocks": {
+        "detail-1": {
+          "type": "detail",
+          "settings": {
+            "title": "Low setting",
+            "text": "The stone sits low and catches light from every side.",
+            "image_alt": ""
+          }
+        },
+        "detail-2": {
+          "type": "detail",
+          "settings": {
+            "title": "Comfort-fit band",
+            "text": "Rounded inside, so it slides over the knuckle.",
+            "image_alt": ""
+          }
+        },
+        "hallmark-1": {
+          "type": "hallmark",
+          "settings": {
+            "title": "Hallmarked",
+            "text": "Stamped inside the band."
+          }
+        }
+      },
+      "block_order": [
+        "detail-1",
+        "detail-2",
+        "hallmark-1"
+      ]
+    },
+    "product-specs": {
+      "type": "product-specs",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Specifications",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "show_certificate": true
+      },
+      "blocks": {
+        "spec-row-1": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Metal",
+            "value": "Yellow Gold: 18-karat yellow gold; Rose Gold: 18-karat rose gold; White Gold: 18-karat white gold; Platinum: Platinum 950",
+            "hide_if_empty": true
+          }
+        },
+        "spec-row-2": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Finish",
+            "value": "Polished",
+            "hide_if_empty": true
+          }
+        },
+        "spec-row-3": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Hallmark",
+            "value": "{hallmark}",
+            "hide_if_empty": true
+          }
+        },
+        "spec-row-4": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Made in",
+            "value": "",
+            "hide_if_empty": true
+          }
+        },
+        "spec-row-5": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Carat",
+            "value": "",
+            "hide_if_empty": true,
+            "column": "group"
+          }
+        },
+        "spec-row-6": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Color",
+            "value": "",
+            "hide_if_empty": true,
+            "column": "group"
+          }
+        },
+        "spec-row-7": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Clarity",
+            "value": "",
+            "hide_if_empty": true,
+            "column": "group"
+          }
+        },
+        "spec-row-8": {
+          "type": "spec-row",
+          "settings": {
+            "label": "Cut",
+            "value": "",
+            "hide_if_empty": true,
+            "column": "group"
+          }
+        },
+        "stone-group-1": {
+          "type": "stone-group",
+          "settings": {
+            "title": "",
+            "rows": "",
+            "open": true
+          }
+        }
+      },
+      "block_order": [
+        "spec-row-1",
+        "spec-row-2",
+        "spec-row-3",
+        "spec-row-4",
+        "stone-group-1",
+        "spec-row-5",
+        "spec-row-6",
+        "spec-row-7",
+        "spec-row-8"
+      ]
+    },
+    "product-on-scale": {
+      "type": "product-on-scale",
+      "settings": {
+        "eyebrow": "Fit",
+        "headline": "On scale",
+        "sub": "Drawn at 1:1 for a size 6.5.",
+        "color_scheme": "scheme-2",
+        "image_alt": "",
+        "mode": "drawing"
+      },
+      "blocks": {
+        "scale-view-1": {
+          "type": "scale-view",
+          "settings": {
+            "body_part": "finger",
+            "caption": "Drawn at 1:1 for a size 6.5."
+          }
+        },
+        "scale-view-2": {
+          "type": "scale-view",
+          "settings": {
+            "body_part": "ear",
+            "caption": "Drawn at 1:1 on an average earlobe."
+          }
+        },
+        "scale-view-3": {
+          "type": "scale-view",
+          "settings": {
+            "body_part": "neck",
+            "caption": "Drawn at 1:1 against a collarbone."
+          }
+        },
+        "scale-view-4": {
+          "type": "scale-view",
+          "settings": {
+            "body_part": "wrist",
+            "caption": "Drawn at 1:1 on a 15 cm wrist."
+          }
+        },
+        "measurement-1": {
+          "type": "measurement",
+          "settings": {
+            "label": "Band width",
+            "value": "2.1 mm",
+            "note": ""
+          }
+        },
+        "measurement-2": {
+          "type": "measurement",
+          "settings": {
+            "label": "Stone width",
+            "value": "5.1 mm",
+            "note": ""
+          }
+        },
+        "measurement-3": {
+          "type": "measurement",
+          "settings": {
+            "label": "Height off finger",
+            "value": "4.2 mm",
+            "note": ""
+          }
+        },
+        "fit-tip-1": {
+          "type": "fit-tip",
+          "settings": {
+            "title": "Between sizes?",
+            "text": "Choose the larger size.",
+            "tone": "info"
+          }
+        }
+      },
+      "block_order": [
+        "scale-view-1",
+        "scale-view-2",
+        "scale-view-3",
+        "scale-view-4",
+        "measurement-1",
+        "measurement-2",
+        "measurement-3",
+        "fit-tip-1"
+      ]
+    },
+    "product-care-tabs": {
+      "type": "product-care-tabs",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Details",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "single_open": true,
+        "use_description": true,
+        "description_title": "Materials and craft"
+      },
+      "blocks": {
+        "tab-1": {
+          "type": "tab",
+          "settings": {
+            "title": "Care",
+            "body": "<p>Remove before swimming or sleeping. Clean with warm water, mild soap and a soft brush.</p>"
+          }
+        },
+        "tab-2": {
+          "type": "tab",
+          "settings": {
+            "title": "Delivery and returns",
+            "body": "<p>Shipping options and costs are shown at checkout. See our refund policy for returns.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "tab-1",
+        "tab-2"
+      ]
+    },
+    "product-fulfilment": {
+      "type": "product-fulfilment",
+      "settings": {
+        "eyebrow": "Delivery",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "show_pickup_stores": true
+      },
+      "blocks": {
+        "delivery-1": {
+          "type": "delivery",
+          "settings": {
+            "icon": "truck",
+            "title": "Delivery",
+            "text": "Shipping options and costs are shown at checkout."
+          }
+        },
+        "pickup-1": {
+          "type": "pickup",
+          "settings": {
+            "title": "Pickup in store",
+            "fallback": "Not available for pickup today.",
+            "show_check_link": true
+          }
+        },
+        "gifting-1": {
+          "type": "gifting",
+          "settings": {
+            "title": "Gifting",
+            "text": "Add a handwritten note at checkout."
+          }
+        }
+      },
+      "block_order": [
+        "delivery-1",
+        "pickup-1",
+        "gifting-1"
+      ]
+    },
+    "product-reviews": {
+      "type": "product-reviews",
+      "settings": {
+        "eyebrow": "Reviews",
+        "headline": "What wearers say",
+        "sub": "",
+        "color_scheme": "scheme-1"
+      },
+      "blocks": {
+        "summary-1": {
+          "type": "summary",
+          "settings": {
+            "label": "average rating"
+          }
+        }
+      },
+      "block_order": [
+        "summary-1"
+      ]
+    },
+    "product-recommendations": {
+      "type": "product-recommendations",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Complete the set",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "intent": "related",
+        "limit": 4,
+        "show_filters": true
+      },
+      "blocks": {
+        "filter-chip-1": {
+          "type": "filter-chip",
+          "settings": {
+            "label": "Rings",
+            "product_type": "Rings",
+            "default": false
+          }
+        },
+        "filter-chip-2": {
+          "type": "filter-chip",
+          "settings": {
+            "label": "Earrings",
+            "product_type": "Earrings",
+            "default": false
+          }
+        },
+        "filter-chip-3": {
+          "type": "filter-chip",
+          "settings": {
+            "label": "Necklaces",
+            "product_type": "Necklaces",
+            "default": false
+          }
+        },
+        "filter-chip-4": {
+          "type": "filter-chip",
+          "settings": {
+            "label": "Bracelets",
+            "product_type": "Bracelets",
+            "default": false
+          }
+        }
+      },
+      "block_order": [
+        "filter-chip-1",
+        "filter-chip-2",
+        "filter-chip-3",
+        "filter-chip-4"
+      ]
+    },
+    "product-recently-viewed": {
+      "type": "product-recently-viewed",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Recently viewed",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "limit": 4
+      },
+      "blocks": {
+        "card-options-1": {
+          "type": "card-options",
+          "settings": {
+            "show_price": true,
+            "show_material": true,
+            "show_quick_view": true
+          }
+        },
+        "empty-link-1": {
+          "type": "empty-link",
+          "settings": {
+            "label": "Shop new arrivals",
+            "show": true
+          }
+        },
+        "clear-1": {
+          "type": "clear",
+          "settings": {
+            "label": "Clear history",
+            "show": true,
+            "confirm": "History cleared"
+          }
+        }
+      },
+      "block_order": [
+        "card-options-1",
+        "empty-link-1",
+        "clear-1"
+      ]
+    },
+    "product-closing-tile": {
+      "type": "product-closing-tile",
+      "settings": {
+        "eyebrow": "Engrave",
+        "headline": "Engraved by hand",
+        "sub": "Choose up to 16 characters before you add to Bag.",
+        "color_scheme": "scheme-3",
+        "cta_label": "",
+        "image_alt": ""
+      },
+      "blocks": {
+        "action-1": {
+          "type": "action",
+          "settings": {
+            "label": "Engrave",
+            "style": "primary"
+          }
+        },
+        "example-1": {
+          "type": "example",
+          "settings": {
+            "text": "Always, M.",
+            "metal": "rose-gold",
+            "show": true
+          }
+        }
+      },
+      "block_order": [
+        "action-1",
+        "example-1"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "product-details-tiles",
+    "product-specs",
+    "product-on-scale",
+    "product-care-tabs",
+    "product-fulfilment",
+    "product-reviews",
+    "product-recommendations",
+    "product-recently-viewed",
+    "product-closing-tile"
+  ]
+}

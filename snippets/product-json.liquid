@@ -1,0 +1,102 @@
+{%- comment -%}
+  The product data the kernel's product-form reads (one per configurator root).
+  Option values are matched by name. Finish images carry src/srcset so a finish change can swap every photo;
+  products without a Finish option carry each variant's image instead ("img"). "needText" is the prompt for
+  the first non-finish option (size, length or the option's own name). "unit" matches snippets/price.
+
+  Accepts:
+  - product {Object}
+  - section {Object} the rendering section (financing note settings)
+  - financing_note {String} with {amount}
+  - financing_min {Number} cents
+{%- endcomment -%}
+{%- liquid
+  assign finish_index = -1
+  assign size_index = -1
+  for option in product.options_with_values
+    assign option_name = option.name | downcase
+    if option_name == 'finish' or option_name == 'metal'
+      assign finish_index = forloop.index0
+    elsif size_index == -1
+      assign size_index = forloop.index0
+      if option_name contains 'ring' or option_name contains 'size'
+        assign need_text = 'products.product.select_size' | t
+      elsif option_name contains 'length' or option_name contains 'chain'
+        assign need_text = 'products.product.select_length' | t
+      else
+        assign need_text = 'products.product.select_option' | t: option: option_name
+      endif
+    endif
+  endfor
+  capture engravable_text
+    render 'product-data', product: product, field: 'engravable'
+  endcapture
+  assign engravable = false
+  if engravable_text contains 'true'
+    assign engravable = true
+  endif
+  capture kind
+    render 'product-data', product: product, field: 'kind'
+  endcapture
+  assign kind = kind | strip | default: 'ring'
+-%}
+<script type="application/json" data-product-json>
+  {
+    "id": {{ product.id }},
+    "handle": {{ product.handle | json }},
+    "url": {{ product.url | json }},
+    "title": {{ product.title | json }},
+    "available": {{ product.available | json }},
+    "kind": {{ kind | json }},
+    "options": {{ product.options | json }},
+    "finishIndex": {{ finish_index }},
+    "sizeIndex": {{ size_index }},
+    "engravable": {{ engravable | json }},
+    "financingNote": {{ financing_note | json }},
+    "financingMin": {{ financing_min | default: 60000 }},
+    "needText": {{ need_text | default: '' | json }},
+    "variants": [
+      {%- for variant in product.variants -%}
+        {%- liquid
+          assign qty = 'null'
+          if variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny'
+            assign qty = variant.inventory_quantity | default: 'null'
+          endif
+        -%}
+        {
+          "id": {{ variant.id }},
+          "options": {{ variant.options | json }},
+          "available": {{ variant.available | json }},
+          "price": {{ variant.price }},
+          "compare": {{ variant.compare_at_price | default: 0 }},
+          "sku": {{ variant.sku | json }},
+          "qty": {{ qty }},
+          "unit": {% if variant.unit_price_measurement %}{% capture unit_text %}{{ variant.unit_price | money }} / {{ variant.unit_price_measurement.reference_value }} {{ variant.unit_price_measurement.reference_unit }}{% endcapture %}{{ unit_text | json }}{% else %}null{% endif %},
+          "plans": { {%- for allocation in variant.selling_plan_allocations -%}"{{ allocation.selling_plan.id }}": {{ allocation.price }}{% unless forloop.last %},{% endunless %}{%- endfor -%} },
+          "media": {{ variant.featured_media.id | default: 0 }}{% if finish_index < 0 and variant.featured_media %},
+          "img": {{ variant.featured_media.preview_image | image_url: width: 360 | json }}{% endif %}
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ],
+    "finishImages": {
+      {%- if finish_index >= 0 -%}
+        {%- assign finish_option = product.options_with_values[finish_index] -%}
+        {%- for value in finish_option.values -%}
+          {%- liquid
+            assign img = value.variant.featured_media.preview_image
+            if img == blank
+              assign img = product.featured_media.preview_image
+            endif
+          -%}
+          {%- capture finish_srcset -%}{{ img | image_url: width: 160 }} 160w, {{ img | image_url: width: 360 }} 360w, {{ img | image_url: width: 720 }} 720w, {{ img | image_url: width: 1040 }} 1040w{%- endcapture -%}
+          {{ value.name | json }}: {%- if img != blank -%}{
+            "src": {{ img | image_url: width: 1040 | json }},
+            "srcset": {{ finish_srcset | json }},
+            "alt": {{ img.alt | default: value.name | json }},
+            "focal": {{ img.presentation.focal_point | default: '50% 30%' | json }}
+          }{%- else -%}null{%- endif -%}{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      {%- endif -%}
+    }
+  }
+</script>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html class="no-js{% unless settings.animations_enabled %} no-motion{% endunless %}" lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {%- if settings.favicon != blank %}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+    {%- endif %}
+    <title>
+      {{- page_title -}}
+      {%- if current_tags %} &ndash; {{ 'general.meta.tagged' | t: tags: current_tags | join: ', ' }}{% endif -%}
+      {%- if current_page != 1 %} &ndash; {{ 'general.meta.page' | t: page: current_page }}{% endif -%}
+      {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+    </title>
+    {%- if page_description %}
+      <meta name="description" content="{{ page_description | escape }}">
+    {%- endif %}
+    {%- liquid
+      assign is_filtered = false
+      if request.page_type == 'collection' or request.page_type == 'search'
+        for filter in collection.filters
+          if filter.active_values.size > 0 or filter.min_value.value != null or filter.max_value.value != null
+            assign is_filtered = true
+          endif
+        endfor
+      endif
+    -%}
+    {%- if is_filtered or current_tags %}
+      <meta name="robots" content="noindex, follow">
+    {%- endif %}
+
+    {% render 'meta-tags' %}
+    {% render 'head-assets' %}
+
+    {{ content_for_header }}
+  </head>
+
+  <body class="{% if settings.sticky_header %}sticky-header{% endif %}{% unless settings.card_hover_lift %} no-card-lift{% endunless %} template-{{ request.page_type | handle }}">
+    <a class="skip-link" href="#main">{{ 'accessibility.skip_to_content' | t }}</a>
+
+    <div id="app-main-wrap">
+      {% sections 'header-group' %}
+      <main id="main" role="main" tabindex="-1">
+        {{ content_for_layout }}
+      </main>
+      {% sections 'footer-group' %}
+    </div>
+
+    <div id="app-overlay">
+      {% sections 'overlay-group' %}
+      {%- if settings.show_country_selector and localization.available_countries.size > 1 -%}
+        {%- render 'localization-form', style: 'sheet' -%}
+      {%- endif -%}
+    </div>
+
+    <p id="app-live" class="fc-sr" role="status" aria-live="polite"></p>
+    <div id="app-toast" class="app-toast" role="status" aria-live="polite"></div>
+
+    {%- if settings.seo_structured_data -%}
+      {% render 'structured-data-site' %}
+    {%- endif -%}
+  </body>
+</html>

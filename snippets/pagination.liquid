@@ -1,0 +1,27 @@
+{%- comment -%}
+  Facet numbered pagination (the no-JS fallback for Load more, and the journal pager).
+
+  Accepts:
+  - paginate {Object}
+{%- endcomment -%}
+{%- if paginate.pages > 1 -%}
+  <div class="dl-pager">
+    <nav class="dl-num" aria-label="{{ 'general.pagination' | t }}">
+      {%- if paginate.previous -%}
+        <a href="{{ paginate.previous.url }}" aria-label="{{ 'accessibility.previous_page' | t }}">{% render 'icon', icon: 'caret-left', size: 16 %}</a>
+      {%- endif -%}
+      {%- for part in paginate.parts -%}
+        {%- if part.is_link -%}
+          <a href="{{ part.url }}">{{ part.title }}</a>
+        {%- elsif part.title == paginate.current_page -%}
+          <span class="on" aria-current="page">{{ part.title }}</span>
+        {%- else -%}
+          <span>{{ part.title }}</span>
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if paginate.next -%}
+        <a href="{{ paginate.next.url }}" aria-label="{{ 'accessibility.next_page' | t }}">{% render 'icon', icon: 'caret-right', size: 16 %}</a>
+      {%- endif -%}
+    </nav>
+  </div>
+{%- endif -%}

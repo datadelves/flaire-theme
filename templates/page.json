@@ -1,0 +1,87 @@
+{
+  "sections": {
+    "page-header": {
+      "type": "page-header",
+      "settings": {
+        "eyebrow": "",
+        "headline": "",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "use_page_title": true,
+        "align": "center"
+      },
+      "blocks": {
+        "breadcrumb-1": {
+          "type": "breadcrumb",
+          "settings": {
+            "show_home": true,
+            "label": "Breadcrumb",
+            "compact": true
+          }
+        },
+        "image-1": {
+          "type": "image",
+          "settings": {
+            "image_alt": "",
+            "width": "content"
+          }
+        },
+        "meta-1": {
+          "type": "meta",
+          "settings": {
+            "text": "",
+            "show_updated": false,
+            "tone": "muted"
+          }
+        }
+      },
+      "block_order": [
+        "breadcrumb-1",
+        "image-1",
+        "meta-1"
+      ]
+    },
+    "main": {
+      "type": "main-page",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "show_toc": false,
+        "width": "narrow"
+      },
+      "blocks": {
+        "content-1": {
+          "type": "content",
+          "settings": {
+            "show_title": false,
+            "size": "body",
+            "drop_hairlines": false
+          }
+        },
+        "callout-1": {
+          "type": "callout",
+          "settings": {
+            "icon": "info",
+            "title": "Good to know",
+            "text": "<p></p>"
+          }
+        },
+        "image-1": {
+          "type": "image",
+          "settings": {
+            "image_alt": "",
+            "caption": ""
+          }
+        }
+      },
+      "block_order": [
+        "content-1",
+        "callout-1",
+        "image-1"
+      ]
+    }
+  },
+  "order": [
+    "page-header",
+    "main"
+  ]
+}

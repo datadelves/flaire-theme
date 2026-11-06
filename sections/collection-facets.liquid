@@ -1,0 +1,271 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign clear_url = collection.url
+  if collection.sort_by != blank
+    assign clear_url = clear_url | append: '?sort_by=' | append: collection.sort_by
+  endif
+  assign root_class = 'dl-filters-wrap ' | append: scheme
+  if section.settings.sticky
+    assign root_class = root_class | append: ' is-sticky'
+  else
+    assign root_class = root_class | append: ' is-static'
+  endif
+  if section.settings.mobile_style == 'inline'
+    assign root_class = root_class | append: ' is-inline-m'
+  endif
+-%}
+<div class="{{ root_class }}" data-section="collection-facets" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}" data-facets data-section-id="{{ section.id }}">
+  {%- render 'collection-facets-bar',
+    results: collection,
+    action: collection.url,
+    blocks: section.blocks,
+    enable_filtering: section.settings.enable_filtering,
+    enable_sorting: section.settings.enable_sorting,
+    show_count: section.settings.show_count,
+    count: collection.products_count,
+    clear_url: clear_url
+  -%}
+</div>
+
+{% stylesheet %}
+  .shopify-section:has(> .dl-filters-wrap.is-sticky) { position: sticky; top: var(--nav-offset, 0px); z-index: 12; }
+  .dl-filters-wrap.is-static { position: relative; top: auto; }
+  @media (max-width: 734px) {
+    .dl-filters-wrap.is-inline-m .dl-filters .group.d { display: flex; }
+    .dl-filters-wrap.is-inline-m .dl-filter-m { display: none; }
+  }
+  /* no JavaScript: popovers open in place and the Apply button submits the form */
+  html.no-js .shopify-section:has(> .dl-filters-wrap) { position: static; }
+  html.no-js .dl-filters-wrap { position: relative; top: auto; }
+  html.no-js .dl-filters-wrap .dl-filters .group.d { display: flex; align-items: flex-start; }
+  html.no-js .dl-filters-wrap .dl-pop[hidden] { display: grid !important; position: static; box-shadow: none; }
+  html.no-js .dl-filters-wrap .dl-pop [data-act="pop-close"] { display: none; }
+  .coll-facets-apply { padding: var(--space-3) 0; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Filters and sort",
+  "tag": "section",
+  "class": "dl-section dl-collection-facets",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "label": "Enable filtering",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "label": "Enable sorting",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_count",
+      "label": "Show result count",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky",
+      "label": "Stick below the header",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "mobile_style",
+      "label": "Mobile filters",
+      "default": "drawer",
+      "options": [
+        {
+          "value": "drawer",
+          "label": "Bottom sheet"
+        },
+        {
+          "value": "inline",
+          "label": "Expandable lists"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "filter",
+      "name": "Filter control",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "filter_label",
+          "label": "Filter label",
+          "default": "Finish"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Panel style",
+          "default": "swatch",
+          "options": [
+            {
+              "value": "swatch",
+              "label": "Swatches"
+            },
+            {
+              "value": "list",
+              "label": "Checkbox list"
+            },
+            {
+              "value": "price",
+              "label": "Price range"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_count",
+          "label": "Show counts",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "sort",
+      "name": "Sort control",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Sort"
+        },
+        {
+          "type": "select",
+          "id": "default",
+          "label": "Default sort",
+          "default": "manual",
+          "options": [
+            {
+              "value": "manual",
+              "label": "Featured"
+            },
+            {
+              "value": "best-selling",
+              "label": "Best selling"
+            },
+            {
+              "value": "created-descending",
+              "label": "Newest"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_price_sorts",
+          "label": "Show price sort options",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "quick-chip",
+      "name": "Quick filter",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "In stock"
+        },
+        {
+          "type": "text",
+          "id": "param",
+          "label": "Filter URL parameter",
+          "default": "filter.v.availability=1",
+          "info": "Apply the filter on a collection page and copy the part after ? from the address bar, for example filter.v.availability=1."
+        },
+        {
+          "type": "checkbox",
+          "id": "default_on",
+          "label": "Apply by default",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "collection"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Filters and sort",
+      "blocks": [
+        {
+          "type": "filter"
+        },
+        {
+          "type": "filter"
+        },
+        {
+          "type": "filter"
+        },
+        {
+          "type": "filter"
+        },
+        {
+          "type": "sort"
+        },
+        {
+          "type": "quick-chip"
+        },
+        {
+          "type": "quick-chip"
+        },
+        {
+          "type": "quick-chip"
+        },
+        {
+          "type": "quick-chip"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

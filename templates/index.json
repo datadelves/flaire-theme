@@ -1,0 +1,750 @@
+{
+  "sections": {
+    "hero-slides": {
+      "type": "hero-slides",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "autoplay": true,
+        "interval_seconds": 6.5
+      },
+      "blocks": {
+        "slide-1": {
+          "type": "slide",
+          "settings": {
+            "color_scheme": "scheme-2",
+            "tint": "none",
+            "tag": "Light, held.",
+            "eyebrow": "New collection",
+            "heading": "Light, held.",
+            "subheading": "Set by hand in 18-karat gold and platinum.",
+            "cta_label": "Shop the collection",
+            "cta_url": "shopify://collections/all",
+            "link_label": "Learn about materials",
+            "flat_left": false,
+            "flat_right": false,
+            "chip": ""
+          }
+        },
+        "slide-2": {
+          "type": "slide",
+          "settings": {
+            "color_scheme": "scheme-1",
+            "tint": "tint-sand",
+            "tag": "Color",
+            "eyebrow": "Gemstone rings",
+            "heading": "Stones with a pulse.",
+            "subheading": "Emerald, ruby and sapphire, hand-set in 18-karat gold.",
+            "cta_label": "Shop gemstone rings",
+            "cta_url": "shopify://collections/all",
+            "link_label": "Browse by stone",
+            "link_url": "shopify://collections/all",
+            "flat_left": false,
+            "flat_right": false,
+            "chip": ""
+          }
+        },
+        "slide-3": {
+          "type": "slide",
+          "settings": {
+            "color_scheme": "scheme-1",
+            "tint": "none",
+            "tag": "Engraving",
+            "eyebrow": "Made yours",
+            "heading": "Say it once, forever.",
+            "subheading": "Add a few words inside the band before you order.",
+            "cta_label": "Start engraving",
+            "cta_url": "shopify://collections/all",
+            "link_label": "Shop engravable",
+            "link_url": "shopify://collections/all",
+            "flat_left": true,
+            "flat_right": true,
+            "chip": "Always, M."
+          }
+        },
+        "slide-4": {
+          "type": "slide",
+          "settings": {
+            "color_scheme": "scheme-1",
+            "tint": "tint-mist",
+            "tag": "Gifts",
+            "eyebrow": "Gifting",
+            "heading": "Ready to give.",
+            "subheading": "Add a handwritten note to any order.",
+            "cta_label": "Shop gifts",
+            "cta_url": "shopify://collections/all",
+            "link_label": "Delivery details",
+            "flat_left": false,
+            "flat_right": false,
+            "chip": ""
+          }
+        }
+      },
+      "block_order": [
+        "slide-1",
+        "slide-2",
+        "slide-3",
+        "slide-4"
+      ]
+    },
+    "category-rail": {
+      "type": "category-rail",
+      "settings": {
+        "eyebrow": "Shop by form",
+        "headline": "Four ways to wear it",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "columns": "4",
+        "show_count": true,
+        "link_label": ""
+      },
+      "blocks": {
+        "form-tile-1": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "form-tile-2": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "form-tile-3": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "form-tile-4": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "link-1": {
+          "type": "link",
+          "settings": {
+            "label": "Shop all",
+            "link": "shopify://collections/all",
+            "align": "end"
+          }
+        }
+      },
+      "block_order": [
+        "form-tile-1",
+        "form-tile-2",
+        "form-tile-3",
+        "form-tile-4",
+        "link-1"
+      ]
+    },
+    "featured-product": {
+      "type": "featured-product",
+      "settings": {
+        "color_scheme": "scheme-2",
+        "layout": "stacked",
+        "eyebrow": "New",
+        "sub": "A slim band set with one round brilliant diamond, polished by hand.",
+        "finish": "rose-gold",
+        "show_swatches": true,
+        "show_buy": true
+      },
+      "blocks": {
+        "copy-1": {
+          "type": "copy",
+          "settings": {
+            "headline": "",
+            "eyebrow": "",
+            "text": ""
+          }
+        },
+        "price-1": {
+          "type": "price",
+          "settings": {
+            "show_note": false,
+            "note": "",
+            "show_unit": false
+          }
+        },
+        "fact-1": {
+          "type": "fact",
+          "settings": {
+            "label": "0.50 carat",
+            "detail": "",
+            "tone": "neutral"
+          }
+        },
+        "fact-2": {
+          "type": "fact",
+          "settings": {
+            "label": "Engravable",
+            "detail": "",
+            "tone": "neutral"
+          }
+        },
+        "actions-1": {
+          "type": "actions",
+          "settings": {
+            "buy_label": "Buy",
+            "learn_label": "Learn more",
+            "quick_view": false
+          }
+        }
+      },
+      "block_order": [
+        "copy-1",
+        "price-1",
+        "fact-1",
+        "fact-2",
+        "actions-1"
+      ]
+    },
+    "material-guide": {
+      "type": "material-guide",
+      "settings": {
+        "eyebrow": "Materials",
+        "headline": "Made of what it says",
+        "sub": "Every metal and stone, named and measured.",
+        "color_scheme": "scheme-1",
+        "layout": "tabs",
+        "image_alt": ""
+      },
+      "blocks": {
+        "metal-1": {
+          "type": "metal",
+          "settings": {
+            "metal": "yellow-gold",
+            "title": "18-karat yellow gold",
+            "text": "Recycled gold, alloyed to 75% purity, cast and polished by hand.",
+            "facts": "Purity | 75% gold, 750 hallmark\nFinish | Polished by hand\nCare | Warm water, mild soap"
+          }
+        },
+        "metal-2": {
+          "type": "metal",
+          "settings": {
+            "metal": "rose-gold",
+            "title": "18-karat rose gold",
+            "text": "Gold alloyed with copper for a warm blush, cast and polished by hand.",
+            "facts": "Purity | 75% gold, 750 hallmark\nAlloy | Copper-rich\nCare | Warm water, mild soap"
+          }
+        },
+        "metal-3": {
+          "type": "metal",
+          "settings": {
+            "metal": "white-gold",
+            "title": "18-karat white gold",
+            "text": "Gold alloyed with palladium and finished in rhodium for a cool, bright white.",
+            "facts": "Purity | 75% gold, 750 hallmark\nPlating | Rhodium, renewed on request\nCare | Warm water, mild soap"
+          }
+        },
+        "metal-4": {
+          "type": "metal",
+          "settings": {
+            "metal": "platinum",
+            "title": "Platinum 950",
+            "text": "95% pure platinum: naturally white, dense and hypoallergenic.",
+            "facts": "Purity | 95% platinum, 950 hallmark\nFinish | Polished, develops a soft patina\nCare | Warm water, mild soap"
+          }
+        },
+        "stone-1": {
+          "type": "stone",
+          "settings": {
+            "stone": "diamond",
+            "facts": "Carat | 0.50\nColor | F\nClarity | VS1\nCut | Round brilliant",
+            "text": ""
+          }
+        },
+        "stone-2": {
+          "type": "stone",
+          "settings": {
+            "stone": "sapphire",
+            "facts": "Carat | 0.80\nColor | Deep blue\nTreatment | Heat only\nCut | Oval",
+            "text": ""
+          }
+        },
+        "stone-3": {
+          "type": "stone",
+          "settings": {
+            "stone": "emerald",
+            "facts": "Carat | 0.70\nColor | Deep green\nTreatment | Minor oil\nCut | Emerald",
+            "text": ""
+          }
+        },
+        "stone-4": {
+          "type": "stone",
+          "settings": {
+            "stone": "ruby",
+            "facts": "Carat | 0.60\nColor | Pigeon blood\nTreatment | Heat only\nCut | Cushion",
+            "text": ""
+          }
+        },
+        "stone-5": {
+          "type": "stone",
+          "settings": {
+            "stone": "pearl",
+            "facts": "Size | 7 mm\nType | Freshwater\nLustre | High\nShape | Round",
+            "text": ""
+          }
+        },
+        "stone-6": {
+          "type": "stone",
+          "settings": {
+            "stone": "onyx",
+            "facts": "Size | 8 mm\nType | Natural\nFinish | Polished\nShape | Round",
+            "text": ""
+          }
+        }
+      },
+      "block_order": [
+        "metal-1",
+        "metal-2",
+        "metal-3",
+        "metal-4",
+        "stone-1",
+        "stone-2",
+        "stone-3",
+        "stone-4",
+        "stone-5",
+        "stone-6"
+      ]
+    },
+    "engraving-studio": {
+      "type": "engraving-studio",
+      "settings": {
+        "eyebrow": "Engrave",
+        "headline": "Say it once, forever",
+        "sub": "Engraved by hand, in the time it takes to order.",
+        "color_scheme": "scheme-2",
+        "max_length": 16,
+        "sample": "Always, M.",
+        "finish": "rose-gold",
+        "cta_label": "Engrave",
+        "link_label": "How engraving works"
+      },
+      "blocks": {
+        "metal-choice-1": {
+          "type": "metal-choice",
+          "settings": {
+            "metal": "yellow-gold"
+          }
+        },
+        "metal-choice-2": {
+          "type": "metal-choice",
+          "settings": {
+            "metal": "rose-gold"
+          }
+        },
+        "metal-choice-3": {
+          "type": "metal-choice",
+          "settings": {
+            "metal": "white-gold"
+          }
+        },
+        "metal-choice-4": {
+          "type": "metal-choice",
+          "settings": {
+            "metal": "platinum"
+          }
+        },
+        "rule-1": {
+          "type": "rule",
+          "settings": {
+            "title": "Final sale",
+            "text": "Engraved pieces cannot be returned.",
+            "tone": "caution"
+          }
+        }
+      },
+      "block_order": [
+        "metal-choice-1",
+        "metal-choice-2",
+        "metal-choice-3",
+        "metal-choice-4",
+        "rule-1"
+      ]
+    },
+    "craft-process": {
+      "type": "craft-process",
+      "settings": {
+        "eyebrow": "Craft",
+        "headline": "Made by hand, checked twice",
+        "sub": "The path from wax to wrist.",
+        "color_scheme": "scheme-1",
+        "layout": "rail",
+        "link_label": ""
+      },
+      "blocks": {
+        "step-1": {
+          "type": "step",
+          "settings": {
+            "number": "1",
+            "title": "Cast",
+            "text": "Recycled 18-karat gold is cast from a hand-carved wax.",
+            "image_alt": ""
+          }
+        },
+        "step-2": {
+          "type": "step",
+          "settings": {
+            "number": "2",
+            "title": "Set",
+            "text": "Each stone is set under magnification, then checked a second time.",
+            "image_alt": ""
+          }
+        },
+        "step-3": {
+          "type": "step",
+          "settings": {
+            "number": "3",
+            "title": "Polish",
+            "text": "The band is polished by hand until the surface holds no marks.",
+            "image_alt": ""
+          }
+        },
+        "step-4": {
+          "type": "step",
+          "settings": {
+            "number": "4",
+            "title": "Check",
+            "text": "Weight, stone and hallmark are checked before it leaves the studio.",
+            "image_alt": ""
+          }
+        },
+        "fact-1": {
+          "type": "fact",
+          "settings": {
+            "label": "Recycled gold",
+            "detail": ""
+          }
+        },
+        "fact-2": {
+          "type": "fact",
+          "settings": {
+            "label": "Hallmarked",
+            "detail": ""
+          }
+        },
+        "fact-3": {
+          "type": "fact",
+          "settings": {
+            "label": "Stones graded",
+            "detail": ""
+          }
+        }
+      },
+      "block_order": [
+        "step-1",
+        "step-2",
+        "step-3",
+        "step-4",
+        "fact-1",
+        "fact-2",
+        "fact-3"
+      ]
+    },
+    "size-and-scale": {
+      "type": "size-and-scale",
+      "settings": {
+        "eyebrow": "Fit",
+        "headline": "Know it fits before it arrives",
+        "sub": "Real dimensions, drawn to scale.",
+        "color_scheme": "scheme-2",
+        "image_alt": "",
+        "cta_label": "Find your size",
+        "size_guide_tab": "rings",
+        "link_label": "Book a visit",
+        "link": "shopify://pages/contact"
+      },
+      "blocks": {
+        "measure-1": {
+          "type": "measure",
+          "settings": {
+            "label": "Band width",
+            "value": "2.1 mm",
+            "detail": ""
+          }
+        },
+        "measure-2": {
+          "type": "measure",
+          "settings": {
+            "label": "Stone width",
+            "value": "5.1 mm",
+            "detail": ""
+          }
+        },
+        "measure-3": {
+          "type": "measure",
+          "settings": {
+            "label": "Height off finger",
+            "value": "4.2 mm",
+            "detail": ""
+          }
+        },
+        "measure-4": {
+          "type": "measure",
+          "settings": {
+            "label": "Weight",
+            "value": "2.8 g",
+            "detail": ""
+          }
+        },
+        "fit-note-1": {
+          "type": "fit-note",
+          "settings": {
+            "title": "Between sizes?",
+            "text": "Choose the larger size for wide bands.",
+            "tone": "info"
+          }
+        }
+      },
+      "block_order": [
+        "measure-1",
+        "measure-2",
+        "measure-3",
+        "measure-4",
+        "fit-note-1"
+      ]
+    },
+    "social-proof": {
+      "type": "social-proof",
+      "settings": {
+        "eyebrow": "Reviews",
+        "headline": "Worn every day",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "show_photos": true
+      },
+      "blocks": {
+        "review-1": {
+          "type": "review",
+          "settings": {
+            "author": "Maya R.",
+            "location": "Austin",
+            "verified": true,
+            "text": "The band sits flat and has not left my finger in four months. The engraving is crisp.",
+            "rating": 5
+          }
+        },
+        "review-2": {
+          "type": "review",
+          "settings": {
+            "author": "Daniel K.",
+            "location": "Seattle",
+            "verified": true,
+            "text": "Arrived the next morning in a box I did not want to throw away. The sapphire is deeper than the photo.",
+            "rating": 5
+          }
+        },
+        "review-3": {
+          "type": "review",
+          "settings": {
+            "author": "Priya S.",
+            "location": "Chicago",
+            "verified": true,
+            "text": "Sized at the studio, delivered on the day promised. Exactly as described.",
+            "rating": 5
+          }
+        },
+        "summary-1": {
+          "type": "summary",
+          "settings": {
+            "label": "average rating",
+            "rating": "4.9",
+            "count": 128
+          }
+        }
+      },
+      "block_order": [
+        "review-1",
+        "review-2",
+        "review-3",
+        "summary-1"
+      ]
+    },
+    "journal-highlights": {
+      "type": "journal-highlights",
+      "settings": {
+        "eyebrow": "Journal",
+        "headline": "Notes on light",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "blog": "news",
+        "count": 3,
+        "link_label": "All articles",
+        "link": "shopify://blogs/news"
+      }
+    },
+    "care-faq": {
+      "type": "care-faq",
+      "settings": {
+        "eyebrow": "Help",
+        "headline": "Questions, answered",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "open_index": 0,
+        "single_open": true,
+        "link_label": ""
+      },
+      "blocks": {
+        "faq-1": {
+          "type": "faq",
+          "settings": {
+            "title": "How do I find my ring size?",
+            "answer": "<p>Use the size guide, or contact us for help with sizing.</p>"
+          }
+        },
+        "faq-2": {
+          "type": "faq",
+          "settings": {
+            "title": "How do I care for gold?",
+            "answer": "<p>Remove before swimming or sleeping. Clean with warm water, mild soap and a soft brush.</p>"
+          }
+        },
+        "faq-3": {
+          "type": "faq",
+          "settings": {
+            "title": "Delivery and returns",
+            "answer": "<p>Shipping options and costs are shown at checkout. See our refund policy for returns.</p>"
+          }
+        },
+        "faq-4": {
+          "type": "faq",
+          "settings": {
+            "title": "How does engraving work?",
+            "answer": "<p>Choose up to 16 characters before you add to Bag.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "faq-1",
+        "faq-2",
+        "faq-3",
+        "faq-4"
+      ]
+    },
+    "gift-finder": {
+      "type": "gift-finder",
+      "settings": {
+        "eyebrow": "Gifts",
+        "headline": "Ready to give",
+        "sub": "Add a handwritten note to any gift.",
+        "color_scheme": "scheme-3",
+        "cta_label": "Find a gift",
+        "cta_link": "shopify://collections/all",
+        "link_label": "",
+        "image_alt": ""
+      },
+      "blocks": {
+        "price-band-1": {
+          "type": "price-band",
+          "settings": {
+            "label": "Under [price]",
+            "link": "shopify://collections/all",
+            "max": 500
+          }
+        },
+        "price-band-2": {
+          "type": "price-band",
+          "settings": {
+            "label": "Under [price]",
+            "link": "shopify://collections/all",
+            "max": 1000
+          }
+        },
+        "recipient-1": {
+          "type": "recipient",
+          "settings": {
+            "label": "For her",
+            "link": "shopify://collections/all",
+            "icon": "gift"
+          }
+        },
+        "recipient-2": {
+          "type": "recipient",
+          "settings": {
+            "label": "For him",
+            "link": "shopify://collections/all",
+            "icon": "gift"
+          }
+        },
+        "recipient-3": {
+          "type": "recipient",
+          "settings": {
+            "label": "Anniversary",
+            "link": "shopify://collections/all",
+            "icon": "heart"
+          }
+        },
+        "gift-card-1": {
+          "type": "gift-card",
+          "settings": {
+            "label": "Send a gift card",
+            "note": ""
+          }
+        }
+      },
+      "block_order": [
+        "price-band-1",
+        "price-band-2",
+        "recipient-1",
+        "recipient-2",
+        "recipient-3",
+        "gift-card-1"
+      ]
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "eyebrow": "Journal",
+        "headline": "Notes on light",
+        "sub": "New pieces and care notes, once a month.",
+        "color_scheme": "scheme-1",
+        "button_label": "Subscribe",
+        "fine_print": "<p>Unsubscribe at any time.</p>",
+        "success_text": "Thank you. You are on the list."
+      },
+      "blocks": {
+        "email-field-1": {
+          "type": "email-field",
+          "settings": {
+            "label": "Email address",
+            "placeholder": "name@example.com",
+            "error": "Enter an email address like name@example.com."
+          }
+        }
+      },
+      "block_order": [
+        "email-field-1"
+      ]
+    },
+    "apps": {
+      "type": "apps",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "width": "content",
+        "padding_top": 64,
+        "padding_bottom": 64
+      }
+    }
+  },
+  "order": [
+    "hero-slides",
+    "category-rail",
+    "featured-product",
+    "material-guide",
+    "engraving-studio",
+    "craft-process",
+    "size-and-scale",
+    "social-proof",
+    "journal-highlights",
+    "care-faq",
+    "gift-finder",
+    "newsletter",
+    "apps"
+  ]
+}

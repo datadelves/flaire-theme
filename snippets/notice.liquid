@@ -1,0 +1,41 @@
+{%- comment -%}
+  Facet Notice: icon, title and one line of text, with an optional link.
+  danger notices are alerts; everything else is a polite status.
+
+  Accepts:
+  - tone {String} info | success | caution | danger | gift (default info)
+  - title {String}
+  - text {String}
+  - link_label {String}
+  - link_url {String}
+  - link_attrs {String} extra attributes on the link
+  - attrs {String} extra attributes on the notice
+  - live {Boolean} false to drop the live-region role (default true)
+{%- endcomment -%}
+{%- liquid
+  assign tone = tone | default: 'info'
+  case tone
+    when 'success'
+      assign notice_icon = 'check-circle'
+    when 'caution'
+      assign notice_icon = 'warning'
+    when 'danger'
+      assign notice_icon = 'warning-circle'
+    when 'gift'
+      assign notice_icon = 'gift'
+    else
+      assign notice_icon = 'info'
+  endcase
+  assign role = 'status'
+  if tone == 'danger'
+    assign role = 'alert'
+  endif
+-%}
+<div class="fc-notice fc-notice-{{ tone }}"{% unless live == false %} role="{{ role }}"{% endunless %}{% if attrs != blank %} {{ attrs }}{% endif %}>
+  {%- render 'icon', icon: notice_icon, size: 20, class: 'fc-notice-icon' -%}
+  <div>
+    {%- if title != blank %}<p class="fc-notice-title">{{ title }}</p>{% endif -%}
+    {%- if text != blank %}<p class="fc-notice-text">{{ text }}</p>{% endif -%}
+    {%- if link_label != blank %}<a href="{{ link_url | default: '#' }}"{% if link_attrs != blank %} {{ link_attrs }}{% endif %}>{{ link_label }}</a>{% endif -%}
+  </div>
+</div>

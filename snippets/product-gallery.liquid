@@ -1,0 +1,240 @@
+{%- comment -%}
+  Product gallery (Facet ProductGallery). The plates are the selected finish's photo plus any media that
+  is not a finish photo. With one photo and "views" on, the prototype's four views are built from it:
+  front, detail (zoomed on the focal point), side and on scale (with a ruler).
+  Videos, YouTube/Vimeo videos and 3D models follow the photos as their own plates (snippets/product-media).
+  Products without a Finish option show every image, starting with the selected variant's image, and the
+  kernel moves to a variant's image when it is selected.
+  Only the active plate is visible; the kernel's media-gallery moves between plates and swaps the finish
+  photo (img[data-finish-img]) when the finish changes.
+
+  Accepts:
+  - product {Object}
+  - finish {String} selected finish value name
+  - ctx {String} pdp | qv
+  - views {Boolean} build the four views from one photo (default true)
+  - zoom {Boolean} zoom button (pdp, default true)
+  - eager {Boolean} first photo is the page's LCP image
+{%- endcomment -%}
+{%- liquid
+  if views == nil
+    assign views = true
+  endif
+  if zoom == nil
+    assign zoom = true
+  endif
+  capture kind
+    render 'product-data', product: product, field: 'kind'
+  endcapture
+  assign kind = kind | strip | default: 'ring'
+  assign finish_media = product.featured_media
+  assign finish_index = -1
+  for option in product.options_with_values
+    assign option_name = option.name | downcase
+    if option_name == 'finish' or option_name == 'metal'
+      assign finish_index = forloop.index0
+    endif
+  endfor
+  assign variant_media_ids = ''
+  if finish_index >= 0
+    for variant in product.variants
+      if variant.featured_media
+        assign variant_media_ids = variant_media_ids | append: ',' | append: variant.featured_media.id | append: ','
+        if variant.options contains finish
+          unless found_finish
+            assign finish_media = variant.featured_media
+            assign found_finish = true
+          endunless
+        endif
+      endif
+    endfor
+  elsif product.selected_or_first_available_variant.featured_media
+    assign finish_media = product.selected_or_first_available_variant.featured_media
+  endif
+  if finish_media.media_type != 'image'
+    assign finish_media = product.media | where: 'media_type', 'image' | first
+  endif
+  assign extra_count = 0
+  assign rich_count = 0
+  assign rich_types = ''
+  assign has_model = false
+  for media in product.media
+    if media.media_type == 'image'
+      assign key = ',' | append: media.id | append: ','
+      unless variant_media_ids contains key or media.id == finish_media.id
+        assign extra_count = extra_count | plus: 1
+      endunless
+    else
+      assign rich_count = rich_count | plus: 1
+      assign rich_types = rich_types | append: media.media_type | append: ','
+      if media.media_type == 'model'
+        assign has_model = true
+      endif
+    endif
+  endfor
+  assign rich_types = rich_types | split: ','
+  assign first_plate = true
+  if finish_media == blank and rich_count > 0
+    assign first_plate = false
+  endif
+  assign synth = false
+  if views and extra_count == 0 and first_plate
+    assign synth = true
+  endif
+  if synth
+    assign plate_count = 4
+  elsif first_plate
+    assign plate_count = extra_count | plus: 1
+  else
+    assign plate_count = 0
+  endif
+  assign rich_start = plate_count
+  assign plate_count = plate_count | plus: rich_count
+  assign focal = finish_media.preview_image.presentation.focal_point | default: '50% 30%'
+  assign title_in = 'products.product.title_in_finish' | t: title: product.title, finish: finish
+  if finish == blank
+    assign title_in = finish_media.alt | default: product.title
+  endif
+  assign loading = 'lazy'
+  assign priority = ''
+  if eager
+    assign loading = 'eager'
+    assign priority = 'high'
+  endif
+  assign size_main = 520
+  assign size_thumb = 80
+  assign rich_sizes = '(max-width: 734px) 100vw, (max-width: 1068px) 50vw, 640px'
+  if ctx == 'qv'
+    assign size_main = 300
+    assign rich_sizes = '(max-width: 734px) 100vw, 520px'
+  endif
+  assign label_front = 'products.gallery.front' | t
+  assign label_detail = 'products.gallery.detail' | t
+  assign label_side = 'products.gallery.side' | t
+  assign label_scale = 'products.gallery.scale' | t
+-%}
+{%- capture ruler -%}<div class="scale-ruler" aria-hidden="true"><i></i><span>0</span><span>10 mm</span><span>20 mm</span></div>{%- endcapture -%}
+{%- capture plates -%}
+  {%- if synth -%}
+    {%- assign alt_front = label_front | downcase | prepend: ', ' | prepend: title_in -%}
+    <div class="media" data-plate="0" data-media-id="{{ finish_media.id }}">{% render 'product-photo', image: finish_media, size: size_main, alt: alt_front, class: 'm-front', loading: loading, fetchpriority: priority, attrs: 'data-finish-img', kind: kind %}</div>
+    {%- assign alt_detail = label_detail | downcase | prepend: ', ' | prepend: title_in -%}
+    <div class="media media-detail" style="--org:{{ focal }}" data-plate="1" hidden>{% render 'product-photo', image: finish_media, size: size_main, alt: alt_detail, class: 'm-detail', attrs: 'data-finish-img', kind: kind %}</div>
+    {%- assign alt_side = label_side | downcase | prepend: ', ' | prepend: title_in -%}
+    <div class="media" data-plate="2" hidden>{% render 'product-photo', image: finish_media, size: size_main, alt: alt_side, class: 'm-side', attrs: 'data-finish-img', kind: kind %}</div>
+    {%- assign alt_scale = label_scale | downcase | prepend: ', ' | prepend: title_in -%}
+    <div class="media media-scale" data-plate="3" hidden>{% render 'product-photo', image: finish_media, size: size_main, alt: alt_scale, class: 'm-scale', attrs: 'data-finish-img', kind: kind %}{{ ruler }}</div>
+  {%- elsif first_plate -%}
+    {%- if finish_index >= 0 -%}
+      <div class="media" data-plate="0" data-media-id="{{ finish_media.id }}">{% render 'product-photo', image: finish_media, size: size_main, alt: title_in, loading: loading, fetchpriority: priority, attrs: 'data-finish-img', kind: kind %}</div>
+    {%- else -%}
+      <div class="media" data-plate="0" data-media-id="{{ finish_media.id }}">{% render 'product-photo', image: finish_media, size: size_main, alt: title_in, loading: loading, fetchpriority: priority, kind: kind %}</div>
+    {%- endif -%}
+    {%- assign n = 0 -%}
+    {%- for media in product.media -%}
+      {%- assign key = ',' | append: media.id | append: ',' -%}
+      {%- unless variant_media_ids contains key or media.id == finish_media.id or media.media_type != 'image' -%}
+        {%- assign n = n | plus: 1 -%}
+        <div class="media" data-plate="{{ n }}" data-media-id="{{ media.id }}" hidden>{% render 'product-photo', image: media, size: size_main %}</div>
+      {%- endunless -%}
+    {%- endfor -%}
+  {%- endif -%}
+  {%- assign r = rich_start -%}
+  {%- for media in product.media -%}
+    {%- if media.media_type != 'image' -%}
+      <div class="media media-rich" data-plate="{{ r }}" data-media-id="{{ media.id }}"{% if r != 0 %} hidden{% endif %}>{% render 'product-media', media: media, product: product, sizes: rich_sizes %}</div>
+      {%- assign r = r | plus: 1 -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if has_model -%}
+    <script type="application/json" data-model-json>{{ product.media | where: 'media_type', 'model' | json }}</script>
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture rich_thumbs -%}
+  {%- assign r = rich_start -%}
+  {%- for media in product.media -%}
+    {%- if media.media_type != 'image' -%}
+      {%- liquid
+        assign idx = r | plus: 1
+        if media.media_type == 'model'
+          assign thumb_label = 'products.media.model_count' | t: index: idx, count: plate_count
+        else
+          assign thumb_label = 'products.media.video_count' | t: index: idx, count: plate_count
+        endif
+      -%}
+      <button type="button" role="radio" aria-checked="{% if r == 0 %}true{% else %}false{% endif %}" aria-label="{{ thumb_label }}" class="thumb thumb-rich{% if r == 0 %} is-on{% endif %}" data-act="gal-to" data-i="{{ r }}" tabindex="{% if r == 0 %}0{% else %}-1{% endif %}"><div class="media">{% render 'product-media', media: media, product: product, thumb: true %}</div></button>
+      {%- assign r = r | plus: 1 -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- assign prev_label = 'accessibility.previous_image' | t -%}
+{%- assign next_label = 'accessibility.next_image' | t -%}
+{%- if ctx == 'qv' -%}
+  <div class="dl-qv-gallery" data-gallery data-ctx="qv" data-count="{{ plate_count }}">
+    {{ plates }}
+    {%- if plate_count > 1 -%}
+      <button type="button" class="fc-btn fc-btn-icon gal-nav prev" aria-label="{{ prev_label }}" data-act="gal" data-dir="-1" data-ctx="qv">{% render 'icon', icon: 'caret-left' %}</button>
+      <button type="button" class="fc-btn fc-btn-icon gal-nav next" aria-label="{{ next_label }}" data-act="gal" data-dir="1" data-ctx="qv">{% render 'icon', icon: 'caret-right' %}</button>
+      <div class="dots">
+        {%- for i in (1..plate_count) -%}
+          {%- liquid
+            assign i0 = forloop.index0
+            assign dot_label = 'accessibility.image_count' | t: index: i, count: plate_count
+            if i0 >= rich_start
+              assign ri = i0 | minus: rich_start
+              if rich_types[ri] == 'model'
+                assign dot_label = 'products.media.model_count' | t: index: i, count: plate_count
+              else
+                assign dot_label = 'products.media.video_count' | t: index: i, count: plate_count
+              endif
+            endif
+          -%}
+          <button type="button"{% if forloop.first %} class="on"{% endif %} aria-label="{{ dot_label }}" aria-current="{{ forloop.first }}" data-act="gal-to" data-i="{{ forloop.index0 }}" data-ctx="qv"></button>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+{%- else -%}
+  <div class="dl-gallery" data-gallery data-ctx="pdp" data-count="{{ plate_count }}">
+    <div class="plate" id="gallery-main" data-swipe>
+      {{ plates }}
+      {%- if zoom and rich_start > 0 -%}
+        <button class="fc-btn fc-btn-icon zoom" type="button" aria-label="{{ 'accessibility.zoom' | t }}" aria-haspopup="dialog" style="background:var(--canvas)" data-open="zoom">{% render 'icon', icon: 'magnifying-glass-plus', size: 24 %}</button>
+      {%- endif -%}
+      {%- if plate_count > 1 -%}
+        <span class="counter" role="status" data-counter>{{ 'accessibility.image_count' | t: index: 1, count: plate_count }}</span>
+        <button class="fc-btn fc-btn-icon gal-nav prev" type="button" aria-label="{{ prev_label }}" data-act="gal" data-dir="-1">{% render 'icon', icon: 'caret-left' %}</button>
+        <button class="fc-btn fc-btn-icon gal-nav next" type="button" aria-label="{{ next_label }}" data-act="gal" data-dir="1">{% render 'icon', icon: 'caret-right' %}</button>
+      {%- endif -%}
+    </div>
+    {%- if plate_count > 1 -%}
+      <div class="thumbs" role="radiogroup" aria-label="{{ 'accessibility.product_images' | t }}" style="grid-template-columns:repeat({{ plate_count }},1fr)">
+        {%- if synth -%}
+          <button type="button" role="radio" aria-checked="true" aria-label="{{ label_front }}" class="thumb is-on" data-act="gal-to" data-i="0" tabindex="0"><div class="media">{% render 'product-photo', image: finish_media, size: size_thumb, alt: '', attrs: 'data-finish-img', kind: kind %}</div></button>
+          <button type="button" role="radio" aria-checked="false" aria-label="{{ label_detail }}" class="thumb" data-act="gal-to" data-i="1" tabindex="-1"><div class="media media-detail" style="--org:{{ focal }}">{% render 'product-photo', image: finish_media, size: size_thumb, alt: '', attrs: 'data-finish-img', kind: kind %}</div></button>
+          <button type="button" role="radio" aria-checked="false" aria-label="{{ label_side }}" class="thumb" data-act="gal-to" data-i="2" tabindex="-1"><div class="media">{% render 'product-photo', image: finish_media, size: size_thumb, alt: '', class: 'm-side', attrs: 'data-finish-img', kind: kind %}</div></button>
+          <button type="button" role="radio" aria-checked="false" aria-label="{{ label_scale }}" class="thumb" data-act="gal-to" data-i="3" tabindex="-1"><div class="media media-scale">{% render 'product-photo', image: finish_media, size: size_thumb, alt: '', attrs: 'data-finish-img', kind: kind %}{{ ruler }}</div></button>
+        {%- elsif first_plate -%}
+          {%- if finish_index >= 0 -%}
+            <button type="button" role="radio" aria-checked="true" aria-label="{{ 'accessibility.image_count' | t: index: 1, count: plate_count }}" class="thumb is-on" data-act="gal-to" data-i="0" tabindex="0"><div class="media">{% render 'product-photo', image: finish_media, size: size_thumb, alt: '', attrs: 'data-finish-img', kind: kind %}</div></button>
+          {%- else -%}
+            <button type="button" role="radio" aria-checked="true" aria-label="{{ 'accessibility.image_count' | t: index: 1, count: plate_count }}" class="thumb is-on" data-act="gal-to" data-i="0" tabindex="0"><div class="media">{% render 'product-photo', image: finish_media, size: size_thumb, alt: '', kind: kind %}</div></button>
+          {%- endif -%}
+          {%- assign n = 0 -%}
+          {%- for media in product.media -%}
+            {%- assign key = ',' | append: media.id | append: ',' -%}
+            {%- unless variant_media_ids contains key or media.id == finish_media.id or media.media_type != 'image' -%}
+              {%- assign n = n | plus: 1 -%}
+              {%- assign idx = n | plus: 1 -%}
+              <button type="button" role="radio" aria-checked="false" aria-label="{{ 'accessibility.image_count' | t: index: idx, count: plate_count }}" class="thumb" data-act="gal-to" data-i="{{ n }}" tabindex="-1"><div class="media">{% render 'product-photo', image: media, size: size_thumb, alt: '' %}</div></button>
+            {%- endunless -%}
+          {%- endfor -%}
+        {%- endif -%}
+        {{ rich_thumbs }}
+      </div>
+      <div class="dots mdots" aria-hidden="true">
+        {%- for i in (1..plate_count) -%}<span{% if forloop.first %} class="on"{% endif %}></span>{%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+{%- endif -%}

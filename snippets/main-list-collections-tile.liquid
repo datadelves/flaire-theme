@@ -1,0 +1,43 @@
+{%- comment -%}
+  One collection tile of the collection list (prototype listCollectionsHtml): photo on the card ground, name,
+  piece count and a "Shop" chevron. Art: block image, then collection.featured_image (the collection image,
+  else the first product's image), then the first product's media.
+
+  Accepts:
+  - c {Object} collection
+  - image {Object} optional image override
+  - line {String} optional caption
+  - show_count {Boolean}
+  - index {Number} position (first row loads eagerly)
+  - shop_label {String}
+  - attrs {String} raw attributes (block.shopify_attributes)
+{%- endcomment -%}
+{%- liquid
+  assign art = image | default: c.featured_image
+  assign art_alt = c.title
+  if art == blank
+    assign first = c.products.first
+    assign art = first.featured_media
+    assign art_alt = first.title
+    capture first_material
+      render 'product-data', product: first, field: 'material', fallback: false
+    endcapture
+    assign first_material = first_material | strip
+    if first_material != blank
+      assign art_alt = art_alt | append: ', ' | append: first_material
+    endif
+  endif
+  assign kind_product = c.products.first
+  capture art_kind
+    render 'product-data', product: kind_product, field: 'kind'
+  endcapture
+  assign art_kind = art_kind | strip | default: 'ring'
+  assign load = 'lazy'
+  if index <= 3
+    assign load = 'eager'
+  endif
+-%}
+<a class="fc-card" href="{{ c.url }}" style="color:var(--ink)"{% if attrs != blank %} {{ attrs }}{% endif %}><div class="fc-card-art" style="padding:32px">{% render 'product-photo', image: art, size: 220, alt: art_alt, kind: art_kind, loading: load %}</div><div class="fc-card-body"><h2 class="t-title" style="margin:0">{{ c.title | escape }}</h2>
+  {%- if show_count %}<p class="fc-card-material">{{ 'general.pieces' | t: count: c.all_products_count }}</p>{% endif -%}
+  {%- if line != blank %}<p class="fc-card-material">{{ line | escape }}</p>{% endif -%}
+  <span class="fc-btn fc-btn-link"><span>{{ shop_label }}</span></span></div></a>

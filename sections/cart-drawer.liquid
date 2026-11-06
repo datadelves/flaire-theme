@@ -1,0 +1,364 @@
+{%- comment -%}
+  Bag drawer (overlays.mjs cartInner). Rendered closed; the kernel opens it and, after every cart change,
+  re-renders it through the Section Rendering API and swaps [data-ov-panel]. Everything here comes from
+  `cart`, never from client state.
+{%- endcomment -%}
+{%- liquid
+  assign show_material = true
+  assign show_engraving = true
+  assign show_delivery = false
+  assign delivery_text = ''
+  assign has_subtotal_row = false
+  assign has_taxes_row = false
+  for block in section.blocks
+    if block.type == 'line-details'
+      assign show_material = block.settings.show_material
+      assign show_engraving = block.settings.show_engraving
+      assign show_delivery = block.settings.show_delivery
+      assign delivery_text = block.settings.delivery_text
+    elsif block.type == 'summary-row' and block.settings.kind == 'subtotal'
+      assign has_subtotal_row = true
+    elsif block.type == 'summary-row' and block.settings.kind == 'taxes' and block.settings.label != blank
+      assign has_taxes_row = true
+    endif
+  endfor
+
+  if cart.duties_included and cart.taxes_included
+    assign tax_note = 'cart.tax_note.duties_included' | t
+  elsif cart.taxes_included
+    assign tax_note = 'cart.tax_note.included' | t
+  else
+    assign tax_note = 'cart.tax_note.at_checkout' | t
+  endif
+
+  if cart.item_count > 0
+    assign drawer_title = 'cart.general.title_count' | t: count: cart.item_count
+  else
+    assign drawer_title = 'cart.general.title' | t
+  endif
+  assign close_label = 'cart.general.close' | t
+
+  assign empty_url = section.settings.empty_collection.url | default: routes.all_products_collection_url
+-%}
+<div class="app-ov" data-ov="cart" data-section="cart-drawer" data-section-id="{{ section.id }}" data-cart-section hidden>
+  <div class="dl-scrim" data-act="scrim"></div>
+  <aside class="dl-drawer right scheme-1" data-place="right" data-place-mobile="bottom bag-full" role="dialog" aria-modal="true" aria-labelledby="ov-title-cart" data-ov-panel>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: drawer_title, close_label: close_label, id: 'ov-title-cart' -%}
+    {%- if cart.item_count == 0 -%}
+      <div class="bd">
+        <div data-undo-slot aria-live="polite"></div>
+        <div class="dl-empty" style="padding:48px 0">
+          {%- if section.settings.empty_title != blank -%}
+            <h3 class="t-title-lg">{{ section.settings.empty_title | escape }}</h3>
+          {%- endif -%}
+          {%- if section.settings.empty_text != blank -%}
+            <p class="t-body muted" style="margin:0">{{ section.settings.empty_text | escape }}</p>
+          {%- endif -%}
+          {%- assign empty_label = 'cart.general.continue_shopping' | t -%}
+          {%- render 'button', variant: 'link', label: empty_label, url: empty_url -%}
+        </div>
+      </div>
+    {%- else -%}
+      {%- liquid
+        assign rec_rows = ''
+        if section.settings.show_recommendations
+          assign in_bag = cart.items | map: 'product_id' | join: ','
+          assign in_bag = ',' | append: in_bag | append: ','
+          if section.settings.recommendation_products != blank
+            assign rec_source = section.settings.recommendation_products
+          elsif section.settings.recommendation_collection != blank
+            assign rec_source = section.settings.recommendation_collection.products
+          else
+            assign rec_source = collections.all.products
+          endif
+          assign rec_count = 0
+        endif
+      -%}
+      {%- if section.settings.show_recommendations -%}
+        {%- capture rec_rows -%}
+          {%- for rec in rec_source limit: 24 -%}
+            {%- liquid
+              assign rec_key = ',' | append: rec.id | append: ','
+              if in_bag contains rec_key or rec.available == false
+                continue
+              endif
+              capture rec_kind
+                render 'product-data', product: rec, field: 'kind'
+              endcapture
+              assign rec_kind = rec_kind | strip | default: 'ring'
+              capture rec_material
+                render 'product-data', product: rec, field: 'material', fallback: false
+              endcapture
+              assign rec_material = rec_material | strip
+            -%}
+            <a class="dl-rec" href="{{ rec.url }}">
+              <span class="art">{% render 'product-photo', image: rec.featured_media, size: 64, alt: '', kind: rec_kind %}</span>
+              <span class="tx">
+                <span class="nm">{{ rec.title | escape }}</span>
+                {%- if rec_material != blank %}<span class="mt">{{ rec_material | escape }}</span>{% endif -%}
+                {%- render 'price', product: rec -%}
+              </span>
+              {%- render 'icon', icon: 'caret-right', size: 18 -%}
+            </a>
+            {%- assign rec_count = rec_count | plus: 1 -%}
+            {%- if rec_count >= 2 %}{% break %}{% endif -%}
+          {%- endfor -%}
+        {%- endcapture -%}
+      {%- endif -%}
+      <div class="bd">
+        <div data-undo-slot aria-live="polite"></div>
+        <div>
+          {%- for item in cart.items -%}
+            {%- render 'bag-line', item: item, index: forloop.index, show_material: show_material, show_engraving: show_engraving, show_delivery: show_delivery, delivery_text: delivery_text -%}
+          {%- endfor -%}
+        </div>
+        {%- if rec_rows != blank -%}
+          <div style="margin-top:24px">
+            <p class="t-overline" style="margin-bottom:12px">{{ 'cart.general.often_together' | t }}</p>
+            <div class="stack" style="gap:12px">{{ rec_rows }}</div>
+          </div>
+        {%- endif -%}
+      </div>
+      <div class="ft">
+        {%- if settings.show_gift_notice and section.settings.show_gift_notice and settings.gift_notice_text != blank -%}
+          {%- liquid
+            assign gift_title = settings.gift_notice_text | split: '. ' | first
+            assign gift_text = settings.gift_notice_text | remove_first: gift_title | remove_first: '. ' | strip
+          -%}
+          {%- render 'notice', tone: 'gift', title: gift_title, text: gift_text -%}
+        {%- endif -%}
+        {%- if settings.show_discount_field and section.settings.show_discount -%}
+          {%- render 'bag-discount', ctx: 'drawer' -%}
+        {%- endif -%}
+        {%- capture discount_rows -%}
+          {%- for application in cart.cart_level_discount_applications -%}
+            <div class="dl-sumrow"><span class="m">{{ application.title | escape }}</span><span>−{{ application.total_allocated_amount | money }}</span></div>
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- unless has_subtotal_row -%}
+          <div class="dl-sumrow"><span class="m">{{ 'cart.general.subtotal' | t }}</span><span class="t-strong">{{ cart.items_subtotal_price | money }}</span></div>
+          {{- discount_rows -}}
+        {%- endunless -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'summary-row' -%}
+            {%- case block.settings.kind -%}
+              {%- when 'subtotal' -%}
+                <div class="dl-sumrow" {{ block.shopify_attributes }}><span class="m">{% if block.settings.label != blank %}{{ block.settings.label | escape }}{% else %}{{ 'cart.general.subtotal' | t }}{% endif %}</span><span class="t-strong">{% if block.settings.value != blank %}{{ block.settings.value | escape }}{% else %}{{ cart.items_subtotal_price | money }}{% endif %}</span></div>
+                {{- discount_rows -}}
+              {%- when 'delivery' -%}
+                {%- if block.settings.label != blank -%}
+                  <div class="dl-sumrow" {{ block.shopify_attributes }}><span class="m">{{ block.settings.label | escape }}</span><span>{{ block.settings.value | default: settings.free_delivery_label | escape }}</span></div>
+                {%- endif -%}
+              {%- when 'taxes' -%}
+                {%- if block.settings.label != blank -%}
+                  <div class="dl-sumrow" {{ block.shopify_attributes }}><span class="m">{{ block.settings.label | escape }}</span><span>{% if block.settings.value != blank %}{{ block.settings.value | escape }}{% else %}{{ tax_note }}{% endif %}</span></div>
+                {%- endif -%}
+            {%- endcase -%}
+          {%- endif -%}
+        {%- endfor -%}
+        <div class="dl-sumrow total"><span>{{ 'cart.general.total' | t }}</span><span>{{ cart.total_price | money }}</span></div>
+        <form action="{{ routes.cart_url }}" method="post" id="cart-drawer-form">
+          <button type="submit" name="checkout" class="fc-btn fc-btn-primary fc-btn-lg fc-btn-block"><span>{{ 'cart.general.checkout' | t }}</span></button>
+        </form>
+        {%- if section.settings.show_accelerated_checkout -%}
+          {%- render 'bag-checkout-buttons' -%}
+        {%- endif -%}
+        {%- unless has_taxes_row -%}
+          <p class="t-fine" style="text-align:center;margin:0">{{ tax_note }}</p>
+        {%- endunless -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'trust-note' and block.settings.text != blank -%}
+            <p class="t-fine" style="text-align:center;margin:0" {{ block.shopify_attributes }}>
+              {%- if block.settings.link != blank -%}
+                <a href="{{ block.settings.link }}">{{ block.settings.text | escape }}</a>
+              {%- else -%}
+                {{ block.settings.text | escape }}
+              {%- endif -%}
+            </p>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </aside>
+</div>
+
+{% schema %}
+{
+  "name": "Cart drawer",
+  "tag": "section",
+  "class": "dl-section dl-cart-drawer",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_recommendations",
+      "label": "Show recommendations",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_discount",
+      "label": "Show discount field",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_gift_notice",
+      "label": "Show gift notice",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_accelerated_checkout",
+      "label": "Show accelerated checkout buttons",
+      "default": true,
+      "info": "Shop Pay, Apple Pay, PayPal and other wallets enabled in your payment settings."
+    },
+    {
+      "type": "text",
+      "id": "empty_title",
+      "label": "Empty headline",
+      "default": "Your Bag is empty"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty text",
+      "default": "Pieces you add will wait here."
+    },
+    {
+      "type": "collection",
+      "id": "empty_collection",
+      "label": "Empty-state collection link"
+    },
+    {
+      "type": "product_list",
+      "id": "recommendation_products",
+      "label": "Often worn together: products",
+      "limit": 6,
+      "info": "Two are shown, skipping products already in the cart."
+    },
+    {
+      "type": "collection",
+      "id": "recommendation_collection",
+      "label": "Often worn together: collection",
+      "info": "Used when no products are chosen. Empty uses all products."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "line-details",
+      "name": "Line details",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_material",
+          "label": "Show material line",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_engraving",
+          "label": "Show engraving line",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_delivery",
+          "label": "Show delivery line",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "delivery_text",
+          "label": "Delivery text",
+          "info": "Shown under each item, for example Ships in 2 to 3 days. Empty hides it."
+        }
+      ]
+    },
+    {
+      "type": "summary-row",
+      "name": "Summary row",
+      "settings": [
+        {
+          "type": "select",
+          "id": "kind",
+          "label": "Row",
+          "default": "delivery",
+          "options": [
+            {
+              "value": "subtotal",
+              "label": "Subtotal"
+            },
+            {
+              "value": "delivery",
+              "label": "Delivery"
+            },
+            {
+              "value": "taxes",
+              "label": "Taxes note"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Delivery"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value",
+          "info": "Empty uses the delivery summary text in Theme settings > Cart."
+        }
+      ]
+    },
+    {
+      "type": "trust-note",
+      "name": "Trust note",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "seal-check",
+          "options": [
+            {
+              "value": "seal-check",
+              "label": "Seal"
+            },
+            {
+              "value": "shield-check",
+              "label": "Shield"
+            },
+            {
+              "value": "lock-simple",
+              "label": "Lock"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Secure checkout."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

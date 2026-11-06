@@ -1,0 +1,20 @@
+{%- comment -%}
+  Article card with a title override (article-related "Pinned article" block). Same markup as the shared
+  article-card snippet; only the heading text differs.
+
+  Accepts:
+  - article {Object}
+  - title {String} heading text shown instead of article.title
+  - show_excerpt {Boolean}
+{%- endcomment -%}
+<a class="dl-acard" href="{{ article.url }}">
+  <div class="art">{% render 'product-photo', image: article.image, size: 160, alt: article.image.alt, kind: 'ring', metal: 'yellow-gold' %}</div>
+  {%- if article.tags.size > 0 -%}
+    <p class="t-overline" style="margin:0">{{ article.tags.first | escape }}</p>
+  {%- endif -%}
+  <h3>{{ title | escape }}</h3>
+  {%- if show_excerpt and article.excerpt_or_content != blank -%}
+    <p class="t-body muted" style="margin:0">{{ article.excerpt_or_content | strip_html | truncatewords: 22 }}</p>
+  {%- endif -%}
+  <p class="t-caption" style="margin:0"><time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: '%B %-d' }}</time></p>
+</a>

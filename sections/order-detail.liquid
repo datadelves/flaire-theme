@@ -1,0 +1,389 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign line_block = section.blocks | where: 'type', 'line' | first
+  assign status_block = section.blocks | where: 'type', 'status' | first
+  assign show_material = true
+  assign show_engraving = true
+  if line_block
+    assign show_material = line_block.settings.show_material
+    assign show_engraving = line_block.settings.show_engraving
+  endif
+
+  assign heading = section.settings.headline | strip_html
+  if heading == blank
+    assign heading = 'customer.account.order_number' | t
+  endif
+  assign heading = heading | append: ' ' | append: order.name
+
+  comment
+    One status for the order: cancelled, refunded, fulfilled, partially fulfilled or not yet shipped.
+  endcomment
+  assign track_url = ''
+  assign track_company = ''
+  assign track_number = ''
+  for li in order.line_items
+    if li.fulfillment.tracking_url != blank
+      assign track_url = li.fulfillment.tracking_url
+      assign track_company = li.fulfillment.tracking_company
+      assign track_number = li.fulfillment.tracking_numbers | join: ', '
+      break
+    endif
+  endfor
+  if order.cancelled
+    assign status = 'customer.order.cancelled_title' | t
+    assign status_tone = 'caution'
+    assign cancel_date = order.cancelled_at | date: '%B %-d'
+    assign status_text = 'customer.order.cancelled' | t: date: cancel_date
+  elsif order.financial_status == 'refunded'
+    assign status = order.financial_status_label
+    assign status_tone = 'info'
+    assign status_text = 'customer.order.refunded_text' | t
+  elsif order.fulfillment_status == 'fulfilled'
+    assign status = order.fulfillment_status_label
+    assign status_tone = 'success'
+    if track_company != blank and track_number != blank
+      assign status_text = 'customer.order.shipped_with' | t: company: track_company, number: track_number
+    else
+      assign status_text = 'customer.order.shipped' | t
+    endif
+  elsif order.fulfillment_status == 'partial'
+    assign status = order.fulfillment_status_label
+    assign status_tone = 'info'
+    assign status_text = 'customer.order.partial_text' | t
+  else
+    assign status = order.fulfillment_status_label
+    assign status_tone = 'info'
+    assign status_text = 'customer.order.unfulfilled_text' | t
+  endif
+  assign track_label = ''
+  if section.settings.show_tracking and track_url != blank
+    assign track_label = 'customer.order.track' | t
+  endif
+
+  assign placed_date = order.created_at | date: '%B %-d'
+  assign lead = 'customer.order.placed_short' | t: date: placed_date
+  assign lead = lead | append: ' · ' | append: status
+
+  assign reorder_url = ''
+  if section.settings.show_reorder
+    assign reorder_parts = ''
+    for li in order.line_items
+      if li.variant_id and li.variant.available
+        assign reorder_parts = reorder_parts | append: li.variant_id | append: ':' | append: li.quantity | append: ','
+      endif
+    endfor
+    if reorder_parts != blank
+      assign reorder_url = reorder_parts | split: ',' | join: ',' | prepend: '/' | prepend: routes.cart_url
+    endif
+  endif
+-%}
+{%- if order -%}
+  <div class="band {{ scheme }}" data-section="order-detail" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="wrap-c">
+      <div style="margin-bottom:24px">
+        <nav class="dl-crumb" aria-label="{{ 'general.breadcrumb' | t }}"><a href="{{ routes.account_url }}">{{ 'accessibility.account' | t }}</a>{% render 'icon', icon: 'caret-right', size: 12 %}<span aria-current="page">{{ heading | escape }}</span></nav>
+      </div>
+      {%- if section.settings.eyebrow != blank %}<p class="t-overline" style="margin-bottom:8px">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+      <h1 class="t-headline" style="margin:0">{{ heading | escape }}</h1>
+      <p class="t-lead" style="margin:8px 0 32px">{{ lead }}</p>
+      {%- if section.settings.sub != blank %}<p class="t-body muted" style="margin:-16px 0 32px">{{ section.settings.sub }}</p>{% endif -%}
+
+      {%- if status_block -%}
+        <div {{ status_block.shopify_attributes }}>
+          {%- if status_block.settings.style == 'notice' -%}
+            {%- render 'notice', tone: status_tone, title: status, text: status_text, link_label: track_label, link_url: track_url, link_attrs: 'target="_blank" rel="noopener"' -%}
+          {%- else -%}
+            <p class="t-body" style="margin:0">
+              {%- if status_block.settings.label != blank %}<span class="t-strong">{{ status_block.settings.label | escape }}:</span> {% endif -%}
+              {{ status }}. <span class="muted">{{ status_text }}</span>
+              {%- if track_label != blank %} <a href="{{ track_url }}" target="_blank" rel="noopener">{{ track_label }}</a>{% endif -%}
+            </p>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      <div style="margin-top:32px;border-top:1px solid var(--hairline)"{% if line_block %} {{ line_block.shopify_attributes }}{% endif %}>
+        {%- for item in order.line_items -%}
+          {%- render 'bag-line', item: item, index: forloop.index, readonly: true, show_material: show_material, show_engraving: show_engraving -%}
+        {%- endfor -%}
+      </div>
+
+      <div class="split" style="margin-top:40px;align-items:start">
+        <div class="stack">
+          {%- if section.settings.show_addresses -%}
+            {%- assign ship = order.shipping_address | default: order.billing_address -%}
+            {%- if ship -%}
+              <p class="t-title" style="margin:0">{{ 'customer.order.shipping_address' | t }}</p>
+              <p class="t-caption" style="margin:0">
+                <span>{{ ship.name | escape }}</span><br>
+                <span>{{ ship.address1 | escape }}{% if ship.address2 != blank %}, {{ ship.address2 | escape }}{% endif %}</span><br>
+                <span>{{ ship.city | escape }}{% if ship.province_code != blank %} {{ ship.province_code | escape }}{% endif %}, {{ ship.zip | escape }}</span>
+              </p>
+            {%- endif -%}
+          {%- endif -%}
+        </div>
+        <div class="stack">
+          <div class="dl-sumrow"><span class="m">{{ 'customer.order.subtotal' | t }}</span><span>{{ order.line_items_subtotal_price | money }}</span></div>
+          {%- for discount in order.cart_level_discount_applications -%}
+            <div class="dl-sumrow"><span class="m">{{ 'customer.order.discount' | t }}{% if discount.title != blank %} <b>{{ discount.title | escape }}</b>{% endif %}</span><span>−{{ discount.total_allocated_amount | money }}</span></div>
+          {%- endfor -%}
+          <div class="dl-sumrow"><span class="m">{{ 'customer.order.shipping' | t }}</span><span>{% if order.shipping_price > 0 %}{{ order.shipping_price | money }}{% else %}{{ 'customer.order.free' | t }}{% endif %}</span></div>
+          {%- if order.tax_price > 0 -%}
+            <div class="dl-sumrow"><span class="m">{{ 'customer.order.tax' | t }}</span><span>{{ order.tax_price | money }}</span></div>
+          {%- endif -%}
+          <div class="dl-sumrow total"><span>{{ 'customer.order.total' | t }}</span><span>{{ order.total_price | money }}</span></div>
+        </div>
+      </div>
+
+      {%- if reorder_url != blank -%}
+        {%- assign buy_again = 'customer.order.buy_again' | t -%}
+        <p style="margin-top:32px">{%- render 'button', label: buy_again, variant: 'secondary', url: reorder_url -%}</p>
+      {%- endif -%}
+
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'support' and block.settings.text != blank -%}
+          {%- liquid
+            assign help_url = block.settings.link
+            if help_url == blank
+              assign help_url = pages.contact.url
+            endif
+          -%}
+          <p class="t-caption inline" style="margin-top:32px;gap:8px" {{ block.shopify_attributes }}>
+            {%- render 'icon', icon: block.settings.icon, size: 20 -%}
+            {%- if help_url != blank -%}<a href="{{ help_url }}">{{ block.settings.text | escape }}</a>{%- else -%}<span>{{ block.settings.text | escape }}</span>{%- endif -%}
+          </p>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Order",
+  "tag": "section",
+  "class": "dl-section dl-order-detail",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Order"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tracking",
+      "label": "Show tracking",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_addresses",
+      "label": "Show addresses",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_reorder",
+      "label": "Show reorder",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "line",
+      "name": "Line options",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_material",
+          "label": "Show material",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_engraving",
+          "label": "Show engraving",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_sku",
+          "label": "Show SKU",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "status",
+      "name": "Status",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "text",
+          "options": [
+            {
+              "value": "text",
+              "label": "Text"
+            },
+            {
+              "value": "notice",
+              "label": "Notice"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_timeline",
+          "label": "Show timeline",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Status"
+        }
+      ]
+    },
+    {
+      "type": "support",
+      "name": "Support",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "chat-circle-dots",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Need help with this order?"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "customers/order"
+    ]
+  },
+  "limit": 1,
+  "default": {
+    "blocks": [
+      {
+        "type": "status",
+        "settings": {
+          "style": "notice",
+          "show_timeline": false,
+          "label": "Status"
+        }
+      },
+      {
+        "type": "line",
+        "settings": {
+          "show_material": true,
+          "show_engraving": true,
+          "show_sku": false
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

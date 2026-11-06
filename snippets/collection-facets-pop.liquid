@@ -1,0 +1,70 @@
+{%- comment -%}
+  One link-style filter control and its popover (collection-facets, main-search). The inputs belong to the
+  surrounding <form data-facets-form>: checkboxes apply on change, price fields apply on submit.
+
+  Accepts:
+  - filter {Object} storefront filter (list, boolean or price_range)
+  - style {String} swatch | list | price (price_range filters always render the price fields)
+  - show_count {Boolean} muted counts after values
+  - count {Number} current result count (button label)
+  - id_prefix {String} popover id prefix (default pop)
+{%- endcomment -%}
+{%- liquid
+  assign key = filter.label | handleize
+  assign prefix = id_prefix | default: 'pop'
+  assign pop_id = prefix | append: '-' | append: key
+  assign on = 0
+  if filter.type == 'price_range'
+    if filter.min_value.value != nil or filter.max_value.value != nil
+      assign on = 1
+    endif
+  else
+    assign on = filter.active_values.size
+  endif
+  assign show_label = 'products.facets.show_results' | t: count: count
+-%}
+<span class="dl-pop-anchor"><button class="fc-btn fc-btn-link" type="button" aria-expanded="false" aria-controls="{{ pop_id }}" data-act="pop" data-pop="{{ key }}"><span>{{ filter.label | escape }}</span>{% if on > 0 %} <span class="muted">({{ on }})</span>{% endif %} {% render 'icon', icon: 'caret-down', size: 14 %}</button>
+  <div class="dl-pop scheme-1" id="{{ pop_id }}" role="group" aria-label="{{ filter.label | escape }}" hidden>
+    {%- if filter.type == 'price_range' -%}
+      {%- liquid
+        assign min_v = ''
+        assign max_v = ''
+        if filter.min_value.value != nil
+          assign rem = filter.min_value.value | modulo: 100
+          if rem == 0
+            assign min_v = filter.min_value.value | divided_by: 100
+          else
+            assign min_v = filter.min_value.value | divided_by: 100.0
+          endif
+        endif
+        if filter.max_value.value != nil
+          assign rem = filter.max_value.value | modulo: 100
+          if rem == 0
+            assign max_v = filter.max_value.value | divided_by: 100
+          else
+            assign max_v = filter.max_value.value | divided_by: 100.0
+          endif
+        endif
+        assign max_ph = filter.range_max | divided_by: 100 | append: ''
+        assign label_from = 'products.facets.price_from' | t
+        assign label_to = 'products.facets.price_to' | t
+        assign id_min = pop_id | append: '-min'
+        assign id_max = pop_id | append: '-max'
+      -%}
+      <div class="stack" style="gap:12px"><div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        {%- render 'field', label: label_from, name: filter.min_value.param_name, id: id_min, type: 'text', value: min_v, placeholder: '0', attrs: 'inputmode="decimal"' -%}
+        {%- render 'field', label: label_to, name: filter.max_value.param_name, id: id_max, type: 'text', value: max_v, placeholder: max_ph, attrs: 'inputmode="decimal"' -%}
+      </div>
+      {%- render 'button', label: show_label, size: 'sm', type: 'submit' -%}
+      </div>
+    {%- else -%}
+      {%- for value in filter.values -%}
+        {%- assign vh = value.label | handleize -%}
+        <label><input type="checkbox" name="{{ value.param_name }}" value="{{ value.value | escape }}"{% if value.active %} checked{% endif %} style="width:20px;height:20px;accent-color:var(--action)">
+          {%- if style == 'swatch' -%}<span class="dot" style="background:var(--metal-{{ vh }}, var(--gem-{{ vh }}, {{ value.swatch.color | default: 'var(--hairline)' }}))"></span>{%- endif -%}
+          {{- value.label | escape -}}{% if show_count %} <span class="muted">({{ value.count }})</span>{% endif %}</label>
+      {%- endfor -%}
+      {%- render 'button', label: show_label, size: 'sm', attrs: 'data-act="pop-close"' -%}
+    {%- endif -%}
+  </div>
+</span>

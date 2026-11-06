@@ -1,0 +1,432 @@
+{%- comment -%}
+  Search page (prototype searchHtml). Tabs are links that set `type`: Pieces = product, Journal = article,
+  Pages = page. A mixed search (the theme's forms and links send type=product,article,page, since a search
+  without `type` may return products only) fills this grid with products and lists articles/pages in the
+  search-journal-results section below.
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign per_page = section.settings.per_page | default: 24
+  assign filters_block = section.blocks | where: 'type', 'filters' | first
+  assign popular_block = section.blocks | where: 'type', 'popular' | first
+  assign suggestion_blocks = section.blocks | where: 'type', 'suggestion'
+
+  assign single = false
+  assign tab = 'product'
+  if search.types.size == 1
+    assign single = true
+    assign tab = search.types.first
+  endif
+  assign terms = search.terms
+  assign terms_q = terms | url_encode
+  assign base_url = routes.search_url | append: '?q=' | append: terms_q | append: '&options%5Bprefix%5D=last'
+  assign all_types = 'product,article,page'
+  assign types_joined = search.types | join: ','
+  if types_joined == blank
+    assign types_joined = all_types
+  endif
+
+  assign enable_filters = true
+  assign enable_sort = true
+  assign filter_label = ''
+  if filters_block
+    assign enable_filters = filters_block.settings.enable
+    assign enable_sort = filters_block.settings.enable_sort
+    assign filter_label = filters_block.settings.label
+  endif
+
+  capture popular_html
+    if popular_block and popular_block.settings.menu != blank
+      for link in popular_block.settings.menu.links
+        assign link_title = link.title | escape
+        echo '<a class="dl-chip" href="' | append: link.url | append: '">' | append: link_title | append: '</a>'
+      endfor
+    elsif popular_block
+      assign popular_terms = popular_block.settings.terms | split: ','
+      for t in popular_terms
+        assign term = t | strip
+        if term != blank
+          assign term_q = term | url_encode
+          assign term_text = term | escape
+          echo '<a class="dl-chip" href="' | append: routes.search_url | append: '?q=' | append: term_q | append: '&amp;options%5Bprefix%5D=last&amp;type=' | append: all_types | append: '">' | append: term_text | append: '</a>'
+        endif
+      endfor
+    endif
+  endcapture
+  assign popular_label = popular_block.settings.heading | default: '' | escape
+-%}
+{%- paginate search.results by per_page -%}
+{%- liquid
+  assign n_product = 0
+  assign n_article = 0
+  assign n_page = 0
+  for item in search.results
+    case item.object_type
+      when 'product'
+        assign n_product = n_product | plus: 1
+      when 'article'
+        assign n_article = n_article | plus: 1
+      when 'page'
+        assign n_page = n_page | plus: 1
+    endcase
+  endfor
+  assign exact = false
+  if paginate.pages <= 1
+    assign exact = true
+  endif
+  if single
+    assign pieces_count = search.results_count
+  elsif exact
+    assign pieces_count = n_product
+  else
+    assign pieces_count = search.results_count
+  endif
+
+  assign filters_active = false
+  for filter in search.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value != nil or filter.max_value.value != nil
+        assign filters_active = true
+      endif
+    elsif filter.active_values.size > 0
+      assign filters_active = true
+    endif
+  endfor
+-%}
+<div class="band tight {{ scheme }}" data-section="main-search" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="wrap">
+    {%- if section.settings.eyebrow != blank %}<p class="t-overline">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+    {%- if section.settings.headline != blank %}<h1 class="t-headline" style="margin:0 0 24px">{{ section.settings.headline }}</h1>{% endif -%}
+    {%- if section.settings.sub != blank %}<p class="t-lead" style="margin:-8px 0 24px">{{ section.settings.sub }}</p>{% endif -%}
+    <form class="dl-search-field" style="max-width:692px" action="{{ routes.search_url }}" method="get" data-form="search" role="search" novalidate>
+      {%- render 'icon', icon: 'magnifying-glass' -%}
+      <input class="fc-input" type="search" name="q" value="{{ terms | escape }}" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" aria-label="{{ 'search.title' | t }}">
+      <input type="hidden" name="options[prefix]" value="last">
+      <input type="hidden" name="type" value="{{ types_joined }}">
+    </form>
+
+    {%- if search.performed and section.settings.show_types -%}
+      <div class="fc-chips" style="margin:24px 0" role="tablist" aria-label="{{ 'search.result_types' | t }}">
+        {%- assign tab_types = 'product,article,page' | split: ',' -%}
+        {%- for tt in tab_types -%}
+          {%- liquid
+            assign tab_count = nil
+            if single and tab == tt
+              assign tab_count = search.results_count
+            elsif single == false and exact
+              case tt
+                when 'product'
+                  assign tab_count = n_product
+                when 'article'
+                  assign tab_count = n_article
+                else
+                  assign tab_count = n_page
+              endcase
+            endif
+            case tt
+              when 'product'
+                if tab_count == nil
+                  assign tab_label = 'search.pieces_label' | t
+                else
+                  assign tab_label = 'search.pieces_tab' | t: count: tab_count
+                endif
+              when 'article'
+                if tab_count == nil
+                  assign tab_label = 'search.journal_label' | t
+                else
+                  assign tab_label = 'search.journal_tab' | t: count: tab_count
+                endif
+              else
+                if tab_count == nil
+                  assign tab_label = 'search.pages_label' | t
+                else
+                  assign tab_label = 'search.pages_tab' | t: count: tab_count
+                endif
+            endcase
+          -%}
+          <a class="dl-chip {% if tab == tt %}is-on{% endif %}" role="tab" aria-selected="{% if tab == tt %}true{% else %}false{% endif %}" href="{{ base_url }}&amp;type={{ tt }}">{{ tab_label }}</a>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    {%- if search.performed == false -%}
+      <div class="dl-empty"{% unless section.settings.show_types %} style="margin-top:24px"{% endunless %}>
+        <h2 class="t-title-lg">{{ 'search.empty_title' | t }}</h2>
+        <p class="t-body muted" style="margin:0">{{ 'search.no_results_hint' | t }}</p>
+        {%- if popular_html != blank and popular_block.settings.show_empty -%}
+          <nav class="fc-chips" style="justify-content:center"{% if popular_label != blank %} aria-label="{{ popular_label }}"{% endif %} {{ popular_block.shopify_attributes }}>{{ popular_html }}</nav>
+        {%- endif -%}
+      </div>
+    {%- elsif tab == 'product' -%}
+      {%- if n_product > 0 or filters_active -%}
+        {%- if enable_filters or enable_sort -%}
+          {%- capture hidden_html -%}<input type="hidden" name="q" value="{{ terms | escape }}"><input type="hidden" name="options[prefix]" value="last"><input type="hidden" name="type" value="{{ types_joined }}">{%- endcapture -%}
+          {%- liquid
+            assign clear_url = base_url | append: '&type=' | append: types_joined
+            if search.sort_by != blank
+              assign clear_url = clear_url | append: '&sort_by=' | append: search.sort_by
+            endif
+          -%}
+          <div class="dl-filters-wrap ms-facets" data-facets data-section-id="{{ section.id }}" {{ filters_block.shopify_attributes }}>
+            {%- render 'collection-facets-bar',
+              results: search,
+              action: routes.search_url,
+              blocks: section.blocks,
+              enable_filtering: enable_filters,
+              enable_sorting: enable_sort,
+              show_count: false,
+              count: pieces_count,
+              clear_url: clear_url,
+              mobile_label: filter_label,
+              hidden_html: hidden_html,
+              is_search: true
+            -%}
+          </div>
+        {%- endif -%}
+        <div class="ms-results" data-grid-section data-section-id="{{ section.id }}" data-count="{{ pieces_count }}">
+          {%- if n_product > 0 -%}
+            <p class="t-caption" role="status" style="margin-bottom:16px">
+              {%- if pieces_count == 1 -%}{{ 'search.results_for_one' | t: count: pieces_count, terms: terms }}{%- else -%}{{ 'search.results_for' | t: count: pieces_count, terms: terms }}{%- endif -%}
+            </p>
+            <div class="grid g4" data-grid>
+              {%- for item in search.results -%}
+                {%- if item.object_type == 'product' -%}
+                  {%- render 'product-card', product: item, size: 140 -%}
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+            {%- liquid
+              assign shown = paginate.current_offset | plus: search.results.size
+              assign total = paginate.items
+              assign pct = 100
+              if total > 0
+                assign pct = shown | times: 100 | divided_by: total
+              endif
+            -%}
+            {%- if paginate.next -%}
+              <div class="dl-pager" data-more-slot>
+                <span class="t-caption" role="status">{{ 'products.facets.showing_of' | t: shown: shown, total: total }}</span><div class="bar"><i style="width:{{ pct }}%"></i></div>
+                {%- assign more_label = 'general.load_more' | t -%}
+                {%- capture more_attrs -%}data-act="more" data-next-url="{{ paginate.next.url }}"{%- endcapture -%}
+                {%- render 'button', label: more_label, variant: 'secondary', class: 'js-only', attrs: more_attrs -%}
+              </div>
+              <div class="no-js-only">{%- render 'pagination', paginate: paginate -%}</div>
+            {%- else -%}
+              <div data-more-slot></div>
+            {%- endif -%}
+          {%- else -%}
+            {%- assign clear_label = 'products.facets.clear_filters' | t -%}
+            {%- render 'empty-state', title: section.settings.empty_title, text: section.settings.empty_text, button_label: clear_label, button_url: clear_url, button_attrs: 'data-facet-link' -%}
+          {%- endif -%}
+        </div>
+      {%- elsif single == false and search.results_count > 0 -%}
+        {%- comment -%} Only articles or pages matched: they are listed by the search-journal-results section below. {%- endcomment -%}
+        <div class="dl-empty"><p class="t-body muted" style="margin:0" role="status">{{ 'templates.search.pieces_none' | t: terms: terms }}</p></div>
+      {%- else -%}
+        <div class="dl-empty">
+          {%- if section.settings.empty_title != blank %}<h2 class="t-title-lg">{{ section.settings.empty_title | escape }}</h2>{% endif -%}
+          <p class="t-body muted" style="margin:0" role="status">{{ 'search.no_results' | t: terms: terms }}{% if section.settings.empty_text != blank %} {{ section.settings.empty_text | escape }}{% endif %}</p>
+          {%- if popular_html != blank -%}
+            <nav class="fc-chips" style="justify-content:center"{% if popular_label != blank %} aria-label="{{ popular_label }}"{% endif %} {{ popular_block.shopify_attributes }}>{{ popular_html }}</nav>
+          {%- endif -%}
+        </div>
+        {%- assign has_suggestions = false -%}
+        {%- for block in suggestion_blocks -%}{%- if block.settings.collection != blank -%}{%- assign has_suggestions = true -%}{%- endif -%}{%- endfor -%}
+        {%- if has_suggestions -%}
+          {%- assign shop_label = 'products.facets.shop' | t -%}
+          <div class="grid g3 keep3 ms-suggest">
+            {%- for block in suggestion_blocks -%}
+              {%- if block.settings.collection != blank -%}
+                {%- render 'main-list-collections-tile', c: block.settings.collection, image: block.settings.image, line: block.settings.line, show_count: true, index: 9, shop_label: shop_label, attrs: block.shopify_attributes -%}
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    {%- elsif search.results_count == 0 -%}
+      <div class="dl-empty"><p class="t-body muted" style="margin:0" role="status">{% if tab == 'article' %}{{ 'search.journal_none' | t: terms: terms }}{% else %}{{ 'search.pages_none' | t: terms: terms }}{% endif %}</p></div>
+    {%- endif -%}
+  </div>
+</div>
+{%- endpaginate -%}
+
+{% stylesheet %}
+  .ms-facets.dl-filters-wrap { position: static; padding: 0; margin: 0 0 var(--space-6); background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .ms-facets .wrap { padding: 0; max-width: none; }
+  .ms-results.is-updating [data-grid] { opacity: .5; transition: opacity 150ms; }
+  .ms-suggest { margin-top: var(--space-8); }
+  html.no-js .ms-facets .dl-filters .group.d { display: flex; align-items: flex-start; }
+  html.no-js .ms-facets .dl-pop[hidden] { display: grid !important; position: static; box-shadow: none; }
+  html.no-js .ms-facets .dl-pop [data-act="pop-close"] { display: none; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Search results",
+  "tag": "section",
+  "class": "dl-section dl-main-search",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Search"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "per_page",
+      "label": "Per page",
+      "default": 24,
+      "min": 8,
+      "max": 48,
+      "step": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "show_types",
+      "label": "Show type tabs",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "empty_title",
+      "label": "No-results headline",
+      "default": "Nothing matched"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "No-results text",
+      "default": "Check the spelling or try a metal, a stone or a collection name."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "popular",
+      "name": "Popular searches",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Popular searches"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_empty",
+          "label": "Show on no-results",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "terms",
+          "label": "Search terms",
+          "default": "Sapphire, Rose gold, Pearl earrings, Gift",
+          "info": "Comma-separated. Used when no menu is chosen."
+        }
+      ]
+    },
+    {
+      "type": "filters",
+      "name": "Filters",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "enable",
+          "label": "Enable filters",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_sort",
+          "label": "Enable sort",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Filter"
+        }
+      ]
+    },
+    {
+      "type": "suggestion",
+      "name": "Suggestion tile",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "line",
+          "label": "Line"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "search"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

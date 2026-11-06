@@ -1,0 +1,24 @@
+{%- comment -%}
+  Facet EmptyState: a title, one line, one action and an optional link.
+
+  Accepts:
+  - title {String}
+  - text {String}
+  - heading_level {Number} (default 2)
+  - heading_class {String} (default t-title-lg)
+  - button_label, button_url, button_attrs, button_variant (default secondary)
+  - link_label, link_url
+  - attrs {String} raw extra attributes on the wrapper
+{%- endcomment -%}
+{%- assign heading_level = heading_level | default: 2 -%}
+<div class="dl-empty"{% if attrs != blank %} {{ attrs }}{% endif %}>
+  {%- if title != blank %}<h{{ heading_level }} class="{{ heading_class | default: 't-title-lg' }}">{{ title }}</h{{ heading_level }}>{% endif -%}
+  {%- if text != blank %}<p class="t-body muted" style="margin:0">{{ text }}</p>{% endif -%}
+  {%- if button_label != blank -%}
+    {%- assign button_variant = button_variant | default: 'secondary' -%}
+    {%- render 'button', label: button_label, variant: button_variant, url: button_url, attrs: button_attrs -%}
+  {%- endif -%}
+  {%- if link_label != blank -%}
+    {%- render 'button', label: link_label, variant: 'link', url: link_url -%}
+  {%- endif -%}
+</div>

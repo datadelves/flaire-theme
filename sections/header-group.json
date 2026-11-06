@@ -1,0 +1,144 @@
+{
+  "type": "header",
+  "name": "Header group",
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "settings": {
+        "color_scheme": "scheme-2",
+        "dismissible": true,
+        "rotate_seconds": 6,
+        "show_localization": false
+      },
+      "blocks": {
+        "message-1": {
+          "type": "message",
+          "settings": {
+            "text": "Welcome to our store.",
+            "link_label": "Learn more"
+          }
+        }
+      },
+      "block_order": [
+        "message-1"
+      ]
+    },
+    "header": {
+      "type": "header",
+      "settings": {
+        "color_scheme": "scheme-4",
+        "menu": "main-menu",
+        "logo_position": "left",
+        "show_search": true,
+        "show_account": true,
+        "mega_menu": true,
+        "show_bag_count": true,
+        "mega_style_heading": "Shop by style",
+        "mega_metal_heading": "Shop by metal",
+        "mega_metals": "Yellow Gold, Rose Gold, White Gold, Platinum",
+        "mega_stone_heading": "Shop by stone",
+        "mega_stones": "Diamond, Sapphire, Emerald, Ruby, Pearl, Onyx",
+        "mega_help_heading": "Help",
+        "mega_size_guide": true,
+        "mega_featured_count": 2
+      },
+      "blocks": {
+        "mega-feature-1": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Rings",
+            "eyebrow": "New"
+          }
+        },
+        "mega-feature-2": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Rings",
+            "eyebrow": "Most loved"
+          }
+        },
+        "mega-feature-3": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Necklaces",
+            "eyebrow": "Most loved"
+          }
+        },
+        "mega-feature-4": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Necklaces",
+            "eyebrow": "Limited edition"
+          }
+        },
+        "mega-feature-5": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Earrings",
+            "eyebrow": "Most loved"
+          }
+        },
+        "mega-feature-6": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Earrings",
+            "eyebrow": "New"
+          }
+        },
+        "mega-feature-7": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Bracelets",
+            "eyebrow": "Most loved"
+          }
+        },
+        "mega-feature-8": {
+          "type": "mega-feature",
+          "settings": {
+            "parent": "Bracelets",
+            "eyebrow": "New"
+          }
+        },
+        "utility-link-1": {
+          "type": "utility-link",
+          "settings": {
+            "label": "Engraving",
+            "icon": "diamond"
+          }
+        },
+        "utility-link-2": {
+          "type": "utility-link",
+          "settings": {
+            "label": "Care guide",
+            "icon": "diamond"
+          }
+        },
+        "utility-link-3": {
+          "type": "utility-link",
+          "settings": {
+            "label": "Book a visit",
+            "link": "shopify://pages/contact",
+            "icon": "storefront"
+          }
+        }
+      },
+      "block_order": [
+        "mega-feature-1",
+        "mega-feature-2",
+        "mega-feature-3",
+        "mega-feature-4",
+        "mega-feature-5",
+        "mega-feature-6",
+        "mega-feature-7",
+        "mega-feature-8",
+        "utility-link-1",
+        "utility-link-2",
+        "utility-link-3"
+      ]
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header"
+  ]
+}

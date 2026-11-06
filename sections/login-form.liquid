@@ -1,0 +1,377 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign fields = section.blocks | where: 'type', 'field'
+  assign recover_block = section.blocks | where: 'type', 'recover' | first
+  assign guest_block = section.blocks | where: 'type', 'guest' | first
+
+  assign email_label = 'customer.login.email' | t
+  assign email_msg = 'general.email_invalid' | t
+  assign email_attrs_extra = ''
+  assign pass_label = 'customer.login.password' | t
+  assign pass_msg = 'customer.login.password_error' | t
+  assign pass_attrs_extra = ''
+  if fields[0]
+    if fields[0].settings.label != blank
+      assign email_label = fields[0].settings.label
+    endif
+    if fields[0].settings.error != blank
+      assign email_msg = fields[0].settings.error
+    endif
+    if fields[0].settings.autofocus
+      assign email_attrs_extra = ' autofocus'
+    endif
+    assign email_attrs_extra = email_attrs_extra | append: ' ' | append: fields[0].shopify_attributes
+  endif
+  if fields[1]
+    if fields[1].settings.label != blank
+      assign pass_label = fields[1].settings.label
+    endif
+    if fields[1].settings.error != blank
+      assign pass_msg = fields[1].settings.error
+    endif
+    if fields[1].settings.autofocus
+      assign pass_attrs_extra = ' autofocus'
+    endif
+    assign pass_attrs_extra = pass_attrs_extra | append: ' ' | append: fields[1].shopify_attributes
+  endif
+
+  assign heading = section.settings.headline
+  if heading == blank
+    assign heading = 'customer.login.title' | t
+  endif
+  assign submit_label = section.settings.button_label
+  if submit_label == blank
+    assign submit_label = 'customer.login.submit' | t
+  endif
+  assign problem = 'general.form.problem' | t
+  assign login_error = 'customer.login.error' | t
+  assign recover_id = 'recover'
+-%}
+
+{%- comment -%} The recover form renders first (captured) so its result decides whether the panel starts open. {%- endcomment -%}
+{%- assign recover_ok = false -%}
+{%- assign recover_open = false -%}
+{%- capture recover_form -%}
+  {%- if recover_block -%}
+    {%- form 'recover_customer_password', id: 'recover-form', class: 'stack', style: 'padding-top:16px;border-top:1px solid var(--hairline);width:100%', novalidate: 'novalidate', data-validate: '', data-form: 'recover' -%}
+      {%- liquid
+        if form.posted_successfully?
+          assign recover_ok = true
+        endif
+        assign r_err = ''
+        if form.errors
+          assign recover_open = true
+          assign r_err = email_msg
+          if form.errors contains 'form'
+            assign r_err = form.errors.messages['form']
+          endif
+        endif
+        assign recover_title = recover_block.settings.title | default: 'customer.recover.title'
+        if recover_block.settings.title == blank
+          assign recover_title = 'customer.recover.title' | t
+        endif
+        assign recover_button = recover_block.settings.button
+        if recover_button == blank
+          assign recover_button = 'customer.recover.submit' | t
+        endif
+        assign sending = 'customer.recover.sending' | t
+      -%}
+      <p class="t-title" style="margin:0">{{ recover_title | escape }}</p>
+      <div data-summary{% if form.errors %} data-server{% endif %}>
+        {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: r_err -%}{%- endif -%}
+      </div>
+      {%- capture r_attrs %}data-msg-required="{{ email_msg | escape }}" data-msg-invalid="{{ email_msg | escape }}"{% endcapture -%}
+      {%- render 'field', label: email_label, name: 'email', id: 'r-email', type: 'email', autocomplete: 'email', required: true, error: r_err, attrs: r_attrs -%}
+      {%- capture r_busy %}data-busy-label="{{ sending | escape }}"{% endcapture -%}
+      <div>{%- render 'button', label: recover_button, variant: 'secondary', type: 'submit', attrs: r_busy -%}</div>
+    {%- endform -%}
+  {%- endif -%}
+{%- endcapture -%}
+
+<div class="band tight {{ scheme }}" data-section="login-form" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="wrap-n" style="display:grid;justify-items:center;gap:32px">
+    {%- if section.settings.eyebrow != blank or section.settings.sub != blank -%}
+      <div style="text-align:center;display:grid;gap:8px">
+        {%- if section.settings.eyebrow != blank %}<p class="t-overline">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+        <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+        {%- if section.settings.sub != blank %}<p class="t-lead">{{ section.settings.sub }}</p>{% endif -%}
+      </div>
+    {%- else -%}
+      <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+    {%- endif -%}
+
+    <div style="width:100%;max-width:420px;display:grid;gap:16px" data-login>
+      {%- form 'customer_login', id: 'login-form', class: 'dl-form', novalidate: 'novalidate', data-validate: '', data-form: 'login' -%}
+        {%- liquid
+          assign l_err = ''
+          if form.errors
+            assign l_err = login_error
+            if form.errors contains 'form'
+              assign l_err = form.errors.messages['form']
+            endif
+          endif
+          assign signing_in = 'customer.login.signing_in' | t
+        -%}
+        <div data-summary{% if form.errors %} data-server{% endif %}>
+          {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: l_err -%}{%- endif -%}
+        </div>
+        {%- capture e_attrs %}data-msg-required="{{ email_msg | escape }}" data-msg-invalid="{{ email_msg | escape }}"{{ email_attrs_extra }}{% endcapture -%}
+        {%- render 'field', label: email_label, name: 'customer[email]', id: 'l-email', type: 'email', value: form.email, autocomplete: 'email', required: true, attrs: e_attrs -%}
+        {%- capture p_attrs %}data-msg-required="{{ pass_msg | escape }}"{{ pass_attrs_extra }}{% endcapture -%}
+        {%- render 'field', label: pass_label, name: 'customer[password]', id: 'l-pass', type: 'password', autocomplete: 'current-password', required: true, error: l_err, attrs: p_attrs -%}
+        {%- capture busy_attrs %}data-busy-label="{{ signing_in | escape }}"{% endcapture -%}
+        {%- render 'button', label: submit_label, type: 'submit', size: 'lg', block: true, attrs: busy_attrs -%}
+        <div class="inline" style="justify-content:space-between">
+          {%- if recover_block and section.settings.recover_label != blank -%}
+            <a class="fc-btn fc-btn-link no-chev" href="#{{ recover_id }}" role="button" aria-expanded="{{ recover_open }}" aria-controls="{{ recover_id }}" style="font-size:14px" data-act="toggle" data-focus-target {{ recover_block.shopify_attributes }}>{{ section.settings.recover_label | escape }}</a>
+          {%- endif -%}
+          {%- if section.settings.register_label != blank -%}
+            {%- render 'button', label: section.settings.register_label, variant: 'link', url: routes.account_register_url, attrs: 'style="font-size:14px"' -%}
+          {%- endif -%}
+        </div>
+      {%- endform -%}
+
+      {%- if recover_block -%}
+        <div id="{{ recover_id }}" class="dl-recover" data-hash-open{% unless recover_open %} hidden{% endunless %}>{{ recover_form }}</div>
+        {%- if recover_ok -%}
+          {%- assign ok_title = 'customer.recover.success_title' | t -%}
+          {%- assign ok_text = recover_block.settings.success | default: 'customer.recover.success' -%}
+          {%- if recover_block.settings.success == blank %}{% assign ok_text = 'customer.recover.success' | t %}{% endif -%}
+          {%- render 'notice', tone: 'success', title: ok_title, text: ok_text -%}
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+
+    {%- if guest_block -%}
+      {%- liquid
+        assign guest_url = guest_block.settings.link
+        if guest_url == blank
+          assign guest_url = routes.cart_url
+        endif
+      -%}
+      <p class="t-caption" {{ guest_block.shopify_attributes }}>
+        {%- if guest_block.settings.text != blank %}{{ guest_block.settings.text | escape }} {% endif -%}
+        {%- if guest_block.settings.label != blank -%}
+          {%- render 'button', label: guest_block.settings.label, variant: 'link', url: guest_url, attrs: 'style="font-size:14px"' -%}
+        {%- endif -%}
+      </p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  /* no-JS: "Forgot your password?" links to #recover */
+  html.no-js .dl-login-form .dl-recover:target { display: block !important; }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    // Open a [data-hash-open] panel when the page is reached with its #id (e.g. /account/login#recover).
+    function sync() {
+      var id = location.hash.slice(1);
+      if (!id) return;
+      var panel = document.getElementById(id);
+      if (!panel || !panel.hasAttribute('data-hash-open')) return;
+      panel.hidden = false;
+      document.querySelectorAll('[aria-controls="' + id + '"]').forEach(function (b) { b.setAttribute('aria-expanded', 'true'); });
+      var input = panel.querySelector('input:not([type="hidden"])');
+      if (input) input.focus();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync);
+    else sync();
+    window.addEventListener('hashchange', sync);
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Sign in",
+  "tag": "section",
+  "class": "dl-section dl-login-form",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Sign in"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Sign in"
+    },
+    {
+      "type": "text",
+      "id": "recover_label",
+      "label": "Recover label",
+      "default": "Forgot your password?"
+    },
+    {
+      "type": "text",
+      "id": "register_label",
+      "label": "Register label",
+      "default": "Create an account"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "field",
+      "name": "Field",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Email address"
+        },
+        {
+          "type": "text",
+          "id": "error",
+          "label": "Error",
+          "default": "Enter an email address like name@example.com."
+        },
+        {
+          "type": "checkbox",
+          "id": "autofocus",
+          "label": "Autofocus",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "recover",
+      "name": "Recover form",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Reset your password"
+        },
+        {
+          "type": "text",
+          "id": "button",
+          "label": "Button",
+          "default": "Send reset link"
+        },
+        {
+          "type": "text",
+          "id": "success",
+          "label": "Success",
+          "default": "We have sent a link to your email."
+        }
+      ]
+    },
+    {
+      "type": "guest",
+      "name": "Guest note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "No account is needed to check out."
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Continue as guest"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "customers/login"
+    ]
+  },
+  "limit": 1,
+  "default": {
+    "blocks": [
+      {
+        "type": "field",
+        "settings": {
+          "label": "Email address",
+          "error": "Enter an email address like name@example.com.",
+          "autofocus": false
+        }
+      },
+      {
+        "type": "field",
+        "settings": {
+          "label": "Password",
+          "error": "Enter your password.",
+          "autofocus": false
+        }
+      },
+      {
+        "type": "recover",
+        "settings": {
+          "title": "Reset your password",
+          "button": "Send reset link",
+          "success": "We have sent a link to reset your password."
+        }
+      },
+      {
+        "type": "guest",
+        "settings": {
+          "text": "No account is needed to check out.",
+          "label": "Continue as guest"
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

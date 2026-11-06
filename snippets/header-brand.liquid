@@ -1,0 +1,33 @@
+{%- comment -%}
+  Inner content of the `.fc-nav-brand` link: the given logo (the header section's own logo), else the logo image in
+  Theme settings > Brand and logo, else the wordmark text setting, else the shop name. Used by the header, the
+  footer and the password page.
+
+  Accepts:
+  - logo {Object} optional image that replaces the Theme settings logo (header section setting)
+  - width {Number} display width of `logo` in px (default the Theme settings logo width)
+  - loading {String} eager | lazy (default eager)
+
+  Usage: <a class="fc-nav-brand" href="{{ routes.root_url }}">{% render 'header-brand', logo: section.settings.logo, width: section.settings.logo_width %}</a>
+{%- endcomment -%}
+{%- liquid
+  assign brand_text = settings.brand_name | default: shop.name
+  assign logo_img = settings.logo
+  assign logo_w = settings.logo_width | default: 96
+  if logo != blank
+    assign logo_img = logo
+    assign logo_w = width | default: logo_w
+  endif
+-%}
+{%- if logo_img != blank -%}
+  {%- liquid
+    assign logo_h = logo_w | divided_by: logo_img.aspect_ratio | round
+    assign logo_w2 = logo_w | times: 2
+    assign widths = logo_w | append: ',' | append: logo_w2
+    assign logo_sizes = logo_w | append: 'px'
+    assign logo_loading = loading | default: 'eager'
+  -%}
+  {{- logo_img | image_url: width: logo_w2 | image_tag: width: logo_w, height: logo_h, widths: widths, sizes: logo_sizes, alt: brand_text, loading: logo_loading, style: 'display:block;height:auto' -}}
+{%- else -%}
+  {{- brand_text | escape -}}
+{%- endif -%}

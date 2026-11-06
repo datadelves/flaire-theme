@@ -1,0 +1,50 @@
+{%- comment -%}
+  Facet Specimen: flat vector jewelry silhouette, the empty state for every product image slot.
+  Never shown as product photography; merchant media replaces it.
+
+  Accepts:
+  - kind {String} ring | band | pendant | earring | bracelet | chain (default ring)
+  - metal {String} yellow-gold | rose-gold | white-gold | platinum (default yellow-gold)
+  - gem {String} diamond | sapphire | emerald | ruby | pearl | onyx (default diamond)
+  - size {Number} pixel size (default 200)
+  - label {String} accessible name; pass '' for decorative use
+  - class {String} extra classes
+
+  Usage: {% render 'specimen', kind: 'pendant', metal: 'rose-gold', gem: 'pearl', size: 120 %}
+{%- endcomment -%}
+{%- liquid
+  assign kind = kind | default: 'ring'
+  assign metal = metal | default: 'yellow-gold'
+  assign gem = gem | default: 'diamond'
+  assign size = size | default: 200
+  assign round = false
+  if gem == 'pearl' or gem == 'onyx'
+    assign round = true
+  endif
+  capture stone
+    echo '<polygon class="g-l" points="86,48 114,48 108,64 92,64"/><polygon class="g" points="86,48 92,64 76,64"/><polygon class="g-d" points="114,48 124,64 108,64"/><polygon class="g-d" points="76,64 92,64 100,92"/><polygon class="g-l" points="92,64 108,64 100,92"/><polygon class="g" points="108,64 124,64 100,92"/><polygon class="g-edge" points="86,48 114,48 124,64 100,92 76,64" fill="none"/>'
+  endcapture
+-%}
+<svg class="fc-spec{% if class != blank %} {{ class }}{% endif %}" width="{{ size }}" height="{{ size }}" viewBox="10 8 180 184" {% if label == blank %}aria-hidden="true" focusable="false"{% else %}role="img" aria-label="{{ label | escape }}"{% endif %} style="--m:var(--metal-{{ metal }}, var(--metal-yellow-gold));--g:var(--gem-{{ gem }}, var(--gem-diamond))">
+  {%- case kind -%}
+    {%- when 'pendant' -%}
+      <ellipse class="sh" cx="100" cy="178" rx="38" ry="5"/><path d="M24 6 Q100 140 176 6" class="m-stroke" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="82" r="6" class="m-stroke" stroke-width="3" fill="none"/>
+      <g transform="translate(0,38)">
+        {%- if round -%}<circle class="g" cx="100" cy="66" r="22"/><circle class="g-l" cx="92.3" cy="58.3" r="7.04" opacity=".8"/><circle class="g-edge" cx="100" cy="66" r="22" fill="none"/>{%- else -%}{{ stone }}{%- endif -%}
+      </g>
+    {%- when 'earring' -%}
+      <ellipse class="sh" cx="100" cy="180" rx="30" ry="4"/><path d="M108 52 C142 46 142 12 118 10 C106 9 100 18 100 30" class="m-stroke" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="52" r="8" class="m-stroke" stroke-width="3" fill="none"/>
+      {%- if round -%}<circle class="g" cx="100" cy="98" r="28"/><circle class="g-l" cx="90.2" cy="88.2" r="8.96" opacity=".8"/><circle class="g-edge" cx="100" cy="98" r="28" fill="none"/>{%- else -%}<g transform="translate(0,24) translate(100 48) scale(1.1) translate(-100 -48)">{{ stone }}</g>{%- endif -%}
+    {%- when 'bracelet' -%}
+      <ellipse class="sh" cx="100" cy="176" rx="74" ry="7"/><ellipse cx="100" cy="106" rx="72" ry="52" class="md-stroke" stroke-width="12" fill="none"/><ellipse cx="100" cy="102" rx="72" ry="52" class="m-stroke" stroke-width="10" fill="none" stroke-dasharray="17 4" stroke-linecap="round"/><path d="M40 70 A72 52 0 0 1 82 52" class="ml-stroke" stroke-width="3" fill="none" stroke-linecap="round"/>
+    {%- when 'chain' -%}
+      <ellipse class="sh" cx="100" cy="182" rx="50" ry="4"/><path d="M14 8 Q100 170 186 8" class="m-stroke" stroke-width="6" fill="none" stroke-dasharray="11 3" stroke-linecap="round"/>
+    {%- else -%}
+      <ellipse class="sh" cx="100" cy="186" rx="54" ry="6"/><circle cx="100" cy="122" r="50" class="m-stroke" stroke-width="12" fill="none"/><path d="M62 152 A50 50 0 0 0 144 154" class="md-stroke" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M57 100 A50 50 0 0 1 80 78" class="ml-stroke" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      {%- unless kind == 'band' -%}
+        <g transform="translate(0,-14)"><ellipse class="m-d" cx="100" cy="84" rx="13" ry="7"/>
+          {%- if round -%}<circle class="g" cx="100" cy="66" r="20"/><circle class="g-l" cx="93" cy="59" r="6.4" opacity=".8"/><circle class="g-edge" cx="100" cy="66" r="20" fill="none"/>{%- else -%}{{ stone }}{%- endif -%}
+          <circle class="m-l" cx="78" cy="63" r="2.6"/><circle class="m-l" cx="122" cy="63" r="2.6"/></g>
+      {%- endunless -%}
+  {%- endcase -%}
+</svg>

@@ -1,0 +1,368 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-2'
+  assign max = s.max_length | default: 16
+  assign text = s.sample | default: ''
+  for block in section.blocks
+    if block.type == 'example' and block.settings.active and block.settings.text != blank
+      assign text = block.settings.text
+      break
+    endif
+  endfor
+  assign text = text | slice: 0, max
+  assign choices = section.blocks | where: 'type', 'metal-choice'
+  capture metal_values
+    for block in choices
+      echo block.settings.metal
+      unless forloop.last
+        echo ','
+      endunless
+    endfor
+  endcapture
+  assign first_metal = choices.first.settings.metal | default: 'rose-gold'
+  if s.finish != blank and metal_values contains s.finish
+    assign first_metal = s.finish
+  endif
+  assign sample = s.product
+  assign art = nil
+  if sample != blank
+    assign art = sample.featured_media
+    for option in sample.options_with_values
+      assign option_name = option.name | downcase
+      if option_name == 'finish' or option_name == 'metal'
+        for v in option.values
+          assign vh = v.name | handleize
+          if vh == first_metal and v.variant.featured_media
+            assign art = v.variant.featured_media
+          endif
+        endfor
+      endif
+    endfor
+  endif
+  assign field_id = 'studio-in-' | append: section.id
+  assign msg_id = 'studio-msg-' | append: section.id
+  assign finish_cap = 'products.product.finish' | t
+  assign cta_url = s.cta_link
+  if cta_url == blank and s.collection != blank
+    assign cta_url = s.collection.url
+  endif
+  if text != blank
+    assign preview_label = 'products.engraving.preview_label' | t: text: text
+    assign cap_text = 'products.engraving.count' | t: count: text.size, max: max
+  else
+    assign preview_label = 'products.engraving.preview_empty' | t
+    assign cap_text = 'products.engraving.empty' | t: max: max
+  endif
+-%}
+<div class="band {{ scheme }}" data-section="engraving-studio" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap split">
+  <div class="stack-lg">
+    {%- render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub, left: true, role: 't-display' -%}
+    <div class="stack">
+      <div class="fc-field" data-studio-field><div class="fc-field-top"><label for="{{ field_id }}" class="fc-field-label">{{ 'products.engraving.studio_label' | t }}</label><span class="fc-field-counter" data-studio-count>{{ 'products.engraving.counter' | t: count: text.size, max: max }}</span></div><input id="{{ field_id }}" class="fc-input" type="text" value="{{ text | escape }}" maxlength="{{ max }}" autocomplete="off" spellcheck="false" data-studio-input data-max="{{ max }}" aria-describedby="{{ msg_id }}"><p id="{{ msg_id }}" class="fc-field-msg" data-studio-msg>{{ 'products.engraving.studio_hint' | t: max: max }}</p></div>
+      {%- capture examples -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'example' and block.settings.text != blank -%}
+            <button type="button" class="dl-chip sm" data-act="studio-fill" data-text="{{ block.settings.text | slice: 0, max | escape }}" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}{% if block.settings.note != blank %}<span class="fc-sr">, {{ block.settings.note | escape }}</span>{% endif %}</button>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if examples != blank %}<div class="fc-chips js-only" style="justify-content:flex-start">{{ examples }}</div>{% endif -%}
+      {%- if choices.size > 0 -%}
+        {%- render 'material-swatch', values: metal_values, product: sample, value: first_metal, cap: finish_cap, size: 320 -%}
+      {%- endif -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'rule' -%}
+          {%- if block.settings.title != blank or block.settings.text != blank -%}
+            {%- capture rule_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+            {%- render 'notice', tone: block.settings.tone, title: block.settings.title, text: block.settings.text, attrs: rule_attrs -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    {%- liquid
+      assign show_cta = false
+      if s.cta_label != blank and cta_url != blank
+        assign show_cta = true
+      endif
+      assign show_link = false
+      if s.link_label != blank and s.link != blank
+        assign show_link = true
+      endif
+    -%}
+    {%- if show_cta or show_link -%}
+      <div class="inline" style="gap:20px">
+        {%- if show_cta %}{% render 'button', label: s.cta_label, size: 'lg', url: cta_url %}{% endif -%}
+        {%- if show_link %}{% render 'button', variant: 'link', label: s.link_label, url: s.link %}{% endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+  <figure class="fc-engr" data-engr style="--m:var(--metal-{{ first_metal }})"><div class="fc-engr-stage" role="img" aria-label="{{ preview_label | escape }}"><span class="fc-engr-tag">{{ 'products.engraving.sample' | t }}</span>
+    {%- render 'product-photo', image: art, size: 320, alt: '', sizes: '(max-width: 734px) 80vw, 320px', attrs: 'data-swatch-img', kind: 'band', metal: first_metal -%}
+    <p class="fc-engr-text" data-engr-text>{{ text | escape }}</p></div><figcaption class="fc-engr-cap" data-engr-cap>{{ cap_text }} · {{ 'products.engraving.sample_note' | t }}</figcaption></figure>
+</div></div>
+
+{% stylesheet %}
+  /* placeholder band follows the finish set on the figure (--m) */
+  .fc-engr-stage svg.fc-spec { --m: inherit !important; width: 100%; height: auto; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Engraving studio",
+  "tag": "section",
+  "class": "dl-section dl-engraving-studio",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Engrave"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Say it once, forever"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Engraved by hand, in the time it takes to order."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "max_length",
+      "label": "Max characters",
+      "default": 16,
+      "min": 4,
+      "max": 32,
+      "step": 1
+    },
+    {
+      "type": "text",
+      "id": "sample",
+      "label": "Sample text",
+      "default": "Always, M."
+    },
+    {
+      "type": "select",
+      "id": "finish",
+      "label": "Finish shown first",
+      "default": "rose-gold",
+      "options": [
+        {
+          "value": "yellow-gold",
+          "label": "Yellow Gold"
+        },
+        {
+          "value": "rose-gold",
+          "label": "Rose Gold"
+        },
+        {
+          "value": "white-gold",
+          "label": "White Gold"
+        },
+        {
+          "value": "platinum",
+          "label": "Platinum"
+        }
+      ]
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Engravable collection"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button link"
+    },
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Sample piece",
+      "info": "Its finish photos show in the preview and swap with the finish swatches."
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label",
+      "default": "How engraving works"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "metal-choice",
+      "name": "Finish choice",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "select",
+          "id": "metal",
+          "label": "Metal",
+          "default": "rose-gold",
+          "options": [
+            {
+              "value": "yellow-gold",
+              "label": "Yellow gold"
+            },
+            {
+              "value": "rose-gold",
+              "label": "Rose gold"
+            },
+            {
+              "value": "white-gold",
+              "label": "White gold"
+            },
+            {
+              "value": "platinum",
+              "label": "Platinum"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "rule",
+      "name": "Rule",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Final sale"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Engraved pieces cannot be returned."
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "caution",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "caution",
+              "label": "Caution"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "example",
+      "name": "Example",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Always, M."
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "default": "Initials and a date"
+        },
+        {
+          "type": "checkbox",
+          "id": "active",
+          "label": "Active by default",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Engraving studio",
+      "blocks": [
+        {
+          "type": "metal-choice"
+        },
+        {
+          "type": "metal-choice"
+        },
+        {
+          "type": "metal-choice"
+        },
+        {
+          "type": "metal-choice"
+        },
+        {
+          "type": "rule"
+        },
+        {
+          "type": "rule"
+        },
+        {
+          "type": "example"
+        },
+        {
+          "type": "example"
+        },
+        {
+          "type": "example"
+        },
+        {
+          "type": "example"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

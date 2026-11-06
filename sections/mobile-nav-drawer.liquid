@@ -1,0 +1,236 @@
+{%- comment -%}
+  Mobile menu drawer (chrome.mjs mobileNavHtml). Rendered closed; opened by the header menu button
+  (data-open="mobile-nav"). Top-level items with child links expand in place (data-act="mnav-sub").
+{%- endcomment -%}
+{%- liquid
+  assign menu = section.settings.menu
+  assign menu_label = 'accessibility.menu' | t
+  if section.settings.close_label != blank
+    assign close_label = section.settings.close_label
+  else
+    assign close_label = 'accessibility.close_menu' | t
+  endif
+  assign show_loc = false
+  if section.settings.show_localization and settings.show_country_selector and localization.available_countries.size > 1
+    assign show_loc = true
+  endif
+  assign show_account = false
+  if section.settings.show_account and shop.customer_accounts_enabled
+    assign show_account = true
+  endif
+-%}
+<div class="app-ov" data-ov="mobile-nav" data-section="mobile-nav-drawer" data-section-id="{{ section.id }}" hidden>
+  <div class="dl-scrim" data-act="scrim"></div>
+  <aside class="dl-drawer left dl-mnav scheme-1" data-place="left dl-mnav" data-place-mobile="bottom dl-mnav" role="dialog" aria-modal="true" aria-label="{{ menu_label | escape }}" data-ov-panel>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: menu_label, close_label: close_label, id: 'ov-title-mnav' -%}
+    <div class="bd">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'featured-link' and block.settings.label != blank and block.settings.link != blank -%}
+          {%- capture featured_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+          {%- render 'button', variant: 'link', label: block.settings.label, url: block.settings.link, attrs: featured_attrs -%}
+          {%- if block.settings.badge != blank %} {% render 'badge', text: block.settings.badge %}{% endif %}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if menu != blank and menu.links.size > 0 -%}
+        <div style="margin-top:16px">
+          {%- for link in menu.links -%}
+            {%- if link.links.size > 0 -%}
+              <button type="button" class="row" aria-expanded="false" aria-controls="sub-{{ link.handle }}" data-act="mnav-sub" data-cat="{{ link.handle }}">{{ link.title | escape }}{% render 'icon', icon: 'plus', class: 'ico-closed' %}{% render 'icon', icon: 'minus', class: 'ico-open' %}</button>
+              <div class="sub" id="sub-{{ link.handle }}" hidden>
+                <a href="{{ link.url }}">{{ 'general.shop_all' | t }} {{ link.title | downcase | escape }}</a>
+                {%- for child in link.links -%}
+                  <a href="{{ child.url }}"{% if child.current %} aria-current="page"{% endif %}>{{ child.title | escape }}</a>
+                {%- endfor -%}
+              </div>
+            {%- else -%}
+              <a class="row" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      {%- capture tiles -%}
+        {%- if show_account -%}
+          {%- if customer -%}
+            <a class="dl-mtile" href="{{ routes.account_url }}"><span class="ic">{% render 'icon', icon: 'user', size: 22 %}</span><b>{{ 'accessibility.account' | t }}</b></a>
+          {%- else -%}
+            <a class="dl-mtile" href="{{ routes.account_login_url }}"><span class="ic">{% render 'icon', icon: 'user', size: 22 %}</span><b>{{ 'accessibility.sign_in' | t }}</b></a>
+          {%- endif -%}
+        {%- endif -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'utility' and block.settings.label != blank and block.settings.link != blank -%}
+            <a class="dl-mtile" href="{{ block.settings.link }}" {{ block.shopify_attributes }}><span class="ic">{% render 'icon', icon: block.settings.icon, size: 22 %}</span><b>{{ block.settings.label | escape }}</b></a>
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if show_loc -%}
+          {%- assign c = localization.country -%}
+          <a class="dl-mtile wide" href="#" role="button" aria-haspopup="dialog" data-open="loc"><span class="ic"><img class="dl-flag" src="{{ c | image_url: width: 48 }}" alt="" width="24" height="18" loading="lazy"></span><b><span class="fc-sr">{{ 'localization.country' | t }}: </span>{{ c.name }} ({{ c.currency.iso_code }} {{ c.currency.symbol }})</b></a>
+        {%- endif -%}
+      {%- endcapture -%}
+      {%- capture promo -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'promo' -%}
+            {%- if block.settings.headline != blank or block.settings.link != blank or block.settings.image != blank -%}
+              <div {{ block.shopify_attributes }}><div class="inline" style="gap:16px;align-items:center;background:var(--canvas-alt);border-radius:var(--radius-lg);padding:12px">
+                {%- if block.settings.image != blank -%}
+                  {%- assign promo_style = 'width:72px;height:72px;object-fit:cover;border-radius:var(--radius-md);object-position:' | append: block.settings.image.presentation.focal_point -%}
+                  {{- block.settings.image | image_url: width: 144 | image_tag: width: 72, height: 72, widths: '72,144', sizes: '72px', loading: 'lazy', alt: '', style: promo_style -}}
+                {%- else -%}
+                  {%- render 'specimen', kind: 'ring', metal: 'rose-gold', gem: 'diamond', size: 72, label: '' -%}
+                {%- endif -%}
+                <div>
+                  {%- if block.settings.headline != blank %}<p class="t-title" style="margin:0;font-size:19px">{{ block.settings.headline | escape }}</p>{% endif -%}
+                  {%- if block.settings.link != blank and block.settings.link_label != blank -%}
+                    {%- render 'button', variant: 'link', label: block.settings.link_label, url: block.settings.link, attrs: 'style="font-size:14px"' -%}
+                  {%- endif -%}
+                </div>
+              </div></div>
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if promo != blank or tiles != blank -%}
+        <div class="stack" style="margin-top:32px">
+          {{- promo -}}
+          {%- if tiles != blank %}<div class="dl-mtiles">{{ tiles }}</div>{% endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </aside>
+</div>
+
+{% schema %}
+{
+  "name": "Mobile menu drawer",
+  "tag": "section",
+  "class": "dl-section dl-mobile-nav-drawer",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "Show account row",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_localization",
+      "label": "Show country selector",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "close_label",
+      "label": "Close label",
+      "default": "Close menu"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "featured-link",
+      "name": "Featured link",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Engrave"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Badge"
+        }
+      ]
+    },
+    {
+      "type": "promo",
+      "name": "Promo tile",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "headline",
+          "label": "Headline",
+          "default": "Light, held."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "Shop new"
+        }
+      ]
+    },
+    {
+      "type": "utility",
+      "name": "Utility link",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Book a visit"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "storefront",
+          "options": [
+            {
+              "value": "storefront",
+              "label": "Store"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Mail"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

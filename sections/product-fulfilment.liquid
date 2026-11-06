@@ -1,0 +1,243 @@
+{%- capture base_id -%}{% render 'product-base-variant', product: product %}{%- endcapture -%}
+{%- liquid
+  assign base_id = base_id | strip
+  assign pickup_variant = product.selected_or_first_available_variant
+  for v in product.variants
+    assign vid = v.id | append: ''
+    if vid == base_id
+      assign pickup_variant = v
+      break
+    endif
+  endfor
+-%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign pickup_text = ''
+  if product != blank
+    assign pickup_variant = pickup_variant
+    for availability in pickup_variant.store_availabilities
+      if availability.pick_up_enabled and availability.available
+        assign pickup_time = availability.pick_up_time | default: ''
+        if pickup_time == blank
+          assign pickup_time = 'products.pickup.available' | t
+        endif
+        assign pickup_text = 'products.pickup.ready_at' | t: time: pickup_time, location: availability.location.name
+        break
+      endif
+    endfor
+  endif
+  assign label_check = 'products.pickup.check' | t
+  assign label_more = 'general.learn_more' | t
+-%}
+<div class="band {{ scheme }}" data-section="product-fulfilment" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, role: 't-title-lg', left: true -%}
+    <div class="dl-fgrid">
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when 'delivery' -%}
+            <div class="dl-fcard" {{ block.shopify_attributes }}>
+              <span class="ic">{% render 'icon', icon: block.settings.icon, size: 24 %}</span>
+              {%- if block.settings.title != blank %}<h3>{{ block.settings.title | escape }}</h3>{% endif -%}
+              {%- if block.settings.text != blank %}<p>{{ block.settings.text | escape }}</p>{% endif -%}
+            </div>
+          {%- when 'pickup' -%}
+            {%- if section.settings.show_pickup_stores -%}
+              {%- assign column_text = pickup_text | default: block.settings.fallback -%}
+              <div class="dl-fcard" {{ block.shopify_attributes }}>
+                <span class="ic">{% render 'icon', icon: 'storefront', size: 24 %}</span>
+                {%- if block.settings.title != blank %}<h3>{{ block.settings.title | escape }}</h3>{% endif -%}
+                {%- if column_text != blank %}<p>{{ column_text | escape }}</p>{% endif -%}
+                {%- if block.settings.show_check_link -%}
+                  {%- render 'button', variant: 'link', label: label_check, no_chev: true, attrs: 'data-open="pickup" aria-haspopup="dialog"' -%}
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+          {%- when 'gifting' -%}
+            <div class="dl-fcard" {{ block.shopify_attributes }}>
+              <span class="ic">{% render 'icon', icon: 'gift', size: 24 %}</span>
+              {%- if block.settings.title != blank %}<h3>{{ block.settings.title | escape }}</h3>{% endif -%}
+              {%- if block.settings.text != blank %}<p>{{ block.settings.text | escape }}</p>{% endif -%}
+              {%- if block.settings.link != blank -%}
+                {%- render 'button', variant: 'link', label: label_more, url: block.settings.link -%}
+              {%- endif -%}
+            </div>
+        {%- endcase -%}
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Delivery and pickup",
+  "tag": "section",
+  "class": "dl-section dl-product-fulfilment",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Delivery and pickup"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pickup_stores",
+      "label": "Show pickup stores",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "delivery",
+      "name": "Delivery",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "truck",
+          "options": [
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Delivery"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Shipping options and costs are shown at checkout."
+        }
+      ]
+    },
+    {
+      "type": "pickup",
+      "name": "Pickup",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Pickup in store"
+        },
+        {
+          "type": "text",
+          "id": "fallback",
+          "label": "Fallback text",
+          "default": "Not available for pickup today."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_check_link",
+          "label": "Show the Check another store link",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "gifting",
+      "name": "Gifting",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Gifting"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Add a handwritten note at checkout."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Delivery and pickup",
+      "blocks": [
+        {
+          "type": "delivery"
+        },
+        {
+          "type": "delivery"
+        },
+        {
+          "type": "pickup"
+        },
+        {
+          "type": "gifting"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

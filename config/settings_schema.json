@@ -1,0 +1,686 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Flaire",
+    "theme_author": "Datadelves",
+    "theme_version": "1.0.0",
+    "theme_documentation_url": "https://shopify.dev/docs/storefronts/themes",
+    "theme_support_url": "https://help.shopify.com/en/manual"
+  },
+  {
+    "name": "Brand and logo",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "logo",
+        "label": "Logo image",
+        "info": "Used on the password and gift card pages, in the footer, and in the header when the header section has no logo of its own. .svg or .png with a transparent background. Without a logo the wordmark text is shown."
+      },
+      {
+        "type": "range",
+        "id": "logo_width",
+        "label": "Logo width",
+        "default": 96,
+        "min": 64,
+        "max": 220,
+        "step": 4,
+        "unit": "px"
+      },
+      {
+        "type": "image_picker",
+        "id": "favicon",
+        "label": "Favicon"
+      },
+      {
+        "type": "text",
+        "id": "brand_name",
+        "label": "Wordmark text",
+        "info": "Shown when no logo is set. Empty uses your store name."
+      }
+    ]
+  },
+  {
+    "name": "Colors",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Scheme 1 sets the page background, text and buttons. Scheme 2 is the alternate background, scheme 3 the dark background and scheme 4 the header. Each section uses one scheme."
+      },
+      {
+        "type": "color_scheme_group",
+        "id": "color_schemes",
+        "definition": [
+          {
+            "type": "color",
+            "id": "background",
+            "label": "Background",
+            "default": "#ffffff"
+          },
+          {
+            "type": "color_background",
+            "id": "background_gradient",
+            "label": "Background gradient"
+          },
+          {
+            "type": "color",
+            "id": "text",
+            "label": "Text",
+            "default": "#1d1d1f"
+          },
+          {
+            "type": "color",
+            "id": "text_muted",
+            "label": "Muted text",
+            "default": "#6e6e73"
+          },
+          {
+            "type": "color",
+            "id": "solid_button_background",
+            "label": "Solid button",
+            "default": "#0071e3"
+          },
+          {
+            "type": "color",
+            "id": "solid_button_background_hover",
+            "label": "Solid button hover",
+            "default": "#0062c4"
+          },
+          {
+            "type": "color",
+            "id": "solid_button_label",
+            "label": "Solid button label",
+            "default": "#ffffff"
+          },
+          {
+            "type": "color",
+            "id": "solid_button_border",
+            "label": "Solid button border",
+            "default": "#0071e3"
+          },
+          {
+            "type": "color",
+            "id": "secondary_button_background",
+            "label": "Secondary button",
+            "default": "rgba(0,0,0,0)"
+          },
+          {
+            "type": "color",
+            "id": "secondary_button_background_hover",
+            "label": "Secondary button hover",
+            "default": "#0066cc"
+          },
+          {
+            "type": "color",
+            "id": "secondary_button_label",
+            "label": "Secondary button label",
+            "default": "#0066cc"
+          },
+          {
+            "type": "color",
+            "id": "secondary_button_label_hover",
+            "label": "Secondary button label hover",
+            "default": "#ffffff"
+          },
+          {
+            "type": "color",
+            "id": "secondary_button_border",
+            "label": "Secondary button border",
+            "default": "#0066cc"
+          },
+          {
+            "type": "color",
+            "id": "outline_button",
+            "label": "Outline button label",
+            "default": "#1d1d1f"
+          },
+          {
+            "type": "color",
+            "id": "outline_button_border",
+            "label": "Outline button border",
+            "default": "#86868b"
+          },
+          {
+            "type": "color",
+            "id": "border",
+            "label": "Border",
+            "default": "#d2d2d7"
+          },
+          {
+            "type": "color",
+            "id": "control_border",
+            "label": "Control border",
+            "default": "#86868b"
+          },
+          {
+            "type": "color",
+            "id": "focus",
+            "label": "Focus ring",
+            "default": "#0071e3"
+          },
+          {
+            "type": "color",
+            "id": "shadow",
+            "label": "Shadow",
+            "default": "rgba(0,0,0,0.22)"
+          },
+          {
+            "type": "color",
+            "id": "link",
+            "label": "Link",
+            "default": "#0066cc"
+          },
+          {
+            "type": "color",
+            "id": "success",
+            "label": "Success",
+            "default": "#1e7a34"
+          },
+          {
+            "type": "color",
+            "id": "caution",
+            "label": "Caution",
+            "default": "#a64d00"
+          },
+          {
+            "type": "color",
+            "id": "danger",
+            "label": "Danger",
+            "default": "#d70015"
+          },
+          {
+            "type": "color",
+            "id": "disabled_text",
+            "label": "Disabled text",
+            "default": "#86868b"
+          },
+          {
+            "type": "color",
+            "id": "disabled_background",
+            "label": "Panel and disabled background",
+            "default": "#f5f5f7"
+          },
+          {
+            "type": "color",
+            "id": "scrim",
+            "label": "Overlay",
+            "default": "rgba(0,0,0,0.48)"
+          }
+        ],
+        "role": {
+          "background": {
+            "solid": "background",
+            "gradient": "background_gradient"
+          },
+          "text": "text",
+          "primary_button": "solid_button_background",
+          "on_primary_button": "solid_button_label",
+          "primary_button_border": "solid_button_border",
+          "secondary_button": "secondary_button_background",
+          "on_secondary_button": "secondary_button_label",
+          "secondary_button_border": "secondary_button_border",
+          "icons": "text",
+          "links": "link"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Typography",
+    "settings": [
+      {
+        "type": "font_picker",
+        "id": "type_header_font",
+        "label": "Heading font",
+        "default": "figtree_n6"
+      },
+      {
+        "type": "font_picker",
+        "id": "type_body_font",
+        "label": "Body font",
+        "default": "figtree_n4"
+      },
+      {
+        "type": "font_picker",
+        "id": "type_accent_font",
+        "label": "Engraving font",
+        "default": "cormorant_i5",
+        "info": "Used for engraving previews."
+      }
+    ]
+  },
+  {
+    "name": "Layout",
+    "settings": [
+      {
+        "type": "select",
+        "id": "section_spacing",
+        "label": "Section spacing",
+        "default": "standard",
+        "options": [
+          {
+            "value": "standard",
+            "label": "Standard"
+          },
+          {
+            "value": "compact",
+            "label": "Compact"
+          }
+        ],
+        "info": "Space between sections. Standard: 120px on desktop, 80px on tablets, 64px on phones. Compact: 80px, 64px and 48px."
+      },
+      {
+        "type": "select",
+        "id": "page_width",
+        "label": "Page width",
+        "default": "1260",
+        "options": [
+          {
+            "value": "1100",
+            "label": "1100px"
+          },
+          {
+            "value": "1260",
+            "label": "1260px"
+          },
+          {
+            "value": "1440",
+            "label": "1440px"
+          }
+        ]
+      },
+      {
+        "type": "checkbox",
+        "id": "sticky_header",
+        "label": "Use sticky header",
+        "default": true
+      }
+    ]
+  },
+  {
+    "name": "Cart",
+    "settings": [
+      {
+        "type": "select",
+        "id": "cart_type",
+        "label": "Cart type",
+        "default": "drawer",
+        "options": [
+          {
+            "value": "drawer",
+            "label": "Drawer"
+          },
+          {
+            "value": "page",
+            "label": "Page"
+          }
+        ]
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_auto_open",
+        "label": "Open cart drawer after adding",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "free_delivery_label",
+        "label": "Delivery summary text",
+        "default": "Calculated at checkout",
+        "info": "Shown next to Delivery in the cart summary. Empty hides the row."
+      },
+      {
+        "type": "checkbox",
+        "id": "show_gift_notice",
+        "label": "Show gift notice",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "gift_notice_text",
+        "label": "Gift notice text",
+        "default": "Gift notes. Add a note at checkout.",
+        "info": "The first sentence is shown in bold."
+      },
+      {
+        "type": "checkbox",
+        "id": "show_cart_note",
+        "label": "Show order note",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_discount_field",
+        "label": "Show discount code field",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_shipping_estimate",
+        "label": "Show shipping estimate",
+        "default": true
+      }
+    ]
+  },
+  {
+    "name": "Product cards and quick view",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "quick_view_enabled",
+        "label": "Enable quick view",
+        "default": true
+      },
+      {
+        "type": "select",
+        "id": "quick_add_mode",
+        "label": "Quick add on cards",
+        "default": "smart",
+        "options": [
+          {
+            "value": "smart",
+            "label": "Add single-variant products, open quick view for others"
+          },
+          {
+            "value": "always_quick_view",
+            "label": "Always open quick view"
+          },
+          {
+            "value": "off",
+            "label": "Hide add button"
+          }
+        ]
+      },
+      {
+        "type": "checkbox",
+        "id": "card_show_material",
+        "label": "Show material line",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "card_show_badge",
+        "label": "Show badges",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "badge_new_auto",
+        "label": "Show New on recently added products",
+        "default": false,
+        "info": "Products without a badge metafield show New for the number of days below. Off: only the badge metafield is shown."
+      },
+      {
+        "type": "range",
+        "id": "badge_new_days",
+        "label": "Days a product counts as new",
+        "default": 30,
+        "min": 1,
+        "max": 90,
+        "step": 1,
+        "unit": "d"
+      },
+      {
+        "type": "checkbox",
+        "id": "card_hover_lift",
+        "label": "Lift cards on hover",
+        "default": true
+      },
+      {
+        "type": "select",
+        "id": "products_per_row_mobile",
+        "label": "Products per row on mobile",
+        "default": "2",
+        "options": [
+          {
+            "value": "1",
+            "label": "1"
+          },
+          {
+            "value": "2",
+            "label": "2"
+          }
+        ]
+      },
+      {
+        "type": "header",
+        "content": "Product metafields"
+      },
+      {
+        "type": "paragraph",
+        "content": "Optional. Show your own product metafields on cards, in quick view and in menus. Enter each as namespace.key, for example custom.material."
+      },
+      {
+        "type": "text",
+        "id": "product_material_metafield",
+        "label": "Material line",
+        "info": "Single line text. Empty shows the first finish names."
+      },
+      {
+        "type": "text",
+        "id": "product_badge_metafield",
+        "label": "Badge",
+        "info": "Single line text, for example Limited edition. Empty shows the Sale and New badges only."
+      },
+      {
+        "type": "text",
+        "id": "product_summary_metafield",
+        "label": "Short description",
+        "info": "Shown in quick view and the featured product section. Empty uses the start of the description."
+      },
+      {
+        "type": "text",
+        "id": "product_stone_metafield",
+        "label": "Stone",
+        "info": "Shown in the quick view details and as stone links in the menu. Empty hides them."
+      },
+      {
+        "type": "text",
+        "id": "product_carat_metafield",
+        "label": "Stone weight in carats"
+      }
+    ]
+  },
+  {
+    "name": "Pricing, stock and fulfillment",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "show_compare_at",
+        "label": "Show compare-at price",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_unit_price",
+        "label": "Show unit price",
+        "default": true
+      },
+      {
+        "type": "range",
+        "id": "inventory_low_threshold",
+        "label": "Low stock threshold",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 1
+      },
+      {
+        "type": "checkbox",
+        "id": "inventory_show_count",
+        "label": "Show stock count",
+        "default": true,
+        "info": "Shows the number left when stock is at or below the threshold."
+      },
+      {
+        "type": "checkbox",
+        "id": "pickup_enabled",
+        "label": "Show pickup availability",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "selling_plans_enabled",
+        "label": "Show subscription options",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_final_sale_notice",
+        "label": "Show final sale notice on engraved items",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "engraving_tag",
+        "label": "Engravable product tag",
+        "default": "engravable",
+        "info": "Engraving is offered on products with this tag. Empty offers it on every product."
+      }
+    ]
+  },
+  {
+    "name": "Reviews",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "reviews_show_photos",
+        "label": "Show review photos",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_card_rating",
+        "label": "Show rating on cards",
+        "default": false
+      }
+    ]
+  },
+  {
+    "name": "Search",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "predictive_search_enabled",
+        "label": "Enable predictive search",
+        "default": true
+      },
+      {
+        "type": "range",
+        "id": "predictive_search_limit",
+        "label": "Products in predictive search",
+        "default": 4,
+        "min": 2,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "type": "link_list",
+        "id": "popular_searches_menu",
+        "label": "Popular searches menu"
+      }
+    ]
+  },
+  {
+    "name": "Customer accounts",
+    "settings": [
+      {
+        "type": "link_list",
+        "id": "customer_account_menu",
+        "label": "Customer account menu",
+        "default": "customer-account-main-menu",
+        "info": "Links in the account sheet that opens from the header's account icon."
+      }
+    ]
+  },
+  {
+    "name": "Localization",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "show_country_selector",
+        "label": "Show country/region selector",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_language_selector",
+        "label": "Show language selector",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_currency_code",
+        "label": "Show currency code",
+        "default": false
+      }
+    ]
+  },
+  {
+    "name": "Social media",
+    "settings": [
+      {
+        "type": "url",
+        "id": "social_instagram",
+        "label": "Instagram"
+      },
+      {
+        "type": "url",
+        "id": "social_pinterest",
+        "label": "Pinterest"
+      },
+      {
+        "type": "url",
+        "id": "social_tiktok",
+        "label": "TikTok"
+      },
+      {
+        "type": "url",
+        "id": "social_youtube",
+        "label": "YouTube"
+      },
+      {
+        "type": "url",
+        "id": "social_facebook",
+        "label": "Facebook"
+      }
+    ]
+  },
+  {
+    "name": "Payment icons",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "show_payment_icons",
+        "label": "Show payment icons",
+        "default": true
+      }
+    ]
+  },
+  {
+    "name": "Animations",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "animations_enabled",
+        "label": "Enable animations",
+        "default": true
+      }
+    ]
+  },
+  {
+    "name": "SEO",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "seo_structured_data",
+        "label": "Add structured data",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "seo_default_og_alt",
+        "label": "Default social sharing image alt text"
+      }
+    ]
+  }
+]

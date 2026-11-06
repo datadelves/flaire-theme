@@ -1,0 +1,46 @@
+{%- comment -%}
+  Outputs the id of the variant a product page starts on. A ?variant= in the URL wins. Otherwise the
+  product's own finish (the finish named by its featured image alt, as the prototype opens each piece in
+  its signature metal), first available size; then Shopify's first available variant.
+  Capture it: {% capture base_id %}{% render 'product-base-variant', product: product %}{% endcapture %}
+
+  Accepts:
+  - product {Object}
+  - prefer_available {Boolean} when the product's own finish is sold out, use the first available variant
+    (card quick add) instead of the sold-out finish (product page)
+{%- endcomment -%}
+{%- liquid
+  assign base = product.selected_or_first_available_variant
+  if product.selected_variant
+    assign base = product.selected_variant
+  else
+    assign finish_index = -1
+    for option in product.options_with_values
+      assign option_name = option.name | downcase
+      if option_name == 'finish' or option_name == 'metal'
+        assign finish_index = forloop.index0
+      endif
+    endfor
+    if finish_index >= 0
+      assign want = product.featured_media.alt
+      assign first_match = nil
+      assign first_available = nil
+      for v in product.variants
+        if v.options[finish_index] == want
+          if first_match == nil
+            assign first_match = v
+          endif
+          if v.available and first_available == nil
+            assign first_available = v
+          endif
+        endif
+      endfor
+      if first_available
+        assign base = first_available
+      elsif first_match and prefer_available != true
+        assign base = first_match
+      endif
+    endif
+  endif
+  echo base.id
+-%}

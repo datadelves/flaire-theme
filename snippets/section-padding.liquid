@@ -1,0 +1,23 @@
+{%- comment -%}
+  A section's Top padding / Bottom padding settings as CSS custom properties, for the style attribute of the
+  element that carries the section's spacing. assets/theme.css reads --pad-top / --pad-bottom on .band, .fc-tile,
+  .dl-footer, .dl-filters-wrap and [data-pad] elements; without them each rule keeps the theme's original spacing.
+
+  Accepts:
+  - top {Number} top padding in px (desktop size)
+  - bottom {Number} bottom padding in px (desktop size)
+  - fixed {Boolean} the same px on every screen size. Default false: the value scales with the theme's section
+    spacing (Theme settings > Layout > Section spacing: 120px on desktop, 80px on tablets, 64px on phones at
+    Standard), so a section at the 120px default spaces exactly like before on every screen
+
+  Usage: <div class="band" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+{%- endcomment -%}
+{%- liquid
+  assign pad_t = top | default: 0
+  assign pad_b = bottom | default: 0
+-%}
+{%- if fixed -%}
+  --pad-top:{{ pad_t }}px;--pad-bottom:{{ pad_b }}px
+{%- else -%}
+  --pad-top:calc(var(--space-section) * {{ pad_t }} / 120);--pad-bottom:calc(var(--space-section) * {{ pad_b }} / 120)
+{%- endif -%}

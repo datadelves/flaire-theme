@@ -1,0 +1,303 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-3'
+  assign product_block = section.blocks | where: 'type', 'product' | first
+  assign tile_product = product_block.settings.product
+  assign art = section.settings.image
+  assign art_alt = section.settings.image_alt
+  if art == blank and tile_product != blank
+    assign art = tile_product.featured_media
+    assign art_alt = tile_product.title
+  endif
+  assign action_blocks = section.blocks | where: 'type', 'action'
+  assign note_blocks = section.blocks | where: 'type', 'note'
+  assign has_actions = false
+  if section.settings.cta_label != blank and section.settings.cta_link != blank
+    assign has_actions = true
+  endif
+  if section.settings.link_label != blank and section.settings.link != blank
+    assign has_actions = true
+  endif
+  if action_blocks.size > 0
+    assign has_actions = true
+  endif
+-%}
+<div data-section="collection-closing-tile">
+  <div class="fc-tile {{ scheme }}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="fc-tile-copy">
+      {%- if section.settings.eyebrow != blank %}<p class="fc-tile-eyebrow">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+      {%- if section.settings.headline != blank %}<h2 class="t-display">{{ section.settings.headline }}</h2>{% endif -%}
+      {%- if section.settings.sub != blank %}<p class="fc-tile-sub">{{ section.settings.sub }}</p>{% endif -%}
+      {%- if tile_product != blank and product_block.settings.show_price -%}
+        <div class="fc-tile-price" {{ product_block.shopify_attributes }}>{% render 'price', product: tile_product, show_from: true %}</div>
+      {%- endif -%}
+      {%- if tile_product != blank and product_block.settings.show_swatches -%}
+        {%- assign finish_option = tile_product.options_with_values | where: 'name', 'Finish' | first -%}
+        {%- if finish_option -%}
+          <div class="facts"><div class="dots-mini cct-dots" aria-hidden="true">{% for value in finish_option.values %}<i style="background:var(--metal-{{ value.name | handleize }})"></i>{% endfor %}</div></div>
+        {%- endif -%}
+      {%- endif -%}
+      {%- if has_actions -%}
+        <div class="fc-tile-actions">
+          {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
+            {%- assign cta_label = section.settings.cta_label | escape -%}
+            {%- render 'button', label: cta_label, size: 'lg', url: section.settings.cta_link -%}
+          {%- endif -%}
+          {%- for block in action_blocks -%}
+            {%- if block.settings.label != blank and block.settings.link != blank -%}
+              {%- assign action_label = block.settings.label | escape -%}
+              {%- assign action_size = '' -%}
+              {%- if block.settings.style != 'link' -%}{%- assign action_size = 'lg' -%}{%- endif -%}
+              {%- capture action_attrs -%}{{ block.shopify_attributes }}{%- endcapture -%}
+              {%- render 'button', label: action_label, variant: block.settings.style, size: action_size, url: block.settings.link, attrs: action_attrs -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if section.settings.link_label != blank and section.settings.link != blank -%}
+            {%- assign link_label = section.settings.link_label | escape -%}
+            {%- render 'button', variant: 'link', label: link_label, url: section.settings.link -%}
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+      {%- for block in note_blocks -%}
+        {%- if block.settings.text != blank -%}
+          <p class="t-fine cct-note" {{ block.shopify_attributes }}>{% if block.settings.show_icon %}{% render 'icon', icon: block.settings.icon, size: 16 %}{% endif %}<span>{{ block.settings.text | escape }}</span></p>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    <div class="fc-tile-art"><div class="hero-art" style="aspect-ratio:16/6">
+      {%- if art != blank -%}
+        {%- render 'product-photo', image: art, size: 480, alt: art_alt, sizes: '(max-width: 734px) 70vw, 400px' -%}
+      {%- else -%}
+        {%- render 'specimen', kind: 'band', metal: 'rose-gold', size: 480, label: '' -%}
+      {%- endif -%}
+    </div></div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .cct-note { display: inline-flex; align-items: center; gap: var(--space-2); margin: var(--space-4) 0 0; color: var(--ink-muted); }
+  .cct-dots { justify-content: center; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Closing tile",
+  "tag": "section",
+  "class": "dl-section dl-collection-closing-tile",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Engrave"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Made yours"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Add a few words before you order."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-3",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button link"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Image",
+      "info": "Without an image, the Product block's photo shows, then a drawing."
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "action",
+      "name": "Action",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Engrave"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "secondary",
+          "options": [
+            {
+              "value": "primary",
+              "label": "Primary"
+            },
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "link",
+              "label": "Link"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Final sale on engraved pieces."
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "info",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_icon",
+          "label": "Show icon",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "product",
+      "name": "Featured product",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_swatches",
+          "label": "Show swatches",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "collection"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Closing tile",
+      "blocks": [
+        {
+          "type": "action"
+        },
+        {
+          "type": "action"
+        },
+        {
+          "type": "action"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "product"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

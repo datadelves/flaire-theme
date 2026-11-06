@@ -1,0 +1,358 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-3'
+  comment
+    On a product page the tile shows only for engravable products (the engraving tag in theme settings).
+  endcomment
+  assign visible = true
+  if product != blank
+    capture engravable
+      render 'product-data', product: product, field: 'engravable'
+    endcapture
+    unless engravable contains 'true'
+      assign visible = false
+    endunless
+  endif
+  assign examples = ''
+  for block in section.blocks
+    if block.type == 'example' and block.settings.show and block.settings.text != blank
+      assign examples = examples | append: block.id | append: ','
+    endif
+  endfor
+  assign has_art = false
+  if examples != blank or section.settings.image != blank
+    assign has_art = true
+  endif
+-%}
+{%- if visible -%}
+<div data-section="product-closing-tile">
+  <div class="fc-tile {{ scheme }}{% unless has_art %} nopad-b{% endunless %}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="fc-tile-copy">
+      {%- if section.settings.eyebrow != blank %}<p class="fc-tile-eyebrow">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+      {%- if section.settings.headline != blank %}<h2 class="t-display">{{ section.settings.headline }}</h2>{% endif -%}
+      {%- if section.settings.sub != blank %}<p class="fc-tile-sub">{{ section.settings.sub }}</p>{% endif -%}
+      {%- capture actions -%}
+        {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
+          {%- render 'button', label: section.settings.cta_label, size: 'lg', url: section.settings.cta_link -%}
+        {%- endif -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'action' and block.settings.label != blank -%}
+            {%- liquid
+              assign action_url = block.settings.link
+              capture action_attrs
+                echo block.shopify_attributes
+              endcapture
+              if action_url == blank or action_url == '#engraving' or action_url == '#engraving-pdp'
+                if product != blank
+                  assign action_url = '#engraving-pdp'
+                  capture action_attrs
+                    echo 'data-act="goto-engr" ' | append: block.shopify_attributes
+                  endcapture
+                else
+                  assign action_url = ''
+                endif
+              endif
+              assign action_size = 'lg'
+              if block.settings.style == 'link'
+                assign action_size = ''
+              endif
+            -%}
+            {%- if action_url != blank -%}
+              {%- render 'button', label: block.settings.label, variant: block.settings.style, size: action_size, url: action_url, attrs: action_attrs -%}
+            {%- elsif request.design_mode -%}
+              {%- render 'button', label: block.settings.label, variant: block.settings.style, size: action_size, attrs: action_attrs -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if actions != blank %}<div class="fc-tile-actions">{{ actions }}</div>{% endif -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'note' and block.settings.text != blank -%}
+          <p class="t-fine dl-closing-note" {{ block.shopify_attributes }}>
+            {%- if block.settings.show_icon %}{% render 'icon', icon: block.settings.icon, size: 16 %}{% endif -%}
+            <span>{{ block.settings.text | escape }}</span>
+          </p>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    {%- if has_art -%}
+      <div class="fc-tile-art">
+        {%- if examples != blank -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'example' and block.settings.show and block.settings.text != blank -%}
+              {%- liquid
+                assign sample = block.settings.text | slice: 0, 16
+                assign sample_media = nil
+                if section.settings.image != blank
+                  assign sample_media = section.settings.image
+                elsif product != blank
+                  assign sample_media = product.featured_media
+                  for v in product.variants
+                    assign v_metal = v.option1 | handleize
+                    if v_metal == block.settings.metal and v.featured_media
+                      assign sample_media = v.featured_media
+                      break
+                    endif
+                  endfor
+                endif
+                assign sample_label = 'products.engraving.preview_label' | t: text: sample
+                assign specimen_kind = 'band'
+                if product != blank
+                  capture specimen_kind
+                    render 'product-data', product: product, field: 'kind'
+                  endcapture
+                  assign specimen_kind = specimen_kind | strip | default: 'band'
+                endif
+              -%}
+              <div style="width:min(560px,90%)" {{ block.shopify_attributes }}>
+                <figure class="fc-engr" style="background:transparent" data-engr>
+                  <div class="fc-engr-stage" role="img" aria-label="{{ sample_label | escape }}">
+                    <span class="fc-engr-tag">{{ 'products.engraving.sample' | t }}</span>
+                    {%- render 'product-photo', image: sample_media, size: 320, alt: '', kind: specimen_kind, metal: block.settings.metal -%}
+                    <p class="fc-engr-text" data-engr-text>{{ sample | escape }}</p>
+                  </div>
+                  <figcaption class="fc-engr-cap" data-engr-cap>{{ 'products.engraving.count' | t: count: sample.size, max: 16 }} · {{ 'products.engraving.sample_note' | t }}</figcaption>
+                </figure>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- else -%}
+          {{ section.settings.image | image_url: width: 1600 | image_tag: loading: 'lazy', widths: '560, 840, 1120, 1600', sizes: '(max-width: 734px) 90vw, 560px', alt: section.settings.image_alt, style: 'width:min(560px,90%);height:auto' }}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+{%- endif -%}
+
+{% stylesheet %}
+  .dl-closing-note { display: flex; gap: 6px; align-items: center; justify-content: center; margin: var(--space-4) 0 0; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Engrave or gift",
+  "tag": "section",
+  "class": "dl-section dl-product-closing-tile",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Engrave"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Engraved by hand"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Choose up to 16 characters before you add to Bag."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-3",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button link"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "info": "Without an image, at least the top padding."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "action",
+      "name": "Action",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Engrave"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "primary",
+          "options": [
+            {
+              "value": "primary",
+              "label": "Primary"
+            },
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "link",
+              "label": "Link"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "example",
+      "name": "Example",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Always, M."
+        },
+        {
+          "type": "select",
+          "id": "metal",
+          "label": "Metal",
+          "default": "rose-gold",
+          "options": [
+            {
+              "value": "yellow-gold",
+              "label": "Yellow gold"
+            },
+            {
+              "value": "rose-gold",
+              "label": "Rose gold"
+            },
+            {
+              "value": "white-gold",
+              "label": "White gold"
+            },
+            {
+              "value": "platinum",
+              "label": "Platinum"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Engraved pieces are final sale."
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "info",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_icon",
+          "label": "Show icon",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Engrave or gift",
+      "blocks": [
+        {
+          "type": "action"
+        },
+        {
+          "type": "action"
+        },
+        {
+          "type": "example"
+        },
+        {
+          "type": "example"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "note"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,302 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  if s.columns == '3'
+    assign rail_cols = 'calc((100% - 48px)/3)'
+  else
+    assign rail_cols = 'calc((100% - 72px)/4)'
+  endif
+  assign link_block = section.blocks | where: 'type', 'link' | first
+  assign shop_label = 'general.shop' | t
+-%}
+{%- capture head_links -%}
+  {%- if s.link_label != blank and s.link != blank -%}
+    {%- render 'button', variant: 'link', label: s.link_label, url: s.link -%}
+  {%- endif -%}
+  {%- if link_block and link_block.settings.align != 'start' and link_block.settings.label != blank and link_block.settings.link != blank -%}
+    {%- capture block_attrs %}{{ link_block.shopify_attributes }}{% endcapture -%}
+    {%- render 'button', variant: 'link', label: link_block.settings.label, url: link_block.settings.link, attrs: block_attrs -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture tiles -%}
+  {%- for block in section.blocks -%}
+    {%- case block.type -%}
+      {%- when 'form-tile' -%}
+        {%- liquid
+          assign c = block.settings.collection
+          assign tile_title = block.settings.title | default: c.title
+          assign art = block.settings.image
+          if art == blank and c != blank
+            assign art = c.image | default: c.featured_image
+          endif
+          if art == blank and c != blank
+            assign art = c.products.first.featured_media
+          endif
+          case c.handle
+            when 'necklaces'
+              assign tile_kind = 'pendant'
+              assign tile_metal = 'yellow-gold'
+            when 'earrings'
+              assign tile_kind = 'earring'
+              assign tile_metal = 'platinum'
+            when 'bracelets'
+              assign tile_kind = 'bracelet'
+              assign tile_metal = 'white-gold'
+            else
+              assign tile_kind = 'ring'
+              assign tile_metal = 'rose-gold'
+          endcase
+          assign art_alt = art.alt | default: tile_title
+        -%}
+        {%- if c != blank -%}
+          <a class="fc-card" href="{{ c.url }}" style="color:var(--ink)" {{ block.shopify_attributes }}><div class="fc-card-art">{% render 'product-photo', image: art, size: 200, alt: art_alt, sizes: '(max-width: 734px) 62vw, 200px', kind: tile_kind, metal: tile_metal %}</div><div class="fc-card-body"><h3 class="fc-card-name t-title" style="font-size:24px">{{ tile_title | escape }}</h3>
+            {%- if s.show_count and c.products_count > 0 %}<p class="fc-card-material">{{ 'general.pieces' | t: count: c.products_count }}</p>{% endif -%}
+            {%- if block.settings.line != blank %}<p class="fc-card-material">{{ block.settings.line | escape }}</p>{% endif -%}
+            <span class="fc-btn fc-btn-link" aria-hidden="true"><span>{{ shop_label }}</span></span></div></a>
+        {%- elsif request.design_mode -%}
+          <div class="fc-card" style="color:var(--ink)" {{ block.shopify_attributes }}><div class="fc-card-art">{% render 'product-photo', image: block.settings.image, size: 200, alt: '', kind: 'ring', metal: 'rose-gold' %}</div><div class="fc-card-body"><h3 class="fc-card-name t-title" style="font-size:24px">{% if block.settings.title != blank %}{{ block.settings.title | escape }}{% else %}{{ 'general.placeholder_collection' | t }}{% endif %}</h3>
+            {%- if block.settings.line != blank %}<p class="fc-card-material">{{ block.settings.line | escape }}</p>{% endif -%}
+            <span class="fc-btn fc-btn-link" aria-hidden="true"><span>{{ shop_label }}</span></span></div></div>
+        {%- endif -%}
+      {%- when 'feature-tile' -%}
+        {%- liquid
+          assign f = block.settings
+          if f.link != blank
+            assign feature_tag = 'a'
+          else
+            assign feature_tag = 'div'
+          endif
+        -%}
+        {%- if f.eyebrow != blank or f.headline != blank -%}
+          <{{ feature_tag }} class="fc-card"{% if f.link != blank %} href="{{ f.link }}"{% endif %} style="color:var(--ink)" {{ block.shopify_attributes }}><div class="fc-card-art">{% render 'product-photo', image: f.image, size: 200, alt: '', sizes: '(max-width: 734px) 62vw, 200px', kind: 'band', metal: 'rose-gold' %}</div><div class="fc-card-body">
+            {%- if f.eyebrow != blank %}<p class="t-overline" style="margin:0 0 4px">{{ f.eyebrow | escape }}</p>{% endif -%}
+            {%- if f.headline != blank %}<h3 class="fc-card-name t-title" style="font-size:24px">{{ f.headline | escape }}</h3>{% endif -%}
+            {%- if f.link != blank %}<span class="fc-btn fc-btn-link" aria-hidden="true"><span>{{ shop_label }}</span></span>{% endif -%}
+          </div></{{ feature_tag }}>
+        {%- endif -%}
+    {%- endcase -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if tiles != blank -%}
+  <div class="band {{ scheme }}" data-section="category-rail" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap">
+    {%- capture head -%}{% render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub, left: true, role: 't-headline' %}{%- endcapture -%}
+    {%- if head != blank or head_links != blank -%}
+      <div class="row-head">{{ head }}{{ head_links }}</div>
+    {%- endif -%}
+    <div class="rail" style="grid-auto-columns:{{ rail_cols }}" data-rail data-carousel>{{ tiles }}</div>
+    {%- if link_block and link_block.settings.align == 'start' and link_block.settings.label != blank and link_block.settings.link != blank -%}
+      <div style="margin-top:24px" {{ link_block.shopify_attributes }}>{% render 'button', variant: 'link', label: link_block.settings.label, url: link_block.settings.link %}</div>
+    {%- endif -%}
+  </div></div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Shop by form",
+  "tag": "section",
+  "class": "dl-section dl-category-rail",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Shop by form"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Four ways to wear it"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "select",
+      "id": "columns",
+      "label": "Columns",
+      "default": "4",
+      "options": [
+        {
+          "value": "3",
+          "label": "3"
+        },
+        {
+          "value": "4",
+          "label": "4"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_count",
+      "label": "Show piece count",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "form-tile",
+      "name": "Form tile",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading override"
+        },
+        {
+          "type": "text",
+          "id": "line",
+          "label": "Material line"
+        }
+      ]
+    },
+    {
+      "type": "feature-tile",
+      "name": "Feature tile",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "Engrave"
+        },
+        {
+          "type": "text",
+          "id": "headline",
+          "label": "Headline",
+          "default": "Make it yours"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Text link",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop all"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "end",
+          "options": [
+            {
+              "value": "start",
+              "label": "Start"
+            },
+            {
+              "value": "end",
+              "label": "End"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Shop by form",
+      "blocks": [
+        {
+          "type": "form-tile"
+        },
+        {
+          "type": "form-tile"
+        },
+        {
+          "type": "form-tile"
+        },
+        {
+          "type": "form-tile"
+        },
+        {
+          "type": "feature-tile"
+        },
+        {
+          "type": "feature-tile"
+        },
+        {
+          "type": "link"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,224 @@
+{
+  "sections": {
+    "page-header": {
+      "type": "page-header",
+      "settings": {
+        "eyebrow": "Help",
+        "headline": "",
+        "sub": "Questions about a piece, a size or an order.",
+        "color_scheme": "scheme-1",
+        "use_page_title": true,
+        "align": "center"
+      },
+      "blocks": {
+        "breadcrumb-1": {
+          "type": "breadcrumb",
+          "settings": {
+            "show_home": true,
+            "label": "Breadcrumb",
+            "compact": true
+          }
+        },
+        "image-1": {
+          "type": "image",
+          "settings": {
+            "image_alt": "",
+            "width": "content"
+          }
+        },
+        "meta-1": {
+          "type": "meta",
+          "settings": {
+            "text": "",
+            "show_updated": false,
+            "tone": "muted"
+          }
+        }
+      },
+      "block_order": [
+        "breadcrumb-1",
+        "image-1",
+        "meta-1"
+      ]
+    },
+    "contact-form": {
+      "type": "contact-form",
+      "settings": {
+        "eyebrow": "Contact",
+        "headline": "Ask a jeweller",
+        "sub": "We reply within one working day.",
+        "color_scheme": "scheme-2",
+        "button_label": "Send",
+        "success_title": "Message sent",
+        "success_text": "We will reply within one working day.",
+        "show_topic": true
+      },
+      "blocks": {
+        "field-1": {
+          "type": "field",
+          "settings": {
+            "label": "Name",
+            "type": "text",
+            "required": true
+          }
+        },
+        "field-2": {
+          "type": "field",
+          "settings": {
+            "label": "Email address",
+            "type": "email",
+            "required": true
+          }
+        },
+        "field-4": {
+          "type": "field",
+          "settings": {
+            "label": "Message",
+            "type": "textarea",
+            "required": true
+          }
+        },
+        "topic-1": {
+          "type": "topic",
+          "settings": {
+            "label": "Sizing",
+            "value": "Sizing",
+            "default": true
+          }
+        },
+        "topic-2": {
+          "type": "topic",
+          "settings": {
+            "label": "Engraving",
+            "value": "Engraving",
+            "default": false
+          }
+        },
+        "topic-3": {
+          "type": "topic",
+          "settings": {
+            "label": "An order",
+            "value": "An order",
+            "default": false
+          }
+        },
+        "topic-4": {
+          "type": "topic",
+          "settings": {
+            "label": "Something else",
+            "value": "Something else",
+            "default": false
+          }
+        },
+        "store-info-1": {
+          "type": "store-info",
+          "settings": {
+            "icon": "storefront",
+            "title": "Studio",
+            "text": "<p>21 Mercer Lane, Portland, OR 97209</p>"
+          }
+        },
+        "store-info-2": {
+          "type": "store-info",
+          "settings": {
+            "icon": "envelope-simple",
+            "title": "Email",
+            "text": "<p>hello@facet.example</p>"
+          }
+        }
+      },
+      "block_order": [
+        "field-1",
+        "field-2",
+        "field-4",
+        "topic-1",
+        "topic-2",
+        "topic-3",
+        "topic-4",
+        "store-info-1",
+        "store-info-2"
+      ]
+    },
+    "apps": {
+      "type": "apps",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "width": "content",
+        "padding_top": 64,
+        "padding_bottom": 64
+      },
+      "blocks": {
+        "heading-1": {
+          "type": "heading",
+          "settings": {
+            "text": "",
+            "eyebrow": "",
+            "center": true
+          }
+        },
+        "divider-1": {
+          "type": "divider",
+          "settings": {
+            "line": true,
+            "space": 32,
+            "full": false
+          }
+        },
+        "divider-2": {
+          "type": "divider",
+          "settings": {
+            "line": true,
+            "space": 32,
+            "full": false
+          }
+        },
+        "divider-3": {
+          "type": "divider",
+          "settings": {
+            "line": true,
+            "space": 32,
+            "full": false
+          }
+        },
+        "note-1": {
+          "type": "note",
+          "settings": {
+            "text": "",
+            "align": "center",
+            "muted": true
+          }
+        },
+        "note-2": {
+          "type": "note",
+          "settings": {
+            "text": "",
+            "align": "center",
+            "muted": true
+          }
+        },
+        "note-3": {
+          "type": "note",
+          "settings": {
+            "text": "",
+            "align": "center",
+            "muted": true
+          }
+        }
+      },
+      "block_order": [
+        "heading-1",
+        "divider-1",
+        "divider-2",
+        "divider-3",
+        "note-1",
+        "note-2",
+        "note-3"
+      ]
+    }
+  },
+  "order": [
+    "page-header",
+    "contact-form",
+    "apps"
+  ]
+}

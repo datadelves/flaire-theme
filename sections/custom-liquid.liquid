@@ -1,0 +1,97 @@
+{%- comment -%}
+  Custom Liquid: the merchant's own Liquid, HTML or app snippet inside the theme's band and container widths.
+  Available on every template and in the header and footer groups. Outside the theme editor it renders
+  nothing while the code is empty.
+{%- endcomment -%}
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  case s.width
+    when 'narrow'
+      assign wrap = 'wrap-n'
+    when 'wide'
+      assign wrap = 'wrap'
+    else
+      assign wrap = 'wrap-c'
+  endcase
+-%}
+{%- if s.custom_liquid != blank or request.design_mode -%}
+  <div data-section="custom-liquid" class="{{ scheme }}" data-pad style="padding-left:var(--space-5);padding-right:var(--space-5);{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}"><div class="{{ wrap }}">{{ s.custom_liquid }}</div></div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Custom Liquid",
+  "tag": "section",
+  "class": "dl-section dl-custom-liquid",
+  "settings": [
+    {
+      "type": "liquid",
+      "id": "custom_liquid",
+      "label": "Liquid code",
+      "info": "Add app snippets or other Liquid code to create advanced customizations."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Container width",
+      "default": "content",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "Narrow"
+        },
+        {
+          "value": "content",
+          "label": "Standard"
+        },
+        {
+          "value": "wide",
+          "label": "Wide"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "disabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Custom Liquid"
+    }
+  ]
+}
+{% endschema %}

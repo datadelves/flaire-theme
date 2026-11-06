@@ -1,0 +1,270 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  assign open_index = s.open_index | default: 0
+  assign learn_more = 'general.learn_more' | t
+  assign row = -1
+-%}
+{%- capture rows -%}
+  {%- for block in section.blocks -%}
+    {%- case block.type -%}
+      {%- when 'faq' -%}
+        {%- assign answer_check = block.settings.answer | strip_html | strip -%}
+        {%- if block.settings.title != blank and answer_check != blank -%}
+          {%- assign row = row | plus: 1 -%}
+          <details class="fc-acc-item"{% if row == open_index %} open{% endif %} {{ block.shopify_attributes }}>
+            <summary class="fc-acc-btn"><span>{{ block.settings.title | escape }}</span>{% render 'icon', icon: 'plus', size: 20, class: 'fc-acc-ico-plus' %}{% render 'icon', icon: 'minus', size: 20, class: 'fc-acc-ico-minus' %}</summary>
+            <div class="fc-acc-panel" role="region">
+              {{- block.settings.answer -}}
+              {%- if block.settings.link != blank -%}<p>{% render 'button', variant: 'link', label: learn_more, url: block.settings.link %}</p>{%- endif -%}
+            </div>
+          </details>
+        {%- endif -%}
+      {%- when 'policy' -%}
+        {%- if block.settings.title != blank and block.settings.page != blank -%}
+          {%- assign row = row | plus: 1 -%}
+          {%- assign policy_page = block.settings.page -%}
+          <details class="fc-acc-item"{% if row == open_index %} open{% endif %} {{ block.shopify_attributes }}>
+            <summary class="fc-acc-btn"><span>{{ block.settings.title | escape }}</span>{% render 'icon', icon: 'plus', size: 20, class: 'fc-acc-ico-plus' %}{% render 'icon', icon: 'minus', size: 20, class: 'fc-acc-ico-minus' %}</summary>
+            <div class="fc-acc-panel" role="region">
+              {%- if block.settings.text != blank %}<p>{{ block.settings.text | escape }}</p>{% endif -%}
+              {%- assign policy_label = policy_page.title | escape -%}
+              <p>{% render 'button', variant: 'link', label: policy_label, url: policy_page.url %}</p>
+            </div>
+          </details>
+        {%- endif -%}
+    {%- endcase -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture contacts -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'contact-card' and block.settings.title != blank and block.settings.link != blank -%}
+      <div class="fc-acc-item" {{ block.shopify_attributes }}>
+        <a class="fc-acc-btn" href="{{ block.settings.link }}"><span class="cq-contact">{% render 'icon', icon: block.settings.icon, size: 20 %}{{ block.settings.title | escape }}</span>{% render 'icon', icon: 'caret-right', size: 20 %}</a>
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if rows != blank or contacts != blank -%}
+  <div class="band {{ scheme }}" data-section="care-faq" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap-n">
+    {%- render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub -%}
+    {%- if rows != blank %}<div class="fc-acc"{% if s.single_open %} data-acc-single{% endif %}>{{ rows }}</div>{% endif -%}
+    {%- if contacts != blank %}<div class="fc-acc" style="margin-top:40px">{{ contacts }}</div>{% endif -%}
+    {%- if s.link_label != blank and s.link != blank -%}
+      <div style="margin-top:32px;text-align:center">{% render 'button', variant: 'link', label: s.link_label, url: s.link %}</div>
+    {%- endif -%}
+  </div></div>
+{%- endif -%}
+
+{% stylesheet %}
+  .cq-contact { display: inline-flex; align-items: center; gap: var(--space-3); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Care and questions",
+  "tag": "section",
+  "class": "dl-section dl-care-faq",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Help"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Questions, answered"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "number",
+      "id": "open_index",
+      "label": "Item open on load",
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "single_open",
+      "label": "One open at a time",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "faq",
+      "name": "Question",
+      "limit": 8,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Question",
+          "default": "How do I find my ring size?"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "Answer",
+          "default": "<p>Use the size guide or contact us for help with sizing.</p>"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "contact-card",
+      "name": "Contact card",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "chat-circle-dots",
+          "options": [
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Mail"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Ask a jeweler"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "policy",
+      "name": "Policy",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Returns"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "See our refund policy."
+        },
+        {
+          "type": "page",
+          "id": "page",
+          "label": "Policy page"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Care and questions",
+      "blocks": [
+        {
+          "type": "faq"
+        },
+        {
+          "type": "faq"
+        },
+        {
+          "type": "faq"
+        },
+        {
+          "type": "faq"
+        },
+        {
+          "type": "contact-card"
+        },
+        {
+          "type": "contact-card"
+        },
+        {
+          "type": "contact-card"
+        },
+        {
+          "type": "policy"
+        },
+        {
+          "type": "policy"
+        },
+        {
+          "type": "policy"
+        },
+        {
+          "type": "policy"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

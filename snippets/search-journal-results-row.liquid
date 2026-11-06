@@ -1,0 +1,37 @@
+{%- comment -%}
+  One hairline row for an article or page search result (prototype search journal tab).
+
+  Accepts:
+  - item {Object} article or page
+  - show_excerpt {Boolean}
+  - show_date {Boolean}
+  - show_image {Boolean} small thumbnail (articles with an image)
+{%- endcomment -%}
+{%- liquid
+  if item.object_type == 'article'
+    assign overline = 'search.journal_label' | t
+    if show_date
+      assign pub = item.published_at | date: '%B %-d'
+      assign overline = 'search.journal_label' | t | append: ' · ' | append: pub
+    endif
+    assign excerpt = item.excerpt | strip_html | strip
+    if excerpt == blank
+      assign excerpt = item.excerpt_or_content | strip_html | truncatewords: 18
+    endif
+    assign thumb = item.image
+  else
+    assign overline = 'search.page_label' | t
+    assign excerpt = item.content | strip_html | truncatewords: 18
+    assign thumb = nil
+  endif
+-%}
+<a class="sjr-row{% if show_image and thumb %} has-thumb{% endif %}" href="{{ item.url }}" style="display:block;padding:20px 0;border-bottom:1px solid var(--hairline);color:var(--ink)">
+  {%- if show_image and thumb -%}
+    {{ thumb | image_url: width: 160 | image_tag: loading: 'lazy', width: 80, height: 80, alt: '', class: 'sjr-thumb', sizes: '80px', widths: '80,160' }}
+  {%- endif -%}
+  <div class="sjr-copy">
+    <p class="t-overline" style="margin:0">{{ overline }}</p>
+    <p class="t-title" style="margin:4px 0">{{ item.title | escape }}</p>
+    {%- if show_excerpt and excerpt != blank %}<p class="t-caption" style="margin:0">{{ excerpt }}</p>{% endif -%}
+  </div>
+</a>

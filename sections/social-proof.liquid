@@ -1,0 +1,368 @@
+{%- comment -%}
+  Testimonials: quote cards from blocks, optional press quotes, an optional rating summary line and review app
+  blocks. Everything is merchant-entered; nothing is read from the store's review data.
+{%- endcomment -%}
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  assign summary = section.blocks | where: 'type', 'summary' | first
+  assign total = 0
+  assign rating_sum = 0
+
+  # layout: Automatic is a slider with more than 3 testimonials, a grid otherwise
+  assign review_count = 0
+  for block in section.blocks
+    if block.type == 'review' and block.settings.text != blank
+      assign review_count = review_count | plus: 1
+    endif
+  endfor
+  assign slider = false
+  case s.layout
+    when 'slider'
+      if review_count > 1
+        assign slider = true
+      endif
+    when 'grid'
+      assign slider = false
+    else
+      if review_count > 3
+        assign slider = true
+      endif
+  endcase
+  assign track_id = 'tm-track-' | append: section.id
+-%}
+{%- capture cards -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'review' and block.settings.text != blank -%}
+      {%- liquid
+        assign r = block.settings.rating | default: 5
+        assign total = total | plus: 1
+        assign rating_sum = rating_sum | plus: r
+      -%}
+      {%- capture card_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+      {%- if slider %}<div class="dl-tm-slide" role="group" aria-roledescription="slide" aria-label="{{ 'accessibility.slide_of' | t: index: total, count: review_count }}" data-slide>{% endif -%}
+      {%- render 'review-card', rating: r, body: block.settings.text, author: block.settings.author, location: block.settings.location, verified: block.settings.verified, image: block.settings.photo, show_photo: s.show_photos, attrs: card_attrs -%}
+      {%- if slider %}</div>{% endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture dots -%}
+  {%- if slider -%}
+    {%- assign k = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'review' and block.settings.text != blank -%}
+        {%- liquid
+          assign k = k | plus: 1
+          if block.settings.author != blank
+            assign dot_label = 'accessibility.slide_label' | t: index: k, title: block.settings.author
+          else
+            assign dot_label = 'accessibility.slide_of' | t: index: k, count: review_count
+          endif
+        -%}
+        <button type="button" data-act="slider-go" data-i="{{ k | minus: 1 }}" aria-label="{{ dot_label | escape }}" aria-controls="{{ track_id }}" aria-current="{% if k == 1 %}true{% else %}false{% endif %}"{% if k == 1 %} class="on"{% endif %}></button>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture press -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'press' and block.settings.quote != blank -%}
+      <figure class="stack" style="gap:12px;margin:0;text-align:center" {{ block.shopify_attributes }}>
+        <blockquote class="t-lead" style="margin:0;color:var(--ink)">{{ block.settings.quote }}</blockquote>
+        {%- if block.settings.source != blank -%}
+          <figcaption class="t-overline">
+            {%- if block.settings.link != blank -%}<a href="{{ block.settings.link }}" style="color:inherit">{{ block.settings.source | escape }}</a>{%- else -%}{{ block.settings.source | escape }}{%- endif -%}
+          </figcaption>
+        {%- endif -%}
+      </figure>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture apps -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == '@app' %}{% render block %}{% endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if cards != blank or press != blank or apps != blank -%}
+  <div class="band {{ scheme }}" data-section="social-proof" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap">
+    {%- render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub -%}
+    {%- if cards != blank and slider -%}
+      {%- liquid
+        assign region_label = s.headline | strip_html | strip
+        if region_label == blank
+          assign region_label = 'accessibility.testimonials' | t
+        endif
+      -%}
+      <div class="dl-tm" role="region" aria-roledescription="carousel" aria-label="{{ region_label | escape }}" data-slider data-autoplay="{{ s.slider_autoplay }}" data-interval="{{ s.slider_speed | times: 1000 }}">
+        <div class="rail dl-tm-track reviews" id="{{ track_id }}" tabindex="0" data-slider-track>{{ cards }}</div>
+        <div class="dl-tm-ctl" data-slider-controls>
+          {%- if s.slider_autoplay -%}
+            <button type="button" class="fc-btn fc-btn-icon" data-act="slider-toggle" aria-controls="{{ track_id }}" aria-label="{{ 'accessibility.pause_slideshow' | t }}">{% render 'icon', icon: 'pause', size: 20 %}</button>
+          {%- endif -%}
+          <button type="button" class="fc-btn fc-btn-icon" data-act="slider-prev" aria-controls="{{ track_id }}" aria-label="{{ 'accessibility.previous_slide' | t }}" aria-disabled="true">{% render 'icon', icon: 'caret-left', size: 20 %}</button>
+          <div class="dots" role="group" aria-label="{{ 'accessibility.choose_slide' | t }}">{{ dots }}</div>
+          <button type="button" class="fc-btn fc-btn-icon" data-act="slider-next" aria-controls="{{ track_id }}" aria-label="{{ 'accessibility.next_slide' | t }}">{% render 'icon', icon: 'caret-right', size: 20 %}</button>
+        </div>
+      </div>
+    {%- elsif cards != blank -%}
+      <div class="grid g3 keep3 reviews">{{ cards }}</div>
+    {%- endif -%}
+    {%- if press != blank %}<div class="grid g3 keep3">{{ press }}</div>{% endif -%}
+    {%- if summary and cards != blank -%}
+      {%- liquid
+        assign avg = summary.settings.rating
+        if avg == blank and total > 0
+          assign avg = rating_sum | times: 1.0 | divided_by: total | round: 1
+        endif
+        assign count = summary.settings.count | default: total
+        assign link_label = 'reviews.read_all' | t
+        assign avg_label = summary.settings.label
+        if avg_label == blank
+          assign avg_label = 'reviews.average' | t
+        endif
+      -%}
+      <div class="inline center" style="margin-top:40px;gap:24px" {{ summary.shopify_attributes }}>
+        <div class="dl-rating">{% render 'icon', icon: 'star', size: 16 %} <b>{{ avg }}</b><span class="muted" style="font-weight:400">{{ avg_label | escape }} · {{ 'reviews.count' | t: count: count }}</span></div>
+        {%- if summary.settings.link != blank %}{% render 'button', variant: 'link', label: link_label, url: summary.settings.link %}{% endif -%}
+      </div>
+    {%- endif -%}
+    {%- if apps != blank %}<div class="dl-reviews-host" style="margin-top:40px">{{ apps }}</div>{% endif -%}
+  </div></div>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Slider layout: the theme's scroll-snap rail, 3 testimonials per view on desktop, 2 on tablets, about 1.2 on phones */
+  /* position: the track contains its visually hidden text, so off-screen slides never widen the page */
+  .rail.dl-tm-track { position: relative; grid-auto-columns: calc((100% - 2 * var(--space-6)) / 3); }
+  .rail.dl-tm-track > .dl-tm-slide { display: grid; }
+  .rail.dl-tm-track:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+  .dl-tm-ctl { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-top: var(--space-6); }
+  .dl-tm-ctl .dots { margin: 0; gap: 0; }
+  .dl-tm-ctl .dots button { width: 24px; height: 24px; padding: 0; border: 0; background: none; display: grid; place-items: center; cursor: pointer; }
+  .dl-tm-ctl .dots button::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--control-border); }
+  .dl-tm-ctl .dots button[aria-current="true"]::before { background: var(--ink); }
+  .dl-tm-ctl .fc-btn-icon[aria-disabled="true"] { opacity: .4; cursor: default; }
+  html.no-js .dl-tm-ctl { display: none; }
+  @media (max-width: 1068px) { .rail.dl-tm-track { grid-auto-columns: calc((100% - var(--space-6)) / 2); } }
+  @media (max-width: 734px) { .rail.dl-tm-track { grid-auto-columns: 84%; gap: var(--space-4); } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Testimonials",
+  "tag": "section",
+  "class": "dl-section dl-social-proof",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Reviews"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Worn every day"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_photos",
+      "label": "Show photos",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "default": "auto",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Automatic"
+        },
+        {
+          "value": "grid",
+          "label": "Grid"
+        },
+        {
+          "value": "slider",
+          "label": "Slider"
+        }
+      ],
+      "info": "Automatic shows a slider when there are more than 3 testimonials, and a grid otherwise."
+    },
+    {
+      "type": "checkbox",
+      "id": "slider_autoplay",
+      "label": "Auto-rotate slides",
+      "default": false,
+      "info": "Slider only. Stops while a visitor points at or focuses the slider, and when reduced motion is on."
+    },
+    {
+      "type": "range",
+      "id": "slider_speed",
+      "label": "Change slides every",
+      "default": 6,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "review",
+      "name": "Testimonial",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Quote",
+          "default": "Share what a customer said about the piece, the fit or the service."
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Author",
+          "default": "Customer name"
+        },
+        {
+          "type": "text",
+          "id": "location",
+          "label": "Location"
+        },
+        {
+          "type": "range",
+          "id": "rating",
+          "label": "Rating",
+          "default": 5,
+          "min": 1,
+          "max": 5,
+          "step": 1
+        },
+        {
+          "type": "image_picker",
+          "id": "photo",
+          "label": "Customer photo"
+        },
+        {
+          "type": "checkbox",
+          "id": "verified",
+          "label": "Show verified purchase",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "press",
+      "name": "Press quote",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "quote",
+          "label": "Quote"
+        },
+        {
+          "type": "text",
+          "id": "source",
+          "label": "Publication"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "summary",
+      "name": "Rating summary",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "average rating"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "All reviews link"
+        },
+        {
+          "type": "text",
+          "id": "rating",
+          "label": "Average rating",
+          "info": "Empty uses the average of the testimonials shown."
+        },
+        {
+          "type": "number",
+          "id": "count",
+          "label": "Review count",
+          "info": "Empty uses the number of testimonials."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Testimonials",
+      "blocks": [
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

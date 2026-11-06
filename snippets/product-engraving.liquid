@@ -1,0 +1,47 @@
+{%- comment -%}
+  Engraving: the live EngravingPreview (finish photo with the words set inside the band) over a
+  16-character field. The input is the line item property "Engraving". Hidden for products without the
+  engraving tag (Theme settings > Pricing, stock and fulfilment; snippets/product-data).
+
+  Accepts:
+  - product {Object}
+  - ctx {String} pdp | qv | sheet
+  - finish {String} selected finish value name
+  - max {Number} (default 16)
+  - label {String} (default "Engraving (optional)")
+  - form_id {String} id of the product form the input belongs to
+{%- endcomment -%}
+{%- capture engravable -%}{% render 'product-data', product: product, field: 'engravable' %}{%- endcapture -%}
+{%- if engravable contains 'true' -%}
+  {%- liquid
+    assign max = max | default: 16
+    assign field_label = label
+    if field_label == blank
+      assign field_label = 'products.engraving.label' | t
+    endif
+    assign finish_media = product.featured_media
+    for variant in product.variants
+      if variant.options contains finish and variant.featured_media
+        assign finish_media = variant.featured_media
+        break
+      endif
+    endfor
+    assign property_name = 'products.engraving.property' | t
+  -%}
+  <div class="stack" id="engraving-{{ ctx }}" data-engr-block data-ctx="{{ ctx }}" data-max="{{ max }}">
+    <figure class="fc-engr" data-engr style="--m:var(--metal-{{ finish | handleize }})">
+      <div class="fc-engr-stage" role="img" aria-label="{{ 'products.engraving.preview_empty' | t }}">
+        <span class="fc-engr-tag">{{ 'products.engraving.sample' | t }}</span>
+        {%- render 'product-photo', image: finish_media, size: 320, alt: '', attrs: 'data-finish-img' -%}
+        <p class="fc-engr-text" data-engr-text></p>
+      </div>
+      <figcaption class="fc-engr-cap" data-engr-cap>{{ 'products.engraving.empty' | t: max: max }} · {{ 'products.engraving.sample_note' | t }}</figcaption>
+    </figure>
+    <div class="fc-field" data-engr-field>
+      <div class="fc-field-top"><label for="engr-{{ ctx }}" class="fc-field-label">{{ field_label }}</label><span class="fc-field-counter" data-engr-count>0 / {{ max }}</span></div>
+      <input id="engr-{{ ctx }}" class="fc-input" type="text" name="properties[{{ property_name }}]"{% if form_id != blank %} form="{{ form_id }}"{% endif %} maxlength="40" autocomplete="off" spellcheck="false" placeholder="{{ 'products.engraving.placeholder' | t }}" value="" data-engr-input data-ctx="{{ ctx }}" aria-describedby="engr-{{ ctx }}-msg">
+      <p id="engr-{{ ctx }}-msg" class="fc-field-msg" data-engr-msg>{{ 'products.engraving.hint' | t }}</p>
+    </div>
+    <div data-engr-final></div>
+  </div>
+{%- endif -%}

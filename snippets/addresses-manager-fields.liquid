@@ -1,0 +1,128 @@
+{%- comment -%}
+  Fields of one address form (addresses-manager). Rendered inside {% form 'customer_address' %} for the
+  new address and for every saved address.
+
+  Accepts:
+  - spec {String} field config built by the section: rows "key|label|message|required|attrs" joined with "^"
+    (keys: first_name, last_name, company, address1, address2, city, zip, phone)
+  - form {Object} the customer_address form (values and errors)
+  - prefix {String} unique id prefix for this form
+  - country_select {Boolean} country and province selects (else text inputs)
+  - country_label, province_label {String}
+{%- endcomment -%}
+{%- liquid
+  assign rows = spec | split: '^'
+  assign order = 'first_name,last_name,company,address1,address2,city,zip,country,phone' | split: ','
+  assign pair_name = false
+  assign pair_city = false
+  assign keys_present = '|'
+  for row in rows
+    assign k = row | split: '|' | first
+    assign keys_present = keys_present | append: k | append: '|'
+  endfor
+  if keys_present contains '|first_name|' and keys_present contains '|last_name|'
+    assign pair_name = true
+  endif
+  if keys_present contains '|city|' and keys_present contains '|zip|'
+    assign pair_city = true
+  endif
+  assign has_errors = false
+  if form.errors
+    assign has_errors = true
+  endif
+-%}
+{%- for key in order -%}
+  {%- if key == 'country' -%}
+    {%- liquid
+      assign c_id = prefix | append: '-country'
+      assign p_id = prefix | append: '-province'
+      assign c_default = form.country | default: localization.country.name
+    -%}
+    {%- if country_select -%}
+      {%- capture c_attrs %}data-country-select data-default="{{ c_default | escape }}" autocomplete="country-name"{% endcapture -%}
+      {%- render 'field', label: country_label, name: 'address[country]', id: c_id, select_html: all_country_option_tags, attrs: c_attrs -%}
+      {%- capture p_attrs %}data-province-select data-default="{{ form.province | escape }}" autocomplete="address-level1"{% endcapture -%}
+      {%- render 'field', label: province_label, name: 'address[province]', id: p_id, select_html: '', attrs: p_attrs, class: 'dl-province' -%}
+    {%- else -%}
+      {%- render 'field', label: country_label, name: 'address[country]', id: c_id, value: c_default, autocomplete: 'country-name' -%}
+      {%- render 'field', label: province_label, name: 'address[province]', id: p_id, value: form.province, autocomplete: 'address-level1' -%}
+    {%- endif -%}
+    {%- continue -%}
+  {%- endif -%}
+
+  {%- for row in rows -%}
+    {%- assign parts = row | split: '|' -%}
+    {%- if parts[0] != key -%}{%- continue -%}{%- endif -%}
+    {%- liquid
+      assign f_label = parts[1]
+      assign f_msg = parts[2]
+      assign f_required = false
+      if parts[3] == 'true'
+        assign f_required = true
+      endif
+      assign f_type = 'text'
+      case key
+        when 'first_name'
+          assign f_value = form.first_name
+          assign f_auto = 'given-name'
+        when 'last_name'
+          assign f_value = form.last_name
+          assign f_auto = 'family-name'
+        when 'company'
+          assign f_value = form.company
+          assign f_auto = 'organization'
+        when 'address1'
+          assign f_value = form.address1
+          assign f_auto = 'address-line1'
+        when 'address2'
+          assign f_value = form.address2
+          assign f_auto = 'address-line2'
+        when 'city'
+          assign f_value = form.city
+          assign f_auto = 'address-level2'
+        when 'zip'
+          assign f_value = form.zip
+          assign f_auto = 'postal-code'
+        when 'phone'
+          assign f_value = form.phone
+          assign f_auto = 'tel'
+          assign f_type = 'tel'
+      endcase
+      assign f_error = ''
+      if has_errors and form.errors contains key
+        assign f_error = f_msg | default: form.errors.messages[key]
+      endif
+      assign f_id = prefix | append: '-' | append: key
+      assign f_name = 'address[' | append: key | append: ']'
+      capture f_attrs
+        if f_msg != blank
+          echo 'data-msg-required="' | append: f_msg | append: '"'
+        endif
+        if parts[4] != blank
+          echo ' ' | append: parts[4]
+        endif
+      endcapture
+    -%}
+    {%- liquid
+      assign open_two = false
+      assign close_two = false
+      if pair_name
+        if key == 'first_name'
+          assign open_two = true
+        elsif key == 'last_name'
+          assign close_two = true
+        endif
+      endif
+      if pair_city
+        if key == 'city'
+          assign open_two = true
+        elsif key == 'zip'
+          assign close_two = true
+        endif
+      endif
+    -%}
+    {%- if open_two %}<div class="two">{% endif -%}
+    {%- render 'field', label: f_label, name: f_name, id: f_id, type: f_type, value: f_value, autocomplete: f_auto, required: f_required, error: f_error, attrs: f_attrs -%}
+    {%- if close_two %}</div>{% endif -%}
+  {%- endfor -%}
+{%- endfor -%}

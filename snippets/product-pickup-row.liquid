@@ -1,0 +1,26 @@
+{%- comment -%}
+  One pickup line for the buy box: the first store where the variant can be picked up, or "not available".
+  Hidden when no location offers local pickup. The kernel re-renders it after a variant change.
+
+  Accepts:
+  - variant {Object}
+{%- endcomment -%}
+{%- liquid
+  assign pickup = variant.store_availabilities | where: 'pick_up_enabled', true
+  assign available_at = pickup | where: 'available', true | first
+  assign other_label = 'products.product.pickup_other' | t
+-%}
+{%- if pickup.size > 0 -%}
+  <div class="dl-pickup">
+    {%- render 'icon', icon: 'storefront' -%}
+    <p style="margin:0">
+      {%- if available_at -%}
+        {%- assign ready = available_at.pick_up_time | downcase -%}
+        {{ 'products.product.pickup_available_html' | t: location: available_at.location.name, time: ready }}
+      {%- else -%}
+        {{ 'products.product.pickup_none' | t }}
+      {%- endif %}
+      {% render 'button', variant: 'link', label: other_label, no_chev: true, attrs: 'data-open="pickup" aria-haspopup="dialog" style="font-size:14px"' -%}
+    </p>
+  </div>
+{%- endif -%}

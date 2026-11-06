@@ -1,0 +1,51 @@
+{%- comment -%}
+  Facet Field: label, 52px input, and one message line (hint, error or success).
+  The kernel's form-error-focus writes errors into the same structure on the client.
+
+  Accepts:
+  - label {String}
+  - name {String}
+  - id {String} (required for the label)
+  - type {String} (default text)
+  - value {String}
+  - placeholder {String}
+  - autocomplete {String}
+  - required {Boolean}
+  - hint {String}
+  - error {String} server-side error message
+  - success {String}
+  - textarea {Boolean}
+  - rows {Number}
+  - select_html {String} raw <option> markup; renders a <select>
+  - counter {String} text at the right of the label (e.g. "0 / 16")
+  - attrs {String} raw extra attributes on the control
+  - class {String} extra classes on the wrapper
+
+  Usage: {% render 'field', label: 'Email address', name: 'contact[email]', id: 'c-email', type: 'email', required: true %}
+{%- endcomment -%}
+{%- liquid
+  assign describedby = ''
+  if error != blank
+    assign describedby = id | append: 'e'
+  elsif hint != blank
+    assign describedby = id | append: 'h'
+  endif
+-%}
+{%- capture common -%}id="{{ id }}"{% if name != blank %} name="{{ name }}"{% endif %} class="fc-input"{% if required %} required aria-required="true"{% endif %}{% if error != blank %} aria-invalid="true"{% endif %}{% if describedby != blank %} aria-describedby="{{ describedby }}"{% endif %}{% if attrs != blank %} {{ attrs }}{% endif %}{%- endcapture -%}
+<div class="fc-field{% if error != blank %} is-error{% endif %}{% if success != blank %} is-success{% endif %}{% if class != blank %} {{ class }}{% endif %}"{% if hint != blank %} data-hint="{{ hint | escape }}"{% endif %}>
+  <div class="fc-field-top"><label for="{{ id }}" class="fc-field-label">{{ label }}</label>{% if counter != blank %}<span class="fc-field-counter">{{ counter }}</span>{% endif %}</div>
+  {%- if textarea -%}
+    <textarea {{ common }}{% if rows %} rows="{{ rows }}"{% endif %}{% if placeholder != blank %} placeholder="{{ placeholder | escape }}"{% endif %}>{{ value | escape }}</textarea>
+  {%- elsif select_html != blank -%}
+    <select {{ common }}{% if autocomplete != blank %} autocomplete="{{ autocomplete }}"{% endif %}>{{ select_html }}</select>
+  {%- else -%}
+    <input {{ common }} type="{{ type | default: 'text' }}" value="{{ value | escape }}"{% if placeholder != blank %} placeholder="{{ placeholder | escape }}"{% endif %}{% if autocomplete != blank %} autocomplete="{{ autocomplete }}"{% endif %}>
+  {%- endif -%}
+  {%- if error != blank -%}
+    <p id="{{ id }}e" class="fc-field-msg is-error" role="alert">{% render 'icon', icon: 'warning-circle', size: 16 %}<span>{{ error }}</span></p>
+  {%- elsif success != blank -%}
+    <p class="fc-field-msg is-success">{% render 'icon', icon: 'check', size: 16 %}<span>{{ success }}</span></p>
+  {%- elsif hint != blank -%}
+    <p id="{{ id }}h" class="fc-field-msg">{{ hint }}</p>
+  {%- endif -%}
+</div>

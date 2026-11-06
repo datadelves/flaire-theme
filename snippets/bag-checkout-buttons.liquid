@@ -1,0 +1,15 @@
+{%- comment -%}
+  Accelerated checkout buttons (Shop Pay, Apple Pay, Google Pay, PayPal...) under the Bag's Check Out button,
+  for the wallets enabled in the store's payment settings. Only their size and corner radius follow the theme;
+  the wallets keep their own brand colors. Re-rendered with the cart sections after every cart change.
+
+  Usage: {% render 'bag-checkout-buttons' %}
+{%- endcomment -%}
+{%- if additional_checkout_buttons and cart.item_count > 0 -%}
+  <div class="dl-xcheckout" data-accelerated-checkout>{{ content_for_additional_checkout_buttons }}</div>
+{%- endif -%}
+
+{% stylesheet %}
+  .dl-xcheckout { --shopify-accelerated-checkout-button-block-size: 52px; --shopify-accelerated-checkout-button-border-radius: 26px; --shopify-accelerated-checkout-row-gap: 8px; }
+  .dl-xcheckout:empty { display: none; }
+{% endstylesheet %}

@@ -1,0 +1,340 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-3'
+  assign gift_card = section.blocks | where: 'type', 'gift-card' | first
+  assign collections_path = routes.collections_url | append: '/'
+-%}
+{%- capture chips -%}
+  {%- for block in section.blocks -%}
+    {%- case block.type -%}
+      {%- when 'price-band' -%}
+        {%- if block.settings.label != blank and block.settings.link != blank -%}
+          {%- liquid
+            assign href = block.settings.link
+            if block.settings.max != blank and href contains collections_path
+              assign max_price = block.settings.max
+              if href contains '?'
+                assign href = href | append: '&filter.v.price.lte=' | append: max_price
+              else
+                assign href = href | append: '?filter.v.price.lte=' | append: max_price
+              endif
+            endif
+            # [price] in the label shows the Max price in the shopper's currency (the kernel converts it after load)
+            assign chip_label = block.settings.label | escape
+            if chip_label contains '[price]' and block.settings.max != blank
+              assign max_cents = block.settings.max | times: 100
+              assign max_money = max_cents | money_without_trailing_zeros
+              assign max_html = '<span data-money-base="' | append: max_cents | append: '">' | append: max_money | append: '</span>'
+              assign chip_label = chip_label | replace: '[price]', max_html
+            endif
+          -%}
+          <a class="fc-btn fc-btn-secondary fc-btn-sm" href="{{ href }}" {{ block.shopify_attributes }}>{{ chip_label }}</a>
+        {%- endif -%}
+      {%- when 'recipient' -%}
+        {%- if block.settings.label != blank and block.settings.link != blank -%}
+          <a class="fc-btn fc-btn-secondary fc-btn-sm" href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</a>
+        {%- endif -%}
+    {%- endcase -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture notes -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'delivery-note' -%}
+      {%- if block.settings.title != blank or block.settings.text != blank -%}
+        <p class="t-caption" style="margin:0;display:flex;gap:8px;align-items:center;justify-content:center" {{ block.shopify_attributes }}>{% render 'icon', icon: block.settings.icon, size: 16 %}<span>{% if block.settings.title != blank %}<b style="color:var(--ink)">{{ block.settings.title | escape }}</b> {% endif %}{{ block.settings.text | escape }}</span></p>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- liquid
+  assign show_cta = false
+  if s.cta_label != blank and s.cta_link != blank
+    assign show_cta = true
+  endif
+  assign show_link = false
+  if s.link_label != blank and s.link != blank
+    assign show_link = true
+  endif
+  assign show_gift = false
+  if gift_card and gift_card.settings.label != blank and gift_card.settings.product != blank
+    assign show_gift = true
+  endif
+-%}
+<div data-section="gift-finder">
+  <div class="fc-tile {{ scheme }}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="fc-tile-copy">
+      {%- if s.eyebrow != blank %}<p class="fc-tile-eyebrow">{{ s.eyebrow | escape }}</p>{% endif -%}
+      {%- if s.headline != blank %}<h2 class="t-display">{{ s.headline }}</h2>{% endif -%}
+      {%- if s.sub != blank %}<p class="fc-tile-sub">{{ s.sub }}</p>{% endif -%}
+      {%- if chips != blank %}<div class="facts">{{ chips }}</div>{% endif -%}
+      {%- if show_cta or show_link or show_gift -%}
+        <div class="fc-tile-actions">
+          {%- if show_cta %}{% render 'button', label: s.cta_label, size: 'lg', url: s.cta_link %}{% endif -%}
+          {%- if show_link %}{% render 'button', variant: 'link', label: s.link_label, url: s.link %}{% endif -%}
+          {%- if show_gift -%}
+            {%- capture gift_attrs %}{{ gift_card.shopify_attributes }}{% endcapture -%}
+            {%- render 'button', variant: 'link', label: gift_card.settings.label, url: gift_card.settings.product.url, attrs: gift_attrs -%}
+          {%- endif -%}
+        </div>
+        {%- if show_gift and gift_card.settings.note != blank %}<p class="t-fine" style="margin:8px 0 0">{{ gift_card.settings.note | escape }}</p>{% endif -%}
+      {%- endif -%}
+      {%- if notes != blank %}<div class="stack" style="gap:8px;margin-top:24px">{{ notes }}</div>{% endif -%}
+    </div>
+    <div class="fc-tile-art"><div class="hero-art" style="aspect-ratio:16/6">
+      {%- if s.image != blank -%}
+        {{ s.image | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '400, 600, 800, 1200', sizes: '(max-width: 734px) 70vw, 400px', alt: s.image_alt, class: 'fc-photo' }}
+      {%- else -%}
+        {%- render 'specimen', kind: 'pendant', metal: 'yellow-gold', gem: 'emerald', size: 500, label: s.image_alt -%}
+      {%- endif -%}
+    </div></div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Gift finder",
+  "tag": "section",
+  "class": "dl-section dl-gift-finder",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Gifts"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Ready to give"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Add a handwritten note to any gift."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-3",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button link"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "price-band",
+      "name": "Price band",
+      "limit": 5,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Under [price]",
+          "info": "[price] shows the Max price in the shopper's currency."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "number",
+          "id": "max",
+          "label": "Max price",
+          "default": 500,
+          "info": "In your store's currency. Collection links filter up to this price."
+        }
+      ]
+    },
+    {
+      "type": "recipient",
+      "name": "Recipient",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "For her"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "gift",
+          "options": [
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "diamond",
+              "label": "Diamond"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "gift-card",
+      "name": "Gift card",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Gift card product"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Send a gift card"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "default": "Delivered by email."
+        }
+      ]
+    },
+    {
+      "type": "delivery-note",
+      "name": "Delivery note",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Sending a gift?"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Add a note at checkout."
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "truck",
+          "options": [
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift finder",
+      "blocks": [
+        {
+          "type": "price-band"
+        },
+        {
+          "type": "price-band"
+        },
+        {
+          "type": "price-band"
+        },
+        {
+          "type": "price-band"
+        },
+        {
+          "type": "recipient"
+        },
+        {
+          "type": "recipient"
+        },
+        {
+          "type": "recipient"
+        },
+        {
+          "type": "recipient"
+        },
+        {
+          "type": "gift-card"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

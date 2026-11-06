@@ -1,0 +1,337 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign brand_text = settings.brand_name | default: shop.name
+  assign show_loc = false
+  if section.settings.show_localization and settings.show_country_selector and localization.available_countries.size > 1
+    assign show_loc = true
+  endif
+  assign show_pay = false
+  if section.settings.show_payment_icons and settings.show_payment_icons and shop.enabled_payment_types.size > 0
+    assign show_pay = true
+  endif
+-%}
+<footer class="dl-footer {{ scheme }}" data-section="footer" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="cols">
+    {%- capture brand_stack -%}
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when 'brand-note' -%}
+            {%- if block.settings.show_logo -%}
+              <a class="fc-nav-brand" style="color:var(--ink)" href="{{ routes.root_url }}"{% if block.settings.text == blank %} {{ block.shopify_attributes }}{% endif %}>{% render 'header-brand', loading: 'lazy' %}</a>
+            {%- endif -%}
+            {%- if block.settings.text != blank -%}
+              <p style="margin:0;max-width:260px" {{ block.shopify_attributes }}>{{ block.settings.text }}</p>
+            {%- endif -%}
+          {%- when 'newsletter-inline' -%}
+            <div data-news-footer {{ block.shopify_attributes }}>
+              {%- render 'newsletter-form', id: 'footer', layout: 'stack', heading: block.settings.heading, button_label: block.settings.button, success_text: block.settings.success -%}
+            </div>
+        {%- endcase -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if brand_stack != blank %}<div class="stack">{{ brand_stack }}</div>{% endif -%}
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+        {%- when 'link-list' -%}
+          {%- if block.settings.heading != blank or block.settings.menu.links.size > 0 -%}
+            <div {{ block.shopify_attributes }}>
+              {%- if block.settings.heading != blank %}<h2>{{ block.settings.heading | escape }}</h2>{% endif -%}
+              {%- if block.settings.menu.links.size > 0 -%}
+                <ul>
+                  {%- for link in block.settings.menu.links -%}
+                    <li><a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a></li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        {%- when '@app' -%}
+          <div>{% render block %}</div>
+        {%- when 'custom-liquid' -%}
+          <div {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>
+      {%- endcase -%}
+    {%- endfor -%}
+  </div>
+  {%- capture promises -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'promise' -%}
+        {%- if block.settings.title != blank or block.settings.text != blank -%}
+          <div class="promise" {{ block.shopify_attributes }}><span class="ic">{% render 'icon', icon: block.settings.icon, size: 22 %}</span><div>
+            {%- if block.settings.title != blank %}<b>{{ block.settings.title | escape }}</b>{% endif -%}
+            {%- if block.settings.text != blank %}<span>{{ block.settings.text | escape }}</span>{% endif -%}
+          </div></div>
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- if promises != blank %}<div class="promises">{{ promises }}</div>{% endif %}
+  {%- if section.settings.legal != blank %}<div class="dl-footer-fine rte">{{ section.settings.legal }}</div>{% endif %}
+  <div class="legal">
+    <div class="l">
+      <span>&copy; {{ brand_text | escape }}</span>
+      {%- if section.settings.legal_menu.links.size > 0 -%}
+        {%- for link in section.settings.legal_menu.links -%}
+          <a href="{{ link.url }}">{{ link.title | escape }}</a>
+        {%- endfor -%}
+      {%- else -%}
+        {%- for policy in shop.policies -%}
+          <a href="{{ policy.url }}">{{ policy.title | escape }}</a>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+    <div class="r">
+      {%- if show_loc -%}
+        {%- render 'localization-form' -%}
+      {%- endif -%}
+      {%- if section.settings.show_social -%}
+        {%- capture social_links -%}
+          {%- if settings.social_instagram != blank %}<a href="{{ settings.social_instagram }}" aria-label="Instagram">{% render 'icon', icon: 'instagram-logo' %}</a>{% endif -%}
+          {%- if settings.social_pinterest != blank %}<a href="{{ settings.social_pinterest }}" aria-label="Pinterest">{% render 'icon', icon: 'pinterest-logo' %}</a>{% endif -%}
+          {%- if settings.social_tiktok != blank %}<a href="{{ settings.social_tiktok }}" aria-label="TikTok">{% render 'icon', icon: 'tiktok-logo' %}</a>{% endif -%}
+          {%- if settings.social_youtube != blank %}<a href="{{ settings.social_youtube }}" aria-label="YouTube">{% render 'icon', icon: 'youtube-logo' %}</a>{% endif -%}
+          {%- if settings.social_facebook != blank %}<a href="{{ settings.social_facebook }}" aria-label="Facebook">{% render 'icon', icon: 'facebook-logo' %}</a>{% endif -%}
+        {%- endcapture -%}
+        {%- if social_links != blank %}<div class="dl-social">{{ social_links }}</div>{% endif -%}
+      {%- endif -%}
+      {%- if section.settings.show_follow_on_shop and shop.features.follow_on_shop? -%}
+        <div class="dl-follow">
+          {%- # theme-check-disable -%}
+          {{ shop | login_button: action: 'follow' }}
+          {%- # theme-check-enable -%}
+        </div>
+      {%- endif -%}
+      {%- if show_pay -%}
+        <ul class="dl-pay" aria-label="{{ 'accessibility.accepted_payments' | t | escape }}">
+          {%- for type in shop.enabled_payment_types -%}
+            <li>{{ type | payment_type_svg_tag: class: 'dl-pay-icon' }}</li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+</footer>
+
+{% stylesheet %}
+  /* Shopify glue: optional fine-print line (legal setting) above the copyright row */
+  .dl-footer .dl-footer-fine { max-width: var(--content-wide); margin: var(--space-4) auto 0; font-size: 12px; color: var(--ink-muted); }
+  .dl-footer .dl-footer-fine p { margin: 0; }
+
+  /* Payment icons are Shopify's full-color SVGs (payment_type_svg_tag); Follow on Shop keeps Shop's own colors */
+  .dl-footer .dl-pay { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
+  .dl-footer .dl-pay li { display: block; }
+  .dl-footer .dl-pay-icon { display: block; width: 38px; height: 24px; }
+  .dl-footer .dl-follow { display: flex; align-items: center; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Footer",
+  "tag": "section",
+  "class": "dl-section dl-footer",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_localization",
+      "label": "Show country and language",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "Show payment icons",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "Show social media icons",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_follow_on_shop",
+      "label": "Show Follow on Shop",
+      "default": true,
+      "info": "Customers can follow your store on the Shop app. Shop Pay must be enabled."
+    },
+    {
+      "type": "richtext",
+      "id": "legal",
+      "label": "Legal line",
+      "default": "<p>Financing is subject to approval.</p>"
+    },
+    {
+      "type": "link_list",
+      "id": "legal_menu",
+      "label": "Legal links menu",
+      "default": "footer",
+      "info": "Links after the copyright (e.g. Privacy, Terms, Shipping policy). Without a menu the store policies are listed."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 48,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 32,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "link-list",
+      "name": "Link list",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Shop"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu",
+          "default": "footer"
+        }
+      ]
+    },
+    {
+      "type": "brand-note",
+      "name": "Brand note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "Fine jewelry, made to be worn every day."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_logo",
+          "label": "Show wordmark",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "promise",
+      "name": "Service promise",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "truck",
+          "options": [
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "arrow-counter-clockwise",
+              "label": "Returns"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Shipping"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Options and costs are shown at checkout."
+        }
+      ]
+    },
+    {
+      "type": "newsletter-inline",
+      "name": "Newsletter",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Stay in the light"
+        },
+        {
+          "type": "text",
+          "id": "button",
+          "label": "Button label",
+          "default": "Subscribe"
+        },
+        {
+          "type": "text",
+          "id": "success",
+          "label": "Success message",
+          "default": "Thank you. You are on the list."
+        }
+      ]
+    },
+    {
+      "type": "custom-liquid",
+      "name": "Custom Liquid",
+      "settings": [
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Liquid code",
+          "info": "Shown as a footer column. Add app snippets or other Liquid code to create advanced customizations."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "footer"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

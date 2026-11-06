@@ -1,0 +1,112 @@
+{%- comment -%}
+  Add to Bag, the helper line under it and the stock Notice (Facet PurchaseControls), first state.
+  The kernel's product-form updates them as the selection changes.
+
+  Accepts:
+  - product {Object}
+  - ctx {String} pdp | qv
+  - finish {String} selected finish value name
+  - variant {Object} chosen variant, blank while a size is still needed
+  - label {String} button label (default "Add to Bag")
+  - show_stock {Boolean} (default true)
+  - stock_text {String} text under "In stock"
+  - type {String} submit | button (default submit)
+  - part {String} add (button and helper line) | stock (the Notice) | all (default)
+{%- endcomment -%}
+{%- liquid
+  if show_stock == nil
+    assign show_stock = true
+  endif
+  assign add_label = label
+  if add_label == blank
+    assign add_label = 'products.product.add_to_bag' | t
+  endif
+  assign need_text = ''
+  assign summary = finish
+  for option in product.options_with_values
+    assign option_lower = option.name | downcase
+    if option_lower != 'finish' and option_lower != 'metal'
+      if variant == blank
+        if option_lower contains 'ring' or option_lower contains 'size'
+          assign need_text = 'products.product.select_size' | t
+        elsif option_lower contains 'length' or option_lower contains 'chain'
+          assign need_text = 'products.product.select_length' | t
+        else
+          assign need_text = 'products.product.select_option' | t: option: option_lower
+        endif
+        break
+      else
+        assign value = variant.options[forloop.index0]
+        if option_lower contains 'ring'
+          assign size_text = 'products.product.size_value' | t: value: value
+          assign summary = summary | append: ', ' | append: size_text
+        else
+          assign summary = summary | append: ', ' | append: value
+        endif
+      endif
+    endif
+  endfor
+  if product.has_only_default_variant
+    assign summary = ''
+  endif
+
+  assign state = 'ok'
+  if product.available == false
+    assign state = 'soldout'
+  elsif need_text != blank
+    assign state = 'need'
+  elsif variant.available == false
+    assign state = 'combo'
+  endif
+
+  assign low = false
+  if state == 'ok' and settings.inventory_show_count and variant.inventory_management == 'shopify' and variant.inventory_quantity > 0 and variant.inventory_quantity <= settings.inventory_low_threshold
+    assign low = true
+  endif
+-%}
+{%- assign part = part | default: 'all' -%}
+{%- if part != 'stock' -%}
+{%- case state -%}
+  {%- when 'soldout', 'combo' -%}
+    {%- assign label_sold = 'products.product.sold_out' | t -%}
+    {%- capture add_attrs %}data-act="add-blocked" data-add data-ctx="{{ ctx }}" aria-disabled="true"{% endcapture -%}
+    {%- render 'button', label: label_sold, size: 'lg', block: true, type: type, attrs: add_attrs -%}
+  {%- else -%}
+    {%- capture add_attrs %}data-act="add" data-add data-ctx="{{ ctx }}"{% if state == 'need' %} aria-disabled="true"{% endif %}{% endcapture -%}
+    {%- render 'button', label: add_label, size: 'lg', block: true, type: type, attrs: add_attrs -%}
+{%- endcase -%}
+<p class="t-fine" style="text-align:center;margin:0" data-line role="status">
+  {%- case state -%}
+    {%- when 'soldout' -%}{{ 'products.product.sold_out_text' | t }}
+    {%- when 'need' -%}{{ need_text }}
+    {%- when 'combo' -%}{{ 'products.product.choose_available' | t }}
+    {%- else -%}{% if summary != blank %}{{ summary }}. {% endif %}{{ 'products.product.delivery_free' | t }}
+  {%- endcase -%}
+</p>
+{%- endif -%}
+{%- if show_stock and part != 'add' -%}
+  <div data-stock style="display:contents">
+    {%- liquid
+      case state
+        when 'soldout'
+          assign t_title = 'products.product.sold_out_title' | t
+          assign t_text = 'products.product.waitlist_text' | t
+          assign t_link = 'products.product.waitlist' | t
+          render 'notice', tone: 'caution', title: t_title, text: t_text, link_label: t_link, link_url: '#waitlist', link_attrs: 'data-open="waitlist"'
+        when 'combo'
+          assign t_title = 'products.product.combination_sold_out' | t
+          assign t_text = 'products.product.combination_sold_out_text' | t
+          assign t_link = 'products.product.notify_me' | t
+          render 'notice', tone: 'caution', title: t_title, text: t_text, link_label: t_link, link_url: '#waitlist', link_attrs: 'data-open="waitlist"'
+        when 'ok'
+          if low
+            assign t_title = 'products.product.only_left' | t: count: variant.inventory_quantity
+            render 'notice', tone: 'caution', title: t_title, text: stock_text
+          else
+            assign t_title = 'products.product.in_stock' | t
+            render 'notice', tone: 'success', title: t_title, text: stock_text
+          endif
+      endcase
+    -%}
+  </div>
+{%- endif -%}

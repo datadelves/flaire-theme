@@ -1,0 +1,280 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  assign steps = section.blocks | where: 'type', 'step'
+-%}
+{%- capture steps_html -%}
+  {%- for block in steps -%}
+    {%- liquid
+      assign b = block.settings
+      assign n = forloop.index0 | modulo: 4
+      case n
+        when 1
+          assign spec_kind = 'ring'
+          assign spec_metal = 'rose-gold'
+          assign spec_gem = 'diamond'
+        when 2
+          assign spec_kind = 'band'
+          assign spec_metal = 'white-gold'
+          assign spec_gem = 'diamond'
+        when 3
+          assign spec_kind = 'earring'
+          assign spec_metal = 'platinum'
+          assign spec_gem = 'pearl'
+        else
+          assign spec_kind = 'ring'
+          assign spec_metal = 'yellow-gold'
+          assign spec_gem = 'diamond'
+      endcase
+      assign step_number = b.number | default: forloop.index
+    -%}
+    <div class="dl-step stack" style="gap:12px" {{ block.shopify_attributes }}><div class="dl-detail" style="background:var(--canvas-alt)"><div class="art" style="background:var(--canvas-alt)">
+      {%- render 'product-photo', image: b.image, size: 180, alt: b.image_alt, sizes: '(max-width: 734px) 44vw, 200px', kind: spec_kind, metal: spec_metal, gem: spec_gem -%}
+    </div></div><p class="num">{{ 'general.step' | t: number: step_number }}</p>
+      {%- if b.title != blank %}<p class="t-title" style="margin:0">{{ b.title | escape }}</p>{% endif -%}
+      {%- if b.text != blank %}<p class="t-caption" style="margin:0">{{ b.text }}</p>{% endif -%}
+    </div>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture facts -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'fact' and block.settings.label != blank -%}
+      {%- capture fact_inner -%}{{ block.settings.label | escape }}{% if block.settings.detail != blank %}<span class="fc-sr">, {{ block.settings.detail | escape }}</span>{% endif %}{%- endcapture -%}
+      {%- if block.settings.link != blank -%}
+        <a class="fc-badge fc-badge-neutral" href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ fact_inner }}</a>
+      {%- else -%}
+        <span class="fc-badge fc-badge-neutral" {{ block.shopify_attributes }}>{{ fact_inner }}</span>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+<div class="band {{ scheme }}" data-section="craft-process" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap">
+  {%- render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub -%}
+  {%- if steps_html != blank -%}
+    {%- if s.layout == 'list' -%}
+      <div class="grid g4">{{ steps_html }}</div>
+    {%- else -%}
+      <div class="rail" style="grid-auto-columns:calc((100% - 72px)/4)" data-carousel>{{ steps_html }}</div>
+    {%- endif -%}
+  {%- endif -%}
+  {%- if facts != blank %}<div class="facts" style="margin-top:40px">{{ facts }}</div>{% endif -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'quote' and block.settings.text != blank -%}
+      <figure class="wrap-n center" style="margin:56px auto 0;text-align:center;display:grid;justify-items:center;gap:16px" {{ block.shopify_attributes }}>
+        {%- if block.settings.image != blank -%}
+          {%- assign quote_style = 'width:96px;height:96px;border-radius:50%;object-fit:cover;object-position:' | append: block.settings.image.presentation.focal_point -%}
+          {{ block.settings.image | image_url: width: 192 | image_tag: loading: 'lazy', widths: '96, 192', sizes: '96px', alt: '', style: quote_style }}
+        {%- endif -%}
+        <blockquote class="t-lead" style="margin:0;color:var(--ink)">{{ block.settings.text }}</blockquote>
+        {%- if block.settings.author != blank %}<figcaption class="t-caption">{{ block.settings.author | escape }}</figcaption>{% endif -%}
+      </figure>
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if s.link_label != blank and s.link != blank -%}
+    <div style="text-align:center;margin-top:32px">{% render 'button', variant: 'link', label: s.link_label, url: s.link %}</div>
+  {%- endif -%}
+</div></div>
+
+{% schema %}
+{
+  "name": "Craft in four steps",
+  "tag": "section",
+  "class": "dl-section dl-craft-process",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Craft"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Made by hand, checked twice"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "The path from wax to wrist."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "default": "rail",
+      "options": [
+        {
+          "value": "rail",
+          "label": "Horizontal rail"
+        },
+        {
+          "value": "list",
+          "label": "Vertical list"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "step",
+      "name": "Step",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "number",
+          "label": "Number",
+          "default": "1"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Cast"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "Recycled 18-karat gold is cast from a hand-carved wax."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Close-up image"
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        }
+      ]
+    },
+    {
+      "type": "fact",
+      "name": "Fact",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Recycled gold"
+        },
+        {
+          "type": "text",
+          "id": "detail",
+          "label": "Detail"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "quote",
+      "name": "Maker note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Quote",
+          "default": "We check every setting twice under magnification."
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Attribution",
+          "default": "Head of studio"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Portrait"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Craft in four steps",
+      "blocks": [
+        {
+          "type": "step"
+        },
+        {
+          "type": "step"
+        },
+        {
+          "type": "step"
+        },
+        {
+          "type": "step"
+        },
+        {
+          "type": "fact"
+        },
+        {
+          "type": "fact"
+        },
+        {
+          "type": "fact"
+        },
+        {
+          "type": "fact"
+        },
+        {
+          "type": "quote"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

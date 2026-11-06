@@ -1,0 +1,277 @@
+{%- capture base_id -%}{% render 'product-base-variant', product: product %}{%- endcapture -%}
+{%- liquid
+  assign base_id = base_id | strip
+  assign current = product.selected_or_first_available_variant
+  for v in product.variants
+    assign vid = v.id | append: ''
+    if vid == base_id
+      assign current = v
+      break
+    endif
+  endfor
+-%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign kind = 'ring'
+  assign metal = 'rose-gold'
+  assign main_media = nil
+  assign alt_media = nil
+  if product != blank
+    capture kind
+      render 'product-data', product: product, field: 'kind'
+    endcapture
+    assign kind = kind | strip | default: 'ring'
+    assign current = current
+    assign main_media = current.featured_media | default: product.featured_media
+    assign metal = current.option1 | handleize
+    assign alt_media = main_media
+    for v in product.variants
+      assign v_metal = v.option1 | handleize
+      if v_metal == 'yellow-gold' and v.featured_media
+        assign alt_media = v.featured_media
+        break
+      endif
+    endfor
+  endif
+-%}
+{%- if section.blocks.size > 0 -%}
+<div class="band {{ scheme }}" data-section="product-details-tiles" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub -%}
+    <div class="grid g3 keep3">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign tile_index = forloop.index0
+          assign block_image = block.settings.image
+          if block.type == 'video'
+            assign block_image = block.settings.poster
+          endif
+          if section.settings.use_media and product != blank
+            assign media_index = tile_index | plus: 4
+            if product.media[media_index]
+              assign block_image = product.media[media_index].preview_image
+            endif
+          endif
+          assign tile_alt = block.settings.image_alt | default: ''
+          assign fallback_media = main_media
+          assign fallback_metal = metal
+          if tile_index == 1
+            assign fallback_media = alt_media
+            assign fallback_metal = 'yellow-gold'
+          endif
+        -%}
+        <div class="dl-detail" {{ block.shopify_attributes }}>
+          <div class="art">
+            {%- if block.type == 'video' and block.settings.video != blank -%}
+              {%- liquid
+                assign vid = block.settings.video.id
+                if block.settings.video.type == 'youtube'
+                  assign video_src = '//www.youtube-nocookie.com/embed/' | append: vid | append: '?autoplay=1&mute=1&loop=1&controls=0&playsinline=1&rel=0&playlist=' | append: vid
+                else
+                  assign video_src = '//player.vimeo.com/video/' | append: vid | append: '?background=1&autoplay=1&muted=1&loop=1'
+                endif
+              -%}
+              <iframe class="dl-detail-video" src="{{ video_src }}" title="{{ block.settings.caption | default: product.title | escape }}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+            {%- elsif block_image != blank -%}
+              {{ block_image | image_url: width: 880 | image_tag: loading: 'lazy', widths: '440, 660, 880', sizes: '(max-width: 734px) 100vw, 33vw', alt: tile_alt, class: 'dl-detail-img' }}
+            {%- else -%}
+              {%- render 'product-photo', image: fallback_media, size: 220, alt: tile_alt, kind: kind, metal: fallback_metal -%}
+            {%- endif -%}
+          </div>
+          {%- if block.type == 'video' -%}
+            {%- if block.settings.caption != blank -%}
+              <div class="body"><p class="t-caption" style="margin:0">{{ block.settings.caption | escape }}</p></div>
+            {%- endif -%}
+          {%- elsif block.settings.title != blank or block.settings.text != blank -%}
+            <div class="body">
+              {%- if block.settings.title != blank %}<p class="t-title" style="margin:0">{{ block.settings.title | escape }}</p>{% endif -%}
+              {%- if block.settings.text != blank %}<p class="t-caption" style="margin:0">{{ block.settings.text | escape }}</p>{% endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+{%- endif -%}
+
+{% stylesheet %}
+  .dl-detail .art > img.dl-detail-img { width: 100%; height: 100%; object-fit: cover; }
+  .dl-detail .art > .dl-detail-video { width: 100%; height: 100%; border: 0; display: block; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Close details",
+  "tag": "section",
+  "class": "dl-section dl-product-details-tiles",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Details"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Look closer"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "use_media",
+      "label": "Use product media",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "detail",
+      "name": "Detail",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Close-up image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Four-prong setting"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "The stone sits low and catches light from every side."
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        }
+      ]
+    },
+    {
+      "type": "hallmark",
+      "name": "Hallmark",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Hallmarked"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Stamped 750 inside the band."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "name": "Video",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "video_url",
+          "id": "video",
+          "label": "Video",
+          "accept": [
+            "youtube",
+            "vimeo"
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "poster",
+          "label": "Poster"
+        },
+        {
+          "type": "text",
+          "id": "caption",
+          "label": "Caption"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Close details",
+      "blocks": [
+        {
+          "type": "detail"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "hallmark"
+        },
+        {
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,290 @@
+{%- comment -%}
+  Sibling collections rail, plus an optional recently viewed rail: the kernel reads viewed handles from
+  localStorage and fetches {{ routes.search_url }}?q=handle:a OR handle:b&type=product&section_id={{ section.id }};
+  that response (search.performed) carries the cards that replace the inside of [data-recent].
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign recent_block = section.blocks | where: 'type', 'recent' | first
+  assign link_block = section.blocks | where: 'type', 'link' | first
+  assign collection_blocks = section.blocks | where: 'type', 'collection'
+  assign recent_limit = recent_block.settings.limit | default: 4
+  assign recent_title = recent_block.settings.title
+  assign recent_show_price = true
+  if recent_block and recent_block.settings.show_price == false
+    assign recent_show_price = false
+  endif
+  assign show_recent = false
+  if section.settings.show_recently_viewed and recent_block
+    assign show_recent = true
+  endif
+-%}
+{%- capture recent_rail -%}
+  {%- if search.performed -%}
+    <div class="row-head cr-recent-head">
+      {%- render 'section-head', heading: recent_title, role: 't-title', level: 3, left: true -%}
+    </div>
+    <div class="rail" style="grid-auto-columns:calc((100% - 72px)/4)">
+      {%- assign shown = 0 -%}
+      {%- for item in search.results -%}
+        {%- if item.object_type != 'product' %}{% continue %}{% endif -%}
+        {%- render 'product-card', product: item, size: 150, show_price: recent_show_price, attrs: 'data-recently-viewed-product-card' -%}
+        {%- assign shown = shown | plus: 1 -%}
+        {%- if shown >= recent_limit %}{% break %}{% endif -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+{%- endcapture -%}
+{%- if search.performed -%}
+  <div class="cr-recent" data-recent data-section-id="{{ section.id }}" data-limit="{{ recent_limit }}">{{ recent_rail }}</div>
+{%- else -%}
+  <div class="band tight {{ scheme }}" data-section="collection-recommendations" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+    <div class="wrap">
+      <div class="row-head">
+        {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, role: 't-title-lg', left: true -%}
+        {%- if link_block and link_block.settings.align != 'start' and link_block.settings.label != blank and link_block.settings.link != blank -%}
+          {%- assign link_label = link_block.settings.label | escape -%}
+          {%- capture link_attrs -%}{{ link_block.shopify_attributes }}{%- endcapture -%}
+          {%- render 'button', variant: 'link', label: link_label, url: link_block.settings.link, attrs: link_attrs -%}
+        {%- endif -%}
+      </div>
+      <div class="rail" style="grid-auto-columns:calc((100% - 72px)/4)">
+        {%- assign shown = 0 -%}
+        {%- for block in collection_blocks -%}
+          {%- assign c = block.settings.collection -%}
+          {%- if c == blank -%}
+            {%- if request.design_mode -%}
+              <span class="fc-card" style="color:var(--ink)" {{ block.shopify_attributes }}><div class="fc-card-art">{% render 'specimen', kind: 'pendant', metal: 'yellow-gold', gem: 'emerald', size: 160, label: '' %}</div><div class="fc-card-body"><h3 class="fc-card-name">{{ 'general.view_all' | t }}</h3></div></span>
+            {%- endif -%}
+            {%- continue -%}
+          {%- endif -%}
+          {%- if collection != blank and c.handle == collection.handle %}{% continue %}{% endif -%}
+          {%- if shown >= 4 %}{% break %}{% endif -%}
+          {%- liquid
+            assign art = block.settings.image | default: c.image
+            assign art_alt = c.title
+            if art == blank
+              assign first = c.products.first
+              assign art = first.featured_media
+              assign art_alt = first.title
+              capture first_material
+                render 'product-data', product: first, field: 'material', fallback: false
+              endcapture
+              assign first_material = first_material | strip
+              if first_material != blank
+                assign art_alt = art_alt | append: ', ' | append: first_material
+              endif
+            endif
+            assign kind_product = c.products.first
+            capture art_kind
+              render 'product-data', product: kind_product, field: 'kind'
+            endcapture
+            assign art_kind = art_kind | strip | default: 'ring'
+          -%}
+          <a class="fc-card" href="{{ c.url }}" style="color:var(--ink)" {{ block.shopify_attributes }}><div class="fc-card-art">{% render 'product-photo', image: art, size: 160, alt: art_alt, kind: art_kind %}</div><div class="fc-card-body"><h3 class="fc-card-name">{{ c.title | escape }}</h3>{% if block.settings.line != blank %}<p class="fc-card-material">{{ block.settings.line | escape }}</p>{% endif %}</div></a>
+          {%- assign shown = shown | plus: 1 -%}
+        {%- endfor -%}
+      </div>
+      {%- if link_block and link_block.settings.align == 'start' and link_block.settings.label != blank and link_block.settings.link != blank -%}
+        <div class="cr-link-start" {{ link_block.shopify_attributes }}>
+          {%- assign link_label = link_block.settings.label | escape -%}
+          {%- render 'button', variant: 'link', label: link_label, url: link_block.settings.link -%}
+        </div>
+      {%- endif -%}
+      {%- if show_recent -%}
+        <div class="cr-recent" data-recent data-section-id="{{ section.id }}" data-limit="{{ recent_limit }}"{% if request.design_mode == false %} hidden{% endif %} {{ recent_block.shopify_attributes }}>
+          {%- if request.design_mode -%}
+            <div class="row-head cr-recent-head">{%- render 'section-head', heading: recent_title, role: 't-title', level: 3, left: true -%}</div>
+            <div class="rail" style="grid-auto-columns:calc((100% - 72px)/4)">{%- for i in (1..recent_limit) -%}{%- render 'product-card', product: blank, size: 150 -%}{%- endfor -%}</div>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .cr-recent { margin-top: var(--space-16); }
+  .cr-recent-head { margin-bottom: var(--space-6); }
+  .cr-link-start { margin-top: var(--space-6); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Related collections",
+  "tag": "section",
+  "class": "dl-section dl-collection-recommendations",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Keep exploring"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_recently_viewed",
+      "label": "Show recently viewed",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collection",
+      "name": "Collection",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "line",
+          "label": "Line"
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Link",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "All collections"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "end",
+          "options": [
+            {
+              "value": "start",
+              "label": "Start"
+            },
+            {
+              "value": "end",
+              "label": "End"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "recent",
+      "name": "Recently viewed",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "range",
+          "id": "limit",
+          "label": "Count",
+          "default": 4,
+          "min": 2,
+          "max": 8,
+          "step": 1
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Recently viewed"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "collection"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Related collections",
+      "blocks": [
+        {
+          "type": "collection"
+        },
+        {
+          "type": "collection"
+        },
+        {
+          "type": "collection"
+        },
+        {
+          "type": "collection"
+        },
+        {
+          "type": "link"
+        },
+        {
+          "type": "recent"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

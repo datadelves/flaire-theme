@@ -1,0 +1,91 @@
+{%- comment -%}
+  Facet NewsletterForm: email field and Subscribe, posting to Shopify's customer form (tag: newsletter).
+  Inline layout (newsletter section): field and button on one row. Stack layout (footer): overline heading,
+  field, small button. Success replaces the form with a success Notice.
+
+  Accepts:
+  - id {String} unique suffix for this form on the page (e.g. section.id, 'footer')
+  - layout {String} inline | stack (default inline)
+  - heading {String} stack layout overline
+  - button_label {String} (default "Subscribe")
+  - button_size {String} sm | lg (default lg for inline, sm for stack)
+  - placeholder {String} (default "name@example.com")
+  - label {String} (default "Email address")
+  - success_title {String} (default "Thank you")
+  - success_text {String} (default "You are on the list.")
+  - error_text {String} message when the email is invalid
+  - consent_html {String} consent text; with consent_required it becomes a required checkbox
+  - consent_required {Boolean}
+{%- endcomment -%}
+{%- liquid
+  assign layout = layout | default: 'inline'
+  assign form_id = 'news-' | append: id
+  assign field_id = form_id | append: '-email'
+  assign button_text = button_label
+  if button_text == blank
+    assign button_text = 'general.subscribe' | t
+  endif
+  assign field_label = label
+  if field_label == blank
+    assign field_label = 'general.email_label' | t
+  endif
+  assign field_placeholder = placeholder
+  if field_placeholder == blank
+    assign field_placeholder = 'general.email_placeholder' | t
+  endif
+  if layout == 'stack'
+    assign button_size = button_size | default: 'sm'
+  else
+    assign button_size = button_size | default: 'lg'
+  endif
+  assign email_attrs = ''
+  if error_text != blank
+    assign email_attrs = 'data-msg-invalid="' | append: error_text | escape | append: '"'
+  endif
+  assign busy_label = 'general.subscribing' | t
+  if success_title == blank
+    assign success_title = 'newsletter.success_title' | t
+  endif
+  if success_text == blank
+    assign success_text = 'newsletter.success_text' | t
+  endif
+-%}
+{%- form 'customer', id: form_id, class: 'dl-news-form', novalidate: 'novalidate', data-validate: '', data-form: 'news' -%}
+  {%- if form.posted_successfully? -%}
+    {%- render 'notice', tone: 'success', title: success_title, text: success_text -%}
+  {%- else -%}
+    <input type="hidden" name="contact[tags]" value="newsletter">
+    {%- liquid
+      assign error_text_server = ''
+      if form.errors contains 'email'
+        assign error_text_server = form.errors.translated_fields.email | capitalize | append: ' ' | append: form.errors.messages.email
+      elsif form.errors
+        assign error_text_server = error_text
+        if error_text_server == blank
+          assign error_text_server = 'general.email_invalid' | t
+        endif
+      endif
+    -%}
+    {%- if layout == 'stack' -%}
+      <div class="dl-news stack" style="gap:8px;max-width:280px">
+        {%- if heading != blank %}<p class="t-overline" style="color:var(--ink)">{{ heading }}</p>{% endif -%}
+        {%- render 'field', label: field_label, name: 'contact[email]', id: field_id, type: 'email', placeholder: field_placeholder, autocomplete: 'email', required: true, error: error_text_server, attrs: email_attrs -%}
+        {%- capture busy_attrs %}data-busy-label="{{ busy_label | escape }}"{% endcapture -%}
+        {%- render 'button', label: button_text, type: 'submit', size: button_size, attrs: busy_attrs -%}
+      </div>
+    {%- else -%}
+      <div class="inline center" style="gap:12px;align-items:flex-start;flex-wrap:nowrap">
+        <div style="flex:1;min-width:0;text-align:left">
+          {%- render 'field', label: field_label, name: 'contact[email]', id: field_id, type: 'email', placeholder: field_placeholder, autocomplete: 'email', required: true, error: error_text_server, attrs: email_attrs -%}
+        </div>
+        <div style="padding-top:30px">
+          {%- capture busy_attrs %}data-busy-label="{{ busy_label | escape }}"{% endcapture -%}
+          {%- render 'button', label: button_text, type: 'submit', size: button_size, attrs: busy_attrs -%}
+        </div>
+      </div>
+    {%- endif -%}
+    {%- if consent_required and consent_html != blank -%}
+      <label class="fc-check" style="margin-top:12px;text-align:left"><input type="checkbox" name="contact[accepts_marketing]" value="true" required data-msg-required="{{ 'newsletter.consent_required' | t | escape }}"> <span>{{ consent_html }}</span></label>
+    {%- endif -%}
+  {%- endif -%}
+{%- endform -%}

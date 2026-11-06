@@ -1,0 +1,438 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign form_id = 'contact-' | append: section.id
+  assign button_label = section.settings.button_label
+  if button_label == blank
+    assign button_label = 'contact.send' | t
+  endif
+  assign busy_label = 'contact.sending' | t
+  assign error_title = 'general.form.problem' | t
+  assign error_text = 'contact.error_text' | t
+  assign email_msg = 'general.email_invalid' | t
+  assign email_msg_e = email_msg | escape
+
+  assign short_count = 0
+  assign topic_count = 0
+  for block in section.blocks
+    if block.type == 'field' and block.settings.type != 'textarea' and block.settings.label != blank
+      assign short_count = short_count | plus: 1
+    elsif block.type == 'topic' and block.settings.label != blank
+      assign topic_count = topic_count | plus: 1
+    endif
+  endfor
+-%}
+<div class="band {{ scheme }}" data-section="contact-form" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-c split" style="align-items:start">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, level: 2, left: true -%}
+    <div class="stack-lg">
+      <div data-contact>
+        {%- form 'contact', id: form_id, class: 'dl-form wide', novalidate: 'novalidate', data-validate: '', data-form: 'contact' -%}
+          {%- if form.posted_successfully? -%}
+            {%- render 'notice', tone: 'success', title: section.settings.success_title, text: section.settings.success_text -%}
+            {%- assign again = 'contact.send_another' | t -%}
+            {%- render 'button', label: again, variant: 'link', no_chev: true, url: request.path -%}
+          {%- else -%}
+            {%- liquid
+              assign summary_text = ''
+              if form.errors
+                assign summary_text = error_text
+                if form.errors contains 'form'
+                  assign summary_text = form.errors.messages['form']
+                endif
+              endif
+            -%}
+            <div data-summary{% if form.errors %} data-server{% endif %}>
+              {%- if form.errors -%}
+                {%- render 'notice', tone: 'danger', title: error_title, text: summary_text -%}
+              {%- endif -%}
+            </div>
+
+            {%- comment -%} Short fields first, two per row (the prototype's Name + Email row), then Topic, then the message. {%- endcomment -%}
+            {%- assign short_index = 0 -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type != 'field' or block.settings.type == 'textarea' or block.settings.label == blank -%}{%- continue -%}{%- endif -%}
+              {%- liquid
+                assign short_index = short_index | plus: 1
+                assign f_type = block.settings.type
+                assign f_label = block.settings.label | escape
+                assign f_value = ''
+                assign f_error = ''
+                assign f_msg = ''
+                case f_type
+                  when 'email'
+                    assign f_name = 'contact[email]'
+                    assign f_auto = 'email'
+                    assign f_value = form.email
+                    assign f_msg = email_msg
+                    if form.errors contains 'email'
+                      assign f_error = email_msg
+                    endif
+                  when 'tel'
+                    assign f_name = 'contact[phone]'
+                    assign f_auto = 'tel'
+                    assign f_value = form.phone
+                    assign f_msg = 'contact.phone_error' | t
+                    if form.errors contains 'phone'
+                      assign f_error = f_msg
+                    endif
+                  else
+                    assign f_handle = block.settings.label | handle
+                    if f_handle == 'name'
+                      assign f_name = 'contact[name]'
+                      assign f_auto = 'name'
+                      assign f_value = form.name
+                      assign f_msg = 'contact.name_error' | t
+                    else
+                      assign f_name = 'contact[' | append: f_label | append: ']'
+                      assign f_auto = ''
+                      assign f_msg = 'general.form.required' | t: label: f_label
+                    endif
+                endcase
+                if f_value == blank and customer
+                  if f_type == 'email'
+                    assign f_value = customer.email
+                  elsif f_auto == 'name'
+                    assign f_value = customer.name
+                  endif
+                endif
+                assign f_id = 'c-' | append: block.id
+                assign f_msg_e = f_msg | escape
+                capture f_attrs
+                  echo 'data-msg-required="' | append: f_msg_e | append: '" '
+                  if f_type == 'email'
+                    echo 'data-msg-invalid="' | append: email_msg_e | append: '" '
+                  endif
+                  echo block.shopify_attributes
+                endcapture
+                assign is_odd = short_index | modulo: 2
+              -%}
+              {%- if is_odd == 1 and short_index < short_count -%}<div class="two">{%- endif -%}
+              {%- render 'field', label: f_label, name: f_name, id: f_id, type: f_type, value: f_value, autocomplete: f_auto, required: block.settings.required, error: f_error, attrs: f_attrs -%}
+              {%- if is_odd == 0 -%}</div>{%- endif -%}
+            {%- endfor -%}
+
+            {%- if section.settings.show_topic and topic_count > 0 -%}
+              {%- capture topic_options -%}
+                {%- for block in section.blocks -%}
+                  {%- if block.type == 'topic' and block.settings.label != blank -%}
+                    <option value="{{ block.settings.value | default: block.settings.label | escape }}"{% if block.settings.default %} selected{% endif %}>{{ block.settings.label | escape }}</option>
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- endcapture -%}
+              {%- assign topic_label = 'contact.topic' | t -%}
+              {%- assign topic_id = 'c-topic-' | append: section.id -%}
+              {%- render 'field', label: topic_label, name: 'contact[topic]', id: topic_id, select_html: topic_options -%}
+            {%- endif -%}
+
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'field' and block.settings.type == 'textarea' and block.settings.label != blank -%}
+                {%- liquid
+                  assign f_id = 'c-' | append: block.id
+                  assign f_error = ''
+                  assign f_msg = 'contact.message_error' | t
+                  assign f_msg_e = f_msg | escape
+                  if form.errors contains 'body'
+                    assign f_error = f_msg
+                  endif
+                  capture f_attrs
+                    echo 'data-msg-required="' | append: f_msg_e | append: '" '
+                    echo block.shopify_attributes
+                  endcapture
+                -%}
+                {%- render 'field', label: block.settings.label, name: 'contact[body]', id: f_id, textarea: true, value: form.body, required: block.settings.required, error: f_error, attrs: f_attrs -%}
+              {%- endif -%}
+            {%- endfor -%}
+
+            {%- capture busy_attrs %}data-busy-label="{{ busy_label | escape }}"{% endcapture -%}
+            {%- render 'button', label: button_label, type: 'submit', size: 'lg', attrs: busy_attrs -%}
+          {%- endif -%}
+        {%- endform -%}
+      </div>
+
+      {%- capture store_info -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'store-info' -%}
+            {%- assign info_text = block.settings.text | strip_html | strip -%}
+            {%- if block.settings.title != blank or info_text != blank -%}
+              <div class="inline" style="gap:12px;align-items:flex-start" {{ block.shopify_attributes }}>
+                {%- render 'icon', icon: block.settings.icon, size: 20 -%}
+                <div>
+                  {%- if block.settings.title != blank %}<p class="t-strong" style="margin:0">{{ block.settings.title | escape }}</p>{% endif -%}
+                  {%- if info_text != blank %}<div class="t-caption dl-store-text" style="margin:0">{{ block.settings.text }}</div>{% endif -%}
+                </div>
+              </div>
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if store_info != blank -%}
+        <div class="stack">{{ store_info }}</div>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .dl-contact-form .dl-store-text > * { margin: 0; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Contact form",
+  "tag": "section",
+  "class": "dl-section dl-contact-form",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Contact"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Ask a jeweler"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "We reply as soon as we can."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Send"
+    },
+    {
+      "type": "text",
+      "id": "success_title",
+      "label": "Success heading",
+      "default": "Message sent"
+    },
+    {
+      "type": "text",
+      "id": "success_text",
+      "label": "Success text",
+      "default": "Thank you. We will reply as soon as we can."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_topic",
+      "label": "Show topic menu",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "field",
+      "name": "Field",
+      "limit": 8,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Name"
+        },
+        {
+          "type": "select",
+          "id": "type",
+          "label": "Type",
+          "default": "text",
+          "options": [
+            {
+              "value": "text",
+              "label": "Text"
+            },
+            {
+              "value": "email",
+              "label": "Email"
+            },
+            {
+              "value": "tel",
+              "label": "Phone"
+            },
+            {
+              "value": "textarea",
+              "label": "Message"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "required",
+          "label": "Required",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "topic",
+      "name": "Topic option",
+      "limit": 8,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Sizing"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value",
+          "default": "sizing"
+        },
+        {
+          "type": "checkbox",
+          "id": "default",
+          "label": "Selected by default",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "store-info",
+      "name": "Store info",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "storefront",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Visit us"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Address and hours",
+          "default": "<p>Add your address and opening hours.</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact form",
+      "blocks": [
+        {
+          "type": "field"
+        },
+        {
+          "type": "field"
+        },
+        {
+          "type": "field"
+        },
+        {
+          "type": "field"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "store-info"
+        },
+        {
+          "type": "store-info"
+        },
+        {
+          "type": "store-info"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

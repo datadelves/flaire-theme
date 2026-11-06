@@ -1,0 +1,287 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign count = section.settings.count | default: 3
+  assign source_blog = blog
+  if source_blog == blank
+    assign source_blog = blogs.journal
+  endif
+
+  comment
+    Pinned articles first, then the newest articles of the blog (minus the one being read) up to the count.
+  endcomment
+  assign shown = 0
+  assign used = '|'
+  if article
+    assign used = used | append: article.id | append: '|'
+  endif
+  capture cards
+    for block in section.blocks
+      if block.type != 'article' or block.settings.article == blank or shown >= count
+        continue
+      endif
+      assign a = block.settings.article
+      assign key = '|' | append: a.id | append: '|'
+      if used contains key
+        continue
+      endif
+      assign used = used | append: a.id | append: '|'
+      assign shown = shown | plus: 1
+      echo '<div ' | append: block.shopify_attributes | append: '>'
+      if block.settings.title != blank
+        render 'article-related-card', article: a, title: block.settings.title, show_excerpt: block.settings.show_excerpt
+      else
+        render 'article-card', article: a, show_excerpt: block.settings.show_excerpt
+      endif
+      echo '</div>'
+    endfor
+    for a in source_blog.articles limit: 12
+      if shown >= count
+        break
+      endif
+      assign key = '|' | append: a.id | append: '|'
+      if used contains key
+        continue
+      endif
+      assign used = used | append: a.id | append: '|'
+      assign shown = shown | plus: 1
+      render 'article-card', article: a
+    endfor
+    if shown == 0 and request.design_mode
+      for i in (1..count)
+        render 'article-card'
+      endfor
+      assign shown = count
+    endif
+  endcapture
+
+  assign link_block = section.blocks | where: 'type', 'link' | first
+  assign grid_class = 'g3 keep3'
+  if count == 2
+    assign grid_class = 'g2'
+  elsif count == 4
+    assign grid_class = 'g4'
+  endif
+-%}
+{%- if shown > 0 -%}
+  <div class="band tight {{ scheme }}" data-section="article-related" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+    <div class="wrap">
+      <div class="row-head">
+        {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, left: true, role: 't-title-lg' -%}
+        {%- if link_block and link_block.settings.align != 'start' and link_block.settings.label != blank and link_block.settings.link != blank -%}
+          {%- capture link_attrs %}{{ link_block.shopify_attributes }}{% endcapture -%}
+          {%- render 'button', label: link_block.settings.label, variant: 'link', url: link_block.settings.link, attrs: link_attrs -%}
+        {%- endif -%}
+      </div>
+
+      {%- capture topics -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'topic' and block.settings.label != blank and block.settings.link != blank -%}
+            <a class="fc-btn fc-btn-{{ block.settings.style | default: 'secondary' }} fc-btn-sm{% if block.settings.style == 'link' %} no-chev{% endif %}" href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</a>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if topics != blank -%}
+        <div class="fc-chips" role="group" aria-label="{{ 'blogs.article.topics' | t }}" style="margin:-16px 0 32px">{{ topics }}</div>
+      {%- endif -%}
+
+      <div class="grid {{ grid_class }}">{{ cards }}</div>
+
+      {%- if link_block and link_block.settings.align == 'start' and link_block.settings.label != blank and link_block.settings.link != blank -%}
+        <div style="margin-top:32px" {{ link_block.shopify_attributes }}>
+          {%- render 'button', label: link_block.settings.label, variant: 'link', url: link_block.settings.link -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Related articles",
+  "tag": "section",
+  "class": "dl-section dl-article-related",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Keep reading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "count",
+      "label": "Articles",
+      "default": 3,
+      "min": 2,
+      "max": 4,
+      "step": 1
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "article",
+      "name": "Pinned article",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "article",
+          "id": "article",
+          "label": "Article"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading override"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_excerpt",
+          "label": "Show excerpt",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "topic",
+      "name": "Topic link",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Care"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "secondary",
+          "options": [
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "link",
+              "label": "Link"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Link",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "All articles"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "end",
+          "options": [
+            {
+              "value": "start",
+              "label": "Start"
+            },
+            {
+              "value": "end",
+              "label": "End"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Related articles",
+      "blocks": [
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "topic"
+        },
+        {
+          "type": "link"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

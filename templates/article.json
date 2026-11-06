@@ -1,0 +1,180 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-article",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "show_image": true,
+        "show_author": true,
+        "show_date": true,
+        "show_tags": true,
+        "enable_comments": true,
+        "show_toc": false
+      },
+      "blocks": {
+        "title-1": {
+          "type": "title",
+          "settings": {
+            "size": "headline",
+            "show_eyebrow": true,
+            "align": "center"
+          }
+        },
+        "content-1": {
+          "type": "content",
+          "settings": {
+            "size": "body",
+            "drop_lead": true,
+            "hairline": false
+          }
+        },
+        "featured-product-1": {
+          "type": "featured-product",
+          "settings": {
+            "eyebrow": "",
+            "show_quick_view": true
+          }
+        },
+        "share-1": {
+          "type": "share",
+          "settings": {
+            "label": "Share",
+            "copy": true,
+            "native": true
+          }
+        }
+      },
+      "block_order": [
+        "title-1",
+        "content-1",
+        "featured-product-1",
+        "share-1"
+      ]
+    },
+    "article-related": {
+      "type": "article-related",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Keep reading",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "count": 3
+      },
+      "blocks": {
+        "article-1": {
+          "type": "article",
+          "settings": {
+            "title": "",
+            "show_excerpt": false
+          }
+        },
+        "article-2": {
+          "type": "article",
+          "settings": {
+            "title": "",
+            "show_excerpt": false
+          }
+        },
+        "article-3": {
+          "type": "article",
+          "settings": {
+            "title": "",
+            "show_excerpt": false
+          }
+        },
+        "topic-1": {
+          "type": "topic",
+          "settings": {
+            "label": "Care",
+            "style": "secondary"
+          }
+        },
+        "topic-2": {
+          "type": "topic",
+          "settings": {
+            "label": "Care",
+            "style": "secondary"
+          }
+        },
+        "topic-3": {
+          "type": "topic",
+          "settings": {
+            "label": "Care",
+            "style": "secondary"
+          }
+        },
+        "topic-4": {
+          "type": "topic",
+          "settings": {
+            "label": "Care",
+            "style": "secondary"
+          }
+        },
+        "link-1": {
+          "type": "link",
+          "settings": {
+            "label": "All articles",
+            "link": "shopify://blogs/news",
+            "align": "end"
+          }
+        }
+      },
+      "block_order": [
+        "article-1",
+        "article-2",
+        "article-3",
+        "topic-1",
+        "topic-2",
+        "topic-3",
+        "topic-4",
+        "link-1"
+      ]
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "eyebrow": "Journal",
+        "headline": "Notes on light",
+        "sub": "New pieces and care notes, once a month.",
+        "color_scheme": "scheme-1",
+        "button_label": "Subscribe",
+        "fine_print": "<p>Unsubscribe at any time.</p>",
+        "success_text": "Thank you. You are on the list."
+      },
+      "blocks": {
+        "heading-1": {
+          "type": "heading",
+          "settings": {
+            "text": "Notes on light",
+            "size": "display"
+          }
+        },
+        "email-field-1": {
+          "type": "email-field",
+          "settings": {
+            "label": "Email address",
+            "placeholder": "name@example.com",
+            "error": "Enter an email address like name@example.com."
+          }
+        },
+        "consent-1": {
+          "type": "consent",
+          "settings": {
+            "text": "<p>By subscribing you agree to our privacy policy.</p>",
+            "required": false
+          }
+        }
+      },
+      "block_order": [
+        "heading-1",
+        "email-field-1",
+        "consent-1"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "article-related",
+    "newsletter"
+  ]
+}

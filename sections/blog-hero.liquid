@@ -1,0 +1,285 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign hero_blog = blog
+  if hero_blog == blank
+    assign hero_blog = blogs.journal
+  endif
+
+  assign feat = nil
+  assign feat_block = nil
+  for block in section.blocks
+    if block.type == 'featured'
+      assign feat_block = block
+      if block.settings.article != blank
+        assign feat = block.settings.article
+      endif
+    endif
+  endfor
+  if feat == blank and section.settings.feature_latest and hero_blog.articles_count > 0
+    assign feat = hero_blog.articles.first
+  endif
+
+  assign tag_links = section.blocks | where: 'type', 'tag-link'
+  assign current_tag = current_tags.first | handle
+
+  comment
+    On a blog page the eyebrow shows blog.title (the prototype's "Journal" line) unless the merchant turns it off.
+  endcomment
+  assign eyebrow = section.settings.eyebrow | escape
+  if section.settings.show_blog_title and blog != blank
+    assign eyebrow = blog.title | escape
+  endif
+-%}
+<div data-section="blog-hero">
+  <div class="fc-tile {{ scheme }}{% if feat == blank %} nopad-b{% endif %}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="fc-tile-copy">
+      {%- if eyebrow != blank %}<p class="fc-tile-eyebrow">{{ eyebrow }}</p>{% endif -%}
+      {%- if section.settings.headline != blank %}<h1 class="t-hero">{{ section.settings.headline }}</h1>{% endif -%}
+      {%- if section.settings.sub != blank %}<p class="fc-tile-sub">{{ section.settings.sub }}</p>{% endif -%}
+
+      {%- if tag_links.size > 0 -%}
+        <div class="fc-tile-actions" role="group" aria-label="{{ 'blogs.article.topics' | t }}">
+          {%- if hero_blog != blank -%}
+            <a class="fc-btn fc-btn-secondary fc-btn-sm" href="{{ hero_blog.url }}"{% if current_tag == blank %} aria-current="true"{% endif %}>{{ 'blogs.all' | t }}</a>
+          {%- endif -%}
+          {%- for block in tag_links -%}
+            {%- liquid
+              assign tag_url = block.settings.link
+              assign tag_handle = block.settings.label | handle
+              if tag_url == blank and hero_blog != blank and block.settings.label != blank
+                assign tag_url = hero_blog.url | append: '/tagged/' | append: tag_handle
+              endif
+              assign tag_on = false
+              if current_tag != blank and current_tag == tag_handle
+                assign tag_on = true
+              endif
+            -%}
+            {%- if block.settings.label != blank and tag_url != blank -%}
+              <a class="fc-btn fc-btn-{{ block.settings.style | default: 'secondary' }} fc-btn-sm{% if block.settings.style == 'link' %} no-chev{% endif %}" href="{{ tag_url }}"{% if tag_on %} aria-current="true" style="border-color:var(--action);color:var(--action)"{% endif %} {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</a>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'note' and block.settings.show and block.settings.text != blank -%}
+          <p class="t-caption" style="margin-top:16px;text-align:{% if block.settings.align == 'start' %}left{% else %}center{% endif %}" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}</p>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+
+    {%- if feat != blank -%}
+      {%- liquid
+        assign feat_eyebrow = ''
+        assign feat_excerpt = true
+        if feat_block != blank
+          assign feat_eyebrow = feat_block.settings.eyebrow
+          assign feat_excerpt = feat_block.settings.show_excerpt
+        endif
+      -%}
+      <div class="fc-tile-art">
+        <div class="dl-blog-feature stack" style="gap:12px;width:100%;max-width:692px;text-align:left"{% if feat_block != blank %} {{ feat_block.shopify_attributes }}{% endif %}>
+          {%- if feat_eyebrow != blank %}<p class="t-overline">{{ feat_eyebrow | escape }}</p>{% endif -%}
+          {%- render 'article-card', article: feat, size: 280, show_excerpt: feat_excerpt, heading_level: 2 -%}
+        </div>
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .dl-blog-hero .dl-blog-feature .dl-acard h2 { margin: 0; font: 600 24px/1.167 var(--font-sans); letter-spacing: -0.012em; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Journal hero",
+  "tag": "section",
+  "class": "dl-section dl-blog-hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Journal"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_blog_title",
+      "label": "Show blog title as eyebrow",
+      "info": "On blog pages the eyebrow shows the blog title instead of the text above.",
+      "default": true
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Notes on light"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Care, craft and gifting."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "feature_latest",
+      "label": "Feature latest article",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "info": "Without a featured article image, at least the top padding."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tag-link",
+      "name": "Topic link",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Care"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "secondary",
+          "options": [
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "link",
+              "label": "Link"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "featured",
+      "name": "Featured article",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "article",
+          "id": "article",
+          "label": "Article"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "Featured"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_excerpt",
+          "label": "Show excerpt",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "center",
+          "options": [
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "start",
+              "label": "Start"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Journal hero",
+      "blocks": [
+        {
+          "type": "tag-link"
+        },
+        {
+          "type": "tag-link"
+        },
+        {
+          "type": "tag-link"
+        },
+        {
+          "type": "tag-link"
+        },
+        {
+          "type": "featured"
+        },
+        {
+          "type": "note"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

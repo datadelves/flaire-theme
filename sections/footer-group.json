@@ -1,0 +1,105 @@
+{
+  "type": "footer",
+  "name": "Footer group",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": {
+        "color_scheme": "scheme-2",
+        "show_localization": true,
+        "show_payment_icons": true,
+        "show_social": true,
+        "legal": ""
+      },
+      "blocks": {
+        "brand-note-1": {
+          "type": "brand-note",
+          "settings": {
+            "text": "Fine jewelry, made to be worn every day.",
+            "show_logo": true
+          }
+        },
+        "newsletter-inline-1": {
+          "type": "newsletter-inline",
+          "settings": {
+            "heading": "Stay in the light",
+            "button": "Subscribe",
+            "success": "Thank you. You are on the list."
+          }
+        },
+        "link-list-1": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Shop",
+            "menu": "main-menu"
+          }
+        },
+        "link-list-2": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Make it yours"
+          }
+        },
+        "link-list-3": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Help"
+          }
+        },
+        "link-list-4": {
+          "type": "link-list",
+          "settings": {
+            "heading": "Company"
+          }
+        },
+        "promise-1": {
+          "type": "promise",
+          "settings": {
+            "icon": "truck",
+            "title": "Shipping",
+            "text": "Options and costs are shown at checkout."
+          }
+        },
+        "promise-2": {
+          "type": "promise",
+          "settings": {
+            "icon": "arrow-counter-clockwise",
+            "title": "Returns",
+            "text": "See our refund policy."
+          }
+        },
+        "promise-3": {
+          "type": "promise",
+          "settings": {
+            "icon": "gift",
+            "title": "Gift notes",
+            "text": "Add a note at checkout."
+          }
+        },
+        "promise-4": {
+          "type": "promise",
+          "settings": {
+            "icon": "ruler",
+            "title": "Sizing help",
+            "text": "Contact us for sizing advice."
+          }
+        }
+      },
+      "block_order": [
+        "brand-note-1",
+        "newsletter-inline-1",
+        "link-list-1",
+        "link-list-2",
+        "link-list-3",
+        "link-list-4",
+        "promise-1",
+        "promise-2",
+        "promise-3",
+        "promise-4"
+      ]
+    }
+  },
+  "order": [
+    "footer"
+  ]
+}

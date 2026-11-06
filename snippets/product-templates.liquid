@@ -1,0 +1,36 @@
+{%- comment -%}
+  Markup the kernel's product-form clones when the selection changes. Rendered once inside each
+  configurator root so every string comes from the locale files. {count}, {title}, {summary} and {msg}
+  are filled in by the kernel.
+
+  Accepts:
+  - stock_text {String} text under "In stock" and "Only N left"
+{%- endcomment -%}
+{%- liquid
+  assign in_stock = 'products.product.in_stock' | t
+  assign only_left = 'products.product.only_left' | t: count: '{count}'
+  assign combo_title = 'products.product.combination_sold_out' | t
+  assign combo_text = 'products.product.combination_sold_out_text' | t
+  assign notify = 'products.product.notify_me' | t
+  assign sold_title = 'products.product.sold_out_title' | t
+  assign sold_text = 'products.product.waitlist_text' | t
+  assign waitlist = 'products.product.waitlist' | t
+  assign added_title = 'products.product.added' | t
+  assign error_title = 'products.product.add_error' | t
+  assign error_text = 'general.errors.network' | t
+  assign try_again = 'general.errors.try_again' | t
+  assign limit_title = 'products.product.limit_error' | t
+  assign final_title = 'products.engraving.final_sale_title' | t
+  assign final_text = 'products.engraving.final_sale_text' | t
+-%}
+<template data-tpl="in-stock">{% render 'notice', tone: 'success', title: in_stock, text: stock_text %}</template>
+<template data-tpl="low">{% render 'notice', tone: 'caution', title: only_left, text: stock_text %}</template>
+<template data-tpl="combo">{% render 'notice', tone: 'caution', title: combo_title, text: combo_text, link_label: notify, link_url: '#waitlist', link_attrs: 'data-open="waitlist"' %}</template>
+<template data-tpl="sold-out">{% render 'notice', tone: 'caution', title: sold_title, text: sold_text, link_label: waitlist, link_url: '#waitlist', link_attrs: 'data-open="waitlist"' %}</template>
+<template data-tpl="added">{% render 'notice', tone: 'success', title: added_title, text: '{title}, {summary}.' %}</template>
+<template data-tpl="error-network">{% render 'notice', tone: 'danger', title: error_title, text: error_text, link_label: try_again, link_url: '#', link_attrs: 'data-act="retry-add"' %}</template>
+<template data-tpl="error-limit">{% render 'notice', tone: 'danger', title: limit_title, text: '{msg}' %}</template>
+<template data-tpl="final-sale">{% render 'notice', tone: 'caution', title: final_title, text: final_text %}</template>
+<template data-tpl="icon-spin">{% render 'icon', icon: 'circle-notch', size: 20, class: 'spin' %}</template>
+<template data-tpl="icon-check">{% render 'icon', icon: 'check', size: 20 %}</template>
+<template data-tpl="icon-warning">{% render 'icon', icon: 'warning-circle', size: 16 %}</template>

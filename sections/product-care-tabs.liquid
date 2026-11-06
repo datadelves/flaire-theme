@@ -1,0 +1,274 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign rows_done = 0
+  assign policy_url = ''
+  assign label_more = 'general.learn_more' | t
+-%}
+{%- capture rows -%}
+  {%- liquid
+    comment
+      "Materials and craft" shows the row text setting (connect a product metafield for text per product), then the description.
+    endcomment
+    assign craft_body = section.settings.description_text
+    assign craft_text = craft_body | strip_html | strip
+    if craft_text == blank and product != blank
+      assign craft_body = product.description
+    endif
+  -%}
+  {%- if section.settings.use_description and craft_body != blank -%}
+    <details class="fc-acc-item" open>
+      <summary class="fc-acc-btn"><span>{{ section.settings.description_title | escape }}</span>{% render 'icon', icon: 'plus', size: 20, class: 'fc-acc-ico-plus' %}{% render 'icon', icon: 'minus', size: 20, class: 'fc-acc-ico-minus' %}</summary>
+      <div class="fc-acc-panel rte" role="region">{{ craft_body }}</div>
+    </details>
+    {%- assign rows_done = rows_done | plus: 1 -%}
+  {%- endif -%}
+  {%- for block in section.blocks -%}
+    {%- liquid
+      assign row_title = block.settings.title
+      assign row_body = ''
+      assign row_open = false
+      case block.type
+        when 'tab'
+          assign row_body = block.settings.body
+        when 'metafield-tab'
+          if product != blank and block.settings.metafield contains '.'
+            assign mf_ns = block.settings.metafield | split: '.' | first | strip
+            assign mf_key = block.settings.metafield | split: '.' | last | strip
+            assign mf = product.metafields[mf_ns][mf_key]
+            if mf != blank
+              if mf.type == 'rich_text_field'
+                assign row_body = mf | metafield_tag
+              else
+                assign row_body = mf.value | escape | newline_to_br | prepend: '<p>' | append: '</p>'
+              endif
+            endif
+          endif
+          assign row_open = block.settings.open
+        when 'policy'
+          if block.settings.page != blank
+            assign row_body = block.settings.page.content
+          elsif block.settings.shipping_policy and shop.refund_policy != blank
+            assign row_body = shop.refund_policy.body | strip_html | truncatewords: 40 | prepend: '<p>' | append: '</p>'
+            assign policy_url = shop.refund_policy.url
+          endif
+      endcase
+      if rows_done == 0
+        assign row_open = true
+      elsif section.settings.single_open
+        assign row_open = false
+      endif
+    -%}
+    {%- if row_title != blank and row_body != blank -%}
+      <details class="fc-acc-item"{% if row_open %} open{% endif %} {{ block.shopify_attributes }}>
+        <summary class="fc-acc-btn"><span>{{ row_title | escape }}</span>{% render 'icon', icon: 'plus', size: 20, class: 'fc-acc-ico-plus' %}{% render 'icon', icon: 'minus', size: 20, class: 'fc-acc-ico-minus' %}</summary>
+        <div class="fc-acc-panel rte" role="region">
+          {{- row_body -}}
+          {%- if block.type == 'tab' and block.settings.link != blank -%}
+            <p>{% render 'button', variant: 'link', label: label_more, url: block.settings.link %}</p>
+          {%- elsif block.type == 'policy' and block.settings.page != blank -%}
+            <p>{% render 'button', variant: 'link', label: label_more, url: block.settings.page.url %}</p>
+          {%- elsif block.type == 'policy' and policy_url != blank -%}
+            <p>{% render 'button', variant: 'link', label: label_more, url: policy_url %}</p>
+          {%- endif -%}
+        </div>
+      </details>
+      {%- assign rows_done = rows_done | plus: 1 -%}
+      {%- assign policy_url = '' -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if rows_done > 0 -%}
+<div class="band {{ scheme }}" data-section="product-care-tabs" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-n">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, role: 't-title-lg' -%}
+    <div class="fc-acc"{% if section.settings.single_open %} data-acc-single{% endif %}>{{ rows }}</div>
+  </div>
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Care and details",
+  "tag": "section",
+  "class": "dl-section dl-product-care-tabs",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Details"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "single_open",
+      "label": "One open at a time",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "use_description",
+      "label": "Description as first row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "description_title",
+      "label": "Description row heading",
+      "default": "Materials and craft"
+    },
+    {
+      "type": "richtext",
+      "id": "description_text",
+      "label": "Description row text",
+      "info": "Connect a product metafield for text per product. Empty uses the product description."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "Tab",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Care"
+        },
+        {
+          "type": "richtext",
+          "id": "body",
+          "label": "Body",
+          "default": "<p>Remove before swimming or sleeping. Clean with warm water and a soft brush.</p>"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "metafield-tab",
+      "name": "Metafield tab",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Craft"
+        },
+        {
+          "type": "text",
+          "id": "metafield",
+          "label": "Metafield key",
+          "info": "A product metafield as namespace.key. The row is hidden when the product has no value."
+        },
+        {
+          "type": "checkbox",
+          "id": "open",
+          "label": "Open",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "policy",
+      "name": "Policy",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Delivery and returns"
+        },
+        {
+          "type": "page",
+          "id": "page",
+          "label": "Policy page"
+        },
+        {
+          "type": "checkbox",
+          "id": "shipping_policy",
+          "label": "Use store policy",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Care and details",
+      "blocks": [
+        {
+          "type": "tab"
+        },
+        {
+          "type": "tab"
+        },
+        {
+          "type": "tab"
+        },
+        {
+          "type": "tab"
+        },
+        {
+          "type": "policy"
+        },
+        {
+          "type": "policy"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

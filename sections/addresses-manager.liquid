@@ -1,0 +1,437 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign row_block = section.blocks | where: 'type', 'address-row' | first
+  assign note_block = section.blocks | where: 'type', 'note' | first
+  assign field_blocks = section.blocks | where: 'type', 'form-field'
+  assign show_badge = true
+  assign show_phone = true
+  assign allow_delete = true
+  if row_block
+    assign show_badge = row_block.settings.show_default_badge
+    assign show_phone = row_block.settings.show_phone
+    assign allow_delete = row_block.settings.allow_delete
+  endif
+
+  assign heading = section.settings.headline
+  if heading == blank
+    assign heading = 'customer.addresses.title' | t
+  endif
+  assign country_label = 'customer.addresses.country' | t
+  assign province_label = 'customer.addresses.province' | t
+  assign problem = 'general.form.problem' | t
+  assign fix_text = 'customer.addresses.error_text' | t
+  assign saving = 'customer.addresses.saving' | t
+  assign save_label = 'customer.addresses.save' | t
+  assign cancel_label = 'customer.addresses.cancel' | t
+  assign delete_confirm = 'customer.addresses.delete_confirm' | t
+
+  comment
+    Form fields: the n-th "Form field" block configures the n-th key below. Without blocks, the prototype's five fields.
+  endcomment
+  assign keys = 'first_name,last_name,address1,city,zip,phone,company,address2' | split: ','
+  assign spec = ''
+  if field_blocks.size > 0
+    for block in field_blocks
+      assign key = keys[forloop.index0]
+      if key == blank
+        break
+      endif
+      if block.settings.label == blank
+        continue
+      endif
+      assign msg = block.settings.error | default: '' | escape
+      assign row = key | append: '|' | append: block.settings.label | append: '|' | append: msg | append: '|' | append: block.settings.required | append: '|' | append: block.shopify_attributes
+      if spec != blank
+        assign spec = spec | append: '^'
+      endif
+      assign spec = spec | append: row
+    endfor
+  else
+    assign l1 = 'customer.addresses.first_name' | t
+    assign l2 = 'customer.addresses.last_name' | t
+    assign l3 = 'customer.addresses.address1' | t
+    assign l4 = 'customer.addresses.city' | t
+    assign l5 = 'customer.addresses.zip' | t
+    assign spec = 'first_name|' | append: l1 | append: '||true|^last_name|' | append: l2 | append: '||false|^address1|' | append: l3 | append: '||true|^city|' | append: l4 | append: '||true|^zip|' | append: l5 | append: '||true|'
+  endif
+-%}
+    {%- assign new_open = false -%}
+{%- comment -%} Customer templates always have a signed-in customer; the guard keeps a bare section render error-free. {%- endcomment -%}
+{%- if customer -%}
+{%- capture new_form -%}
+  {%- form 'customer_address', customer.new_address, id: 'addr-new-form', class: 'dl-form wide', style: 'margin-top:40px;max-width:640px', novalidate: 'novalidate', data-validate: '', data-form: 'address' -%}
+    {%- if form.errors %}{% assign new_open = true %}{% endif -%}
+    <h2 class="t-title-lg" style="margin:0">{{ 'customer.addresses.add_title' | t }}</h2>
+    <div data-summary{% if form.errors %} data-server{% endif %}>
+      {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: fix_text -%}{%- endif -%}
+    </div>
+    {%- render 'addresses-manager-fields', spec: spec, form: form, prefix: 'ad-new', country_select: section.settings.country_select, country_label: country_label, province_label: province_label -%}
+    <label class="fc-check">{{ form.set_as_default_checkbox }} {{ 'customer.addresses.set_default' | t }}</label>
+    <div class="inline">
+      {%- capture busy_attrs %}data-busy-label="{{ saving | escape }}"{% endcapture -%}
+      {%- render 'button', label: save_label, type: 'submit', size: 'lg', attrs: busy_attrs -%}
+      {%- render 'button', label: cancel_label, variant: 'link', no_chev: true, class: 'js-only', attrs: 'data-addr-cancel aria-controls="addr-new"' -%}
+    </div>
+  {%- endform -%}
+{%- endcapture -%}
+<div class="band {{ scheme }}" data-section="addresses-manager" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-c">
+    <div style="margin-bottom:16px">
+      <nav class="dl-crumb" aria-label="{{ 'general.breadcrumb' | t }}"><a href="{{ routes.account_url }}">{{ 'accessibility.account' | t }}</a>{% render 'icon', icon: 'caret-right', size: 12 %}<span aria-current="page">{{ heading | strip_html }}</span></nav>
+    </div>
+    {%- if section.settings.eyebrow != blank %}<p class="t-overline" style="margin-bottom:8px">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+    <div class="inline" style="justify-content:space-between;align-items:flex-end">
+      <h1 class="t-headline" style="margin:0">{{ heading }}</h1>
+      {%- if section.settings.add_label != blank -%}
+        <a class="fc-btn fc-btn-secondary" href="#addr-new" role="button" data-act="toggle" aria-controls="addr-new" aria-expanded="{{ new_open }}" data-focus-target><span>{{ section.settings.add_label | escape }}</span></a>
+      {%- endif -%}
+    </div>
+    {%- if section.settings.sub != blank %}<p class="t-lead" style="margin:8px 0 0">{{ section.settings.sub }}</p>{% endif -%}
+    {%- if note_block and note_block.settings.show and note_block.settings.text != blank -%}
+      <p class="t-caption" style="margin:8px 0 0{% if note_block.settings.tone == 'ink' %};color:var(--ink){% endif %}" {{ note_block.shopify_attributes }}>{{ note_block.settings.text | escape }}</p>
+    {%- endif -%}
+
+    {%- paginate customer.addresses by 10 -%}
+      <div style="margin-top:32px;border-top:1px solid var(--hairline)" data-addr-list>
+        {%- if customer.addresses.size > 0 -%}
+          {%- for address in customer.addresses -%}
+            {%- liquid
+              assign addr_name = address.first_name | append: ' ' | append: address.last_name | strip
+              if addr_name == blank
+                assign addr_name = address.company | default: address.address1
+              endif
+              assign is_default = false
+              if address.id == customer.default_address.id
+                assign is_default = true
+              endif
+              assign edit_id = 'addr-edit-' | append: address.id
+              assign edit_aria = 'customer.addresses.edit_label' | t: name: addr_name
+              assign delete_aria = 'customer.addresses.delete_label' | t: name: addr_name
+            -%}
+            {%- assign edit_open = false -%}
+            {%- assign form_prefix = 'ad-' | append: address.id -%}
+            {%- assign edit_form_id = 'addr-form-' | append: address.id -%}
+            {%- capture edit_form -%}
+              {%- form 'customer_address', address, id: edit_form_id, class: 'dl-form wide', style: 'margin:24px 0 32px;max-width:640px', novalidate: 'novalidate', data-validate: '', data-form: 'address' -%}
+                {%- if form.errors %}{% assign edit_open = true %}{% endif -%}
+                <h2 class="t-title-lg" style="margin:0">{{ 'customer.addresses.edit_title' | t }}</h2>
+                <div data-summary{% if form.errors %} data-server{% endif %}>
+                  {%- if form.errors -%}{%- render 'notice', tone: 'danger', title: problem, text: fix_text -%}{%- endif -%}
+                </div>
+                {%- render 'addresses-manager-fields', spec: spec, form: form, prefix: form_prefix, country_select: section.settings.country_select, country_label: country_label, province_label: province_label -%}
+                <label class="fc-check">{{ form.set_as_default_checkbox }} {{ 'customer.addresses.set_default' | t }}</label>
+                <div class="inline">
+                  {%- capture busy_attrs %}data-busy-label="{{ saving | escape }}"{% endcapture -%}
+                  {%- render 'button', label: save_label, type: 'submit', size: 'lg', attrs: busy_attrs -%}
+                  {%- capture cancel_attrs %}data-addr-cancel aria-controls="{{ edit_id }}"{% endcapture -%}
+                  {%- render 'button', label: cancel_label, variant: 'link', no_chev: true, class: 'js-only', attrs: cancel_attrs -%}
+                </div>
+              {%- endform -%}
+            {%- endcapture -%}
+            <div class="inline" style="justify-content:space-between;align-items:flex-start;padding:24px 0;border-bottom:1px solid var(--hairline)" data-addr="{{ address.id }}"{% if forloop.first and row_block %} {{ row_block.shopify_attributes }}{% endif %}>
+              <div>
+                <p class="t-strong" style="margin:0 0 4px;display:flex;gap:8px;align-items:center"><span>{{ addr_name | escape }}</span>{% if is_default and show_badge %}{% assign default_text = 'customer.addresses.default' | t %}{% render 'badge', text: default_text %}{% endif %}</p>
+                <p class="t-caption" style="margin:0">
+                  <span>{{ address.address1 | escape }}{% if address.address2 != blank %}, {{ address.address2 | escape }}{% endif %}</span><br>
+                  <span>{{ address.city | escape }}{% if address.province_code != blank %} {{ address.province_code | escape }}{% endif %}, {{ address.zip | escape }}</span>
+                  {%- if show_phone and address.phone != blank %}<br><span>{{ address.phone | escape }}</span>{% endif -%}
+                </p>
+              </div>
+              <div class="inline" style="gap:16px">
+                {%- unless is_default -%}
+                  {%- assign default_form_id = 'addr-default-' | append: address.id -%}
+                  {%- form 'customer_address', address, id: default_form_id, class: 'dl-addr-default' -%}
+                    {%- for key in keys -%}
+                      <input type="hidden" name="address[{{ key }}]" value="{{ address[key] | escape }}">
+                    {%- endfor -%}
+                    <input type="hidden" name="address[country]" value="{{ address.country | escape }}">
+                    <input type="hidden" name="address[province]" value="{{ address.province | escape }}">
+                    <input type="hidden" name="address[default]" value="1">
+                    <button type="submit" class="fc-btn fc-btn-link no-chev"><span>{{ 'customer.addresses.make_default' | t }}</span></button>
+                  {%- endform -%}
+                {%- endunless -%}
+                <a class="fc-btn fc-btn-link no-chev" href="#{{ edit_id }}" role="button" data-act="toggle" aria-controls="{{ edit_id }}" aria-expanded="{{ edit_open }}" data-focus-target aria-label="{{ edit_aria | escape }}"><span>{{ 'customer.addresses.edit' | t }}</span></a>
+                {%- if allow_delete -%}
+                  <form method="post" action="{{ address.url }}" data-addr-delete data-confirm="{{ delete_confirm | escape }}">
+                    <input type="hidden" name="_method" value="delete">
+                    <button type="submit" class="fc-btn fc-btn-link no-chev" aria-label="{{ delete_aria | escape }}"><span>{{ 'customer.addresses.delete' | t }}</span></button>
+                  </form>
+                {%- endif -%}
+              </div>
+            </div>
+
+            <div id="{{ edit_id }}" class="dl-addr-panel"{% unless edit_open %} hidden{% endunless %}>{{ edit_form }}</div>
+          {%- endfor -%}
+        {%- elsif section.settings.empty_text != blank -%}
+          <div class="dl-empty" style="padding:32px 0"><p class="t-body muted" style="margin:0">{{ section.settings.empty_text | escape }}</p></div>
+        {%- endif -%}
+      </div>
+      {%- render 'pagination', paginate: paginate -%}
+    {%- endpaginate -%}
+
+    <div id="addr-new" class="dl-addr-panel"{% unless new_open %} hidden{% endunless %}>{{ new_form }}</div>
+  </div>
+</div>
+{%- endif -%}
+
+{% stylesheet %}
+  .dl-addresses-manager .dl-addr-default, .dl-addresses-manager form[data-addr-delete] { display: contents; }
+  /* no-JS: the Add and Edit links target their panel */
+  html.no-js .dl-addresses-manager .dl-addr-panel:target { display: block !important; }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    // Province select from the chosen country's data-provinces (all_country_option_tags); Cancel closes the form;
+    // Delete asks first.
+    function fill(c) {
+      var p = c.form && c.form.querySelector('[data-province-select]'); if (!p) return;
+      var o = c.options[c.selectedIndex], list = [];
+      try { list = JSON.parse((o && o.getAttribute('data-provinces')) || '[]'); } catch (e) { list = []; }
+      var cur = p.getAttribute('data-default') || p.value; p.innerHTML = '';
+      list.forEach(function (x) { var opt = new Option(x[1], x[0]); if (x[0] === cur || x[1] === cur) opt.selected = true; p.add(opt); });
+      p.disabled = !list.length; var w = p.closest('.fc-field'); if (w) w.hidden = !list.length;
+    }
+    function init() {
+      document.querySelectorAll('[data-country-select]').forEach(function (c) {
+        if (c.dataset.ready) return; c.dataset.ready = '1';
+        var d = c.getAttribute('data-default');
+        for (var i = 0; i < c.options.length; i++) { if (d && (c.options[i].value === d || c.options[i].text === d)) { c.selectedIndex = i; break; } }
+        fill(c);
+        c.addEventListener('change', function () { var p = c.form.querySelector('[data-province-select]'); if (p) p.removeAttribute('data-default'); fill(c); });
+      });
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-addr-cancel]'); if (!b) return;
+      var id = b.getAttribute('aria-controls'), panel = document.getElementById(id); if (panel) panel.hidden = true;
+      var opener = document.querySelector('[data-act="toggle"][aria-controls="' + id + '"]');
+      if (opener) { opener.setAttribute('aria-expanded', 'false'); opener.focus(); }
+    });
+    document.addEventListener('submit', function (e) {
+      var f = e.target; if (f.matches && f.matches('[data-addr-delete]') && !window.confirm(f.getAttribute('data-confirm'))) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, true);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+    document.addEventListener('shopify:section:load', init);
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Addresses",
+  "tag": "section",
+  "class": "dl-section dl-addresses-manager",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Addresses"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "add_label",
+      "label": "Add label",
+      "default": "Add address"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty text",
+      "default": "No saved addresses."
+    },
+    {
+      "type": "checkbox",
+      "id": "country_select",
+      "label": "Show country and province menus",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "address-row",
+      "name": "Address row",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_default_badge",
+          "label": "Show default badge",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_phone",
+          "label": "Show phone",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "allow_delete",
+          "label": "Show delete link",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "form-field",
+      "name": "Form field",
+      "limit": 10,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Address"
+        },
+        {
+          "type": "text",
+          "id": "error",
+          "label": "Error",
+          "default": "Enter a street address."
+        },
+        {
+          "type": "checkbox",
+          "id": "required",
+          "label": "Required",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Used for delivery and gift options."
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "muted",
+          "options": [
+            {
+              "value": "muted",
+              "label": "Muted"
+            },
+            {
+              "value": "ink",
+              "label": "Default"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "customers/addresses"
+    ]
+  },
+  "limit": 1,
+  "default": {
+    "blocks": [
+      {
+        "type": "address-row",
+        "settings": {
+          "show_default_badge": true,
+          "show_phone": true,
+          "allow_delete": true
+        }
+      },
+      {
+        "type": "form-field",
+        "settings": {
+          "label": "First name",
+          "error": "Enter your first name.",
+          "required": true
+        }
+      },
+      {
+        "type": "form-field",
+        "settings": {
+          "label": "Last name",
+          "error": "",
+          "required": false
+        }
+      },
+      {
+        "type": "form-field",
+        "settings": {
+          "label": "Address",
+          "error": "Enter a street address.",
+          "required": true
+        }
+      },
+      {
+        "type": "form-field",
+        "settings": {
+          "label": "City",
+          "error": "Enter a city.",
+          "required": true
+        }
+      },
+      {
+        "type": "form-field",
+        "settings": {
+          "label": "Postal code",
+          "error": "Enter a postal code.",
+          "required": true
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

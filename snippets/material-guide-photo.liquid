@@ -1,0 +1,55 @@
+{%- comment -%}
+  Swatch photo data for the Materials section: the attributes the kernel's swatch preview (BUILD.md 8.6) reads to
+  swap img[data-swatch-img] when a metal or stone is chosen. Same src and srcset widths as snippets/product-photo.liquid.
+
+  Accepts:
+  - image {Object} the photo; blank outputs data-img="" (the kernel then shows the frame's placeholder)
+  - alt {String} alt text (may be empty)
+  - size {Number} display size in px (default 420)
+  - sizes {String} sizes attribute
+
+  Usage: <button ... {% render 'material-guide-photo', image: block.settings.image, alt: alt, size: 420, sizes: photo_sizes %}>
+{%- endcomment -%}
+{%- if image != blank -%}
+  {%- liquid
+    assign size = size | default: 420
+    assign w0 = size | divided_by: 2
+    assign w1 = size
+    assign w2 = size | times: 2
+    assign w3 = size | times: 3
+    if w0 > image.width
+      assign w0 = image.width
+    endif
+    if w1 > image.width
+      assign w1 = image.width
+    endif
+    if w2 > image.width
+      assign w2 = image.width
+    endif
+    if w3 > image.width
+      assign w3 = image.width
+    endif
+    capture srcset
+      echo image | image_url: width: w0 | append: ' ' | append: w0 | append: 'w'
+      if w1 > w0
+        echo ', '
+        echo image | image_url: width: w1 | append: ' ' | append: w1 | append: 'w'
+      endif
+      if w2 > w1
+        echo ', '
+        echo image | image_url: width: w2 | append: ' ' | append: w2 | append: 'w'
+      endif
+      if w3 > w2
+        echo ', '
+        echo image | image_url: width: w3 | append: ' ' | append: w3 | append: 'w'
+      endif
+    endcapture
+    assign sizes_attr = sizes
+    if sizes_attr == blank
+      assign sizes_attr = size | append: 'px'
+    endif
+  -%}
+  data-img="{{ image | image_url: width: w2 }}" data-srcset="{{ srcset }}" data-sizes="{{ sizes_attr }}" data-alt="{{ alt | escape }}"
+{%- else -%}
+  data-img=""
+{%- endif -%}

@@ -1,0 +1,46 @@
+{%- comment -%}
+  Facet Button: the one button recipe. Sections choose a variant; they never restyle it.
+
+  Accepts:
+  - label {String}
+  - variant {String} primary | secondary | outline | link | icon (default primary)
+  - size {String} sm | lg
+  - block {Boolean} full width
+  - url {String} renders an <a> when present
+  - type {String} button | submit (default button, ignored for links)
+  - icon {String} Phosphor icon before the label
+  - icon_after {String} Phosphor icon after the label
+  - icon_size {Number} (default 20)
+  - no_chev {Boolean} link variant without the trailing chevron
+  - class {String} extra classes
+  - attrs {String} raw extra attributes (aria-*, data-*)
+
+  Usage: {% render 'button', label: 'Shop rings', variant: 'link', url: collection.url %}
+{%- endcomment -%}
+{%- liquid
+  assign variant = variant | default: 'primary'
+  assign classes = 'fc-btn fc-btn-' | append: variant
+  if size != blank
+    assign classes = classes | append: ' fc-btn-' | append: size
+  endif
+  if block
+    assign classes = classes | append: ' fc-btn-block'
+  endif
+  if no_chev
+    assign classes = classes | append: ' no-chev'
+  endif
+  if class != blank
+    assign classes = classes | append: ' ' | append: class
+  endif
+  assign icon_size = icon_size | default: 20
+-%}
+{%- capture inner -%}
+  {%- if icon != blank %}{% render 'icon', icon: icon, size: icon_size %}{% endif -%}
+  {%- if label != blank %}<span>{{ label }}</span>{% endif -%}
+  {%- if icon_after != blank %}{% render 'icon', icon: icon_after, size: icon_size %}{% endif -%}
+{%- endcapture -%}
+{%- if url != blank -%}
+  <a class="{{ classes }}" href="{{ url }}"{% if attrs != blank %} {{ attrs }}{% endif %}>{{ inner }}</a>
+{%- else -%}
+  <button type="{{ type | default: 'button' }}" class="{{ classes }}"{% if attrs != blank %} {{ attrs }}{% endif %}>{{ inner }}</button>
+{%- endif -%}

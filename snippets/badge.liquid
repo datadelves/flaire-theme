@@ -1,0 +1,10 @@
+{%- comment -%}
+  Facet Badge: one or two words of fact, 24px pill. Not a status or error carrier.
+
+  Accepts:
+  - text {String}
+  - tone {String} neutral | accent | inverse (default neutral)
+{%- endcomment -%}
+{%- if text != blank -%}
+  <span class="fc-badge fc-badge-{{ tone | default: 'neutral' }}">{{ text | escape }}</span>
+{%- endif -%}

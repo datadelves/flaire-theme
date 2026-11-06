@@ -1,0 +1,406 @@
+{%- capture base_id -%}{% render 'product-base-variant', product: product %}{%- endcapture -%}
+{%- liquid
+  assign base_id = base_id | strip
+  assign current = product.selected_or_first_available_variant
+  for v in product.variants
+    assign vid = v.id | append: ''
+    if vid == base_id
+      assign current = v
+      break
+    endif
+  endfor
+-%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign kind = 'ring'
+  assign metal = 'rose-gold'
+  assign media = nil
+  assign dims_raw = section.settings.dimensions | default: '' | append: '' | strip
+  if product != blank
+    capture kind
+      render 'product-data', product: product, field: 'kind'
+    endcapture
+    assign kind = kind | strip | default: 'ring'
+    assign current = current
+    assign media = current.featured_media | default: product.featured_media
+    assign metal = current.option1 | handleize
+  endif
+  case kind
+    when 'earring'
+      assign kind_part = 'ear'
+    when 'pendant', 'chain'
+      assign kind_part = 'neck'
+    when 'bracelet'
+      assign kind_part = 'wrist'
+    else
+      assign kind_part = 'finger'
+  endcase
+
+  assign views = section.blocks | where: 'type', 'scale-view'
+  assign active_part = ''
+  for view in views
+    if view.settings.body_part == kind_part
+      assign active_part = kind_part
+      break
+    endif
+  endfor
+  if active_part == blank and views.size > 0
+    assign active_part = views.first.settings.body_part
+  endif
+-%}
+
+{%- capture facts -%}
+  {%- if dims_raw != blank -%}
+    {%- assign dim_parts = dims_raw | split: ';' -%}
+    {%- for part in dim_parts -%}
+      {%- assign part = part | strip -%}
+      {%- if part == blank %}{% continue %}{% endif -%}
+      {%- if part contains ':' -%}
+        {%- assign dim_label = part | split: ':' | first | strip -%}
+        {%- assign dim_value = part | remove_first: dim_label | remove_first: ':' | strip -%}
+        <div class="fc-fact"><dt>{{ dim_label | escape }}</dt><dd>{{ dim_value | escape }}</dd></div>
+      {%- else -%}
+        <div class="fc-fact"><dt>{{ 'products.specs.dimensions' | t }}</dt><dd>{{ part | escape }}</dd></div>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- else -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'measurement' and block.settings.label != blank and block.settings.value != blank -%}
+        <div class="fc-fact" {{ block.shopify_attributes }}><dt>{{ block.settings.label | escape }}</dt><dd>{{ block.settings.value | escape }}{% if block.settings.note != blank %}<br><span class="t-fine">{{ block.settings.note | escape }}</span>{% endif %}</dd></div>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- liquid
+  assign show_visual = true
+  if product != blank and facts == blank
+    assign show_visual = false
+  endif
+  assign ruler_10 = 'products.scale.mm' | t: count: 10
+  assign ruler_20 = 'products.scale.mm' | t: count: 20
+-%}
+<div class="band {{ scheme }}" data-section="product-on-scale" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap split">
+    {%- if show_visual -%}
+      <div class="dl-scale">
+        {%- if views.size == 0 -%}
+          {%- if section.settings.mode == 'photo' and section.settings.image != blank -%}
+            {{ section.settings.image | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(max-width: 734px) 100vw, 50vw', alt: section.settings.image_alt, class: 'dl-scale-photo' }}
+          {%- else -%}
+            {%- render 'product-photo', image: media, size: 300, alt: '', kind: kind, metal: metal -%}
+            <div class="ruler"><span>0</span><span>{{ ruler_10 }}</span><span>{{ ruler_20 }}</span></div>
+          {%- endif -%}
+        {%- else -%}
+          {%- for view in views -%}
+            {%- liquid
+              assign part = view.settings.body_part
+              assign view_image = view.settings.image
+              if view_image == blank and section.settings.mode == 'photo'
+                assign view_image = section.settings.image
+              endif
+              case part
+                when 'ear'
+                  assign draw_size = 240
+                when 'neck'
+                  assign draw_size = 200
+                when 'wrist'
+                  assign draw_size = 360
+                else
+                  assign draw_size = 300
+              endcase
+            -%}
+            <div class="dl-scale-view" data-swatch-panel="{{ part }}"{% unless part == active_part %} hidden{% endunless %} {{ view.shopify_attributes }}>
+              {%- if view_image != blank -%}
+                {{ view_image | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(max-width: 734px) 100vw, 50vw', alt: section.settings.image_alt, class: 'dl-scale-photo' }}
+              {%- else -%}
+                {%- render 'product-photo', image: media, size: draw_size, alt: '', kind: kind, metal: metal -%}
+                <div class="ruler"><span>0</span><span>{{ ruler_10 }}</span><span>{{ ruler_20 }}</span></div>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    <div class="stack-lg">
+      {%- if section.settings.eyebrow != blank or section.settings.headline != blank or section.settings.sub != blank or views.size > 0 -%}
+        <div class="sec-head left">
+          {%- if section.settings.eyebrow != blank %}<p class="t-overline">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+          {%- if section.settings.headline != blank %}<h2 class="t-headline">{{ section.settings.headline }}</h2>{% endif -%}
+          {%- if views.size > 0 -%}
+            {%- for view in views -%}
+              {%- assign lead = view.settings.caption | escape | default: section.settings.sub -%}
+              {%- if lead != blank -%}
+                <p class="t-lead" data-swatch-panel="{{ view.settings.body_part }}"{% unless view.settings.body_part == active_part %} hidden{% endunless %}>{{ lead }}</p>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- elsif section.settings.sub != blank -%}
+            <p class="t-lead">{{ section.settings.sub }}</p>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+      {%- if views.size > 1 -%}
+        <div class="fc-chips" role="radiogroup" aria-label="{{ 'products.scale.reference' | t | escape }}" data-swatches>
+          {%- for view in views -%}
+            {%- assign part = view.settings.body_part -%}
+            {%- assign part_key = 'products.scale.' | append: part -%}
+            <button class="dl-chip{% if part == active_part %} is-on{% endif %}" role="radio" aria-checked="{% if part == active_part %}true{% else %}false{% endif %}" tabindex="{% if part == active_part %}0{% else %}-1{% endif %}" data-value="{{ part }}" type="button">{{ part_key | t }}</button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      {%- if facts != blank -%}
+        <dl class="fc-facts">{{ facts }}</dl>
+      {%- endif -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'fit-tip' -%}
+          {%- if block.settings.title != blank or block.settings.text != blank -%}
+            {%- render 'notice', tone: block.settings.tone, title: block.settings.title, text: block.settings.text, attrs: block.shopify_attributes -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .dl-scale-view { display: grid; place-items: center; }
+  .dl-scale-view[hidden] { display: none; }
+  .dl-scale > img.dl-scale-photo, .dl-scale-view > img.dl-scale-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "On scale",
+  "tag": "section",
+  "class": "dl-section dl-product-on-scale",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Fit"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "On scale"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Drawn at 1:1 for a 6.5 ring."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "On-model image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "text",
+      "id": "dimensions",
+      "label": "Dimensions",
+      "info": "Label: value pairs separated by semicolons, for example Band width: 2.1 mm; Weight: 2.4 g. Connect a product metafield for values per product. Replaces the measurement blocks."
+    },
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "Mode",
+      "default": "photo",
+      "options": [
+        {
+          "value": "photo",
+          "label": "Photograph"
+        },
+        {
+          "value": "drawing",
+          "label": "Scale drawing"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "scale-view",
+      "name": "Scale view",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "select",
+          "id": "body_part",
+          "label": "Body part",
+          "default": "finger",
+          "options": [
+            {
+              "value": "finger",
+              "label": "Finger"
+            },
+            {
+              "value": "ear",
+              "label": "Ear"
+            },
+            {
+              "value": "neck",
+              "label": "Neckline"
+            },
+            {
+              "value": "wrist",
+              "label": "Wrist"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "caption",
+          "label": "Caption",
+          "default": "Shown on a size 6.5 finger."
+        }
+      ]
+    },
+    {
+      "type": "measurement",
+      "name": "Measurement",
+      "limit": 8,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Stone width"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value",
+          "default": "5.1 mm"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note"
+        }
+      ]
+    },
+    {
+      "type": "fit-tip",
+      "name": "Fit tip",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Between sizes?"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Choose the larger size."
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "info",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "On scale",
+      "blocks": [
+        {
+          "type": "scale-view"
+        },
+        {
+          "type": "scale-view"
+        },
+        {
+          "type": "scale-view"
+        },
+        {
+          "type": "scale-view"
+        },
+        {
+          "type": "measurement"
+        },
+        {
+          "type": "measurement"
+        },
+        {
+          "type": "measurement"
+        },
+        {
+          "type": "measurement"
+        },
+        {
+          "type": "fit-tip"
+        },
+        {
+          "type": "fit-tip"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

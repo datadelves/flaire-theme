@@ -1,0 +1,129 @@
+{
+  "sections": {
+    "not-found": {
+      "type": "not-found",
+      "settings": {
+        "eyebrow": "404",
+        "headline": "This page has slipped away",
+        "sub": "Search for a piece or start from a category.",
+        "color_scheme": "scheme-2",
+        "show_search": true,
+        "cta_label": ""
+      },
+      "blocks": {
+        "category-link-1": {
+          "type": "category-link",
+          "settings": {
+            "label": "",
+            "style": "secondary"
+          }
+        },
+        "category-link-2": {
+          "type": "category-link",
+          "settings": {
+            "label": "",
+            "style": "secondary"
+          }
+        },
+        "category-link-3": {
+          "type": "category-link",
+          "settings": {
+            "label": "",
+            "style": "secondary"
+          }
+        },
+        "category-link-4": {
+          "type": "category-link",
+          "settings": {
+            "label": "",
+            "style": "secondary"
+          }
+        },
+        "help-1": {
+          "type": "help",
+          "settings": {
+            "label": "Contact us",
+            "link": "shopify://pages/contact",
+            "icon": "chat-circle-dots"
+          }
+        },
+        "featured-product-1": {
+          "type": "featured-product",
+          "settings": {
+            "eyebrow": "Most loved",
+            "show_price": true
+          }
+        }
+      },
+      "block_order": [
+        "category-link-1",
+        "category-link-2",
+        "category-link-3",
+        "category-link-4",
+        "help-1",
+        "featured-product-1"
+      ]
+    },
+    "category-rail": {
+      "type": "category-rail",
+      "settings": {
+        "eyebrow": "Shop by form",
+        "headline": "Start from a category",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "columns": "4",
+        "show_count": true,
+        "link_label": ""
+      },
+      "blocks": {
+        "form-tile-1": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "form-tile-2": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "form-tile-3": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "form-tile-4": {
+          "type": "form-tile",
+          "settings": {
+            "title": "",
+            "line": ""
+          }
+        },
+        "link-1": {
+          "type": "link",
+          "settings": {
+            "label": "Shop all",
+            "link": "shopify://collections/all",
+            "align": "end"
+          }
+        }
+      },
+      "block_order": [
+        "form-tile-1",
+        "form-tile-2",
+        "form-tile-3",
+        "form-tile-4",
+        "link-1"
+      ]
+    }
+  },
+  "order": [
+    "not-found",
+    "category-rail"
+  ]
+}

@@ -1,0 +1,198 @@
+{%- comment -%}
+  BagLine: one cart line (bag drawer, bag page) or one order line (readonly).
+  Markup follows parts.mjs bagLineHtml. Quantity and Remove are /cart/change links so they work without
+  JavaScript; the kernel (BUILD.md 8.3) intercepts them through data-act.
+
+  Accepts:
+  - item {Object} cart or order line item
+  - index {Number} 1-based line number (forloop.index), used by /cart/change?line=
+  - readonly {Boolean} no controls, price as charged (order page)
+  - show_material {Boolean} finish and size line (default true)
+  - show_engraving {Boolean} engraving line (default true)
+  - show_delivery {Boolean} delivery sentence (default false)
+  - delivery_text {String} delivery sentence copy
+  - show_plan {Boolean} selling plan name (default true)
+  - plan_prefix {String} text before the plan name
+  - plan_change {Boolean} lines with a selling plan always get Edit (re-pick the plan in the variant sheet)
+  - show_vendor {Boolean} overline above the name
+  - engrave_offer {Boolean} offer "Edit or engrave" on engravable pieces (default true)
+  - img_size {Number} photo size in px (default 96)
+
+  Usage: {% render 'bag-line', item: item, index: forloop.index %}
+{%- endcomment -%}
+{%- liquid
+  if show_material == nil
+    assign show_material = true
+  endif
+  if show_engraving == nil
+    assign show_engraving = true
+  endif
+  if show_plan == nil
+    assign show_plan = true
+  endif
+  if engrave_offer == nil
+    assign engrave_offer = true
+  endif
+  assign img_size = img_size | default: 96
+
+  assign line_product = item.product
+  assign line_title = line_product.title | default: item.title
+  assign title_escaped = line_title | escape
+
+  assign finish_name = ''
+  assign material_line = ''
+  for option in item.options_with_values
+    if option.value == 'Default Title'
+      continue
+    endif
+    assign option_name = option.name | downcase
+    assign option_text = option.value
+    if option_name == 'finish'
+      assign finish_name = option.value
+    elsif option_name contains 'size'
+      assign option_text = 'cart.general.size_value' | t: size: option.value
+    endif
+    if material_line != blank
+      assign material_line = material_line | append: ', '
+    endif
+    assign material_line = material_line | append: option_text
+  endfor
+
+  capture kind
+    render 'product-data', product: line_product, field: 'kind'
+  endcapture
+  assign kind = kind | strip | default: 'ring'
+  assign metal = finish_name | handleize
+  assign art_label = line_title
+  if finish_name != blank
+    assign art_label = 'products.product.title_in_finish' | t: title: line_title, finish: finish_name
+  endif
+
+  assign engraving = item.properties['Engraving']
+  assign plan_name = item.selling_plan_allocation.selling_plan.name
+
+  unless readonly
+    assign is_engravable = false
+    if engrave_offer and line_product != blank
+      capture line_engravable
+        render 'product-data', product: line_product, field: 'engravable'
+      endcapture
+      if line_engravable contains 'true'
+        assign is_engravable = true
+      endif
+    endif
+    assign can_edit = true
+    if line_product == blank
+      assign can_edit = false
+    elsif line_product.has_only_default_variant and is_engravable == false
+      assign can_edit = false
+      if plan_change and plan_name != blank
+        assign can_edit = true
+      endif
+    endif
+    if is_engravable and engraving == blank
+      assign edit_label = 'cart.general.edit' | t
+    else
+      assign edit_label = 'cart.general.edit_plain' | t
+    endif
+
+    assign max_qty = ''
+    assign at_max = false
+    if item.variant.inventory_management == 'shopify' and item.variant.inventory_policy == 'deny'
+      assign variant_in_cart = cart.items | where: 'variant_id', item.variant_id | sum: 'quantity'
+      assign other_lines = variant_in_cart | minus: item.quantity
+      assign max_qty = item.variant.inventory_quantity | minus: other_lines
+      if max_qty < 0
+        assign max_qty = 0
+      endif
+      if item.quantity >= max_qty
+        assign at_max = true
+      endif
+    endif
+
+    assign change_base = routes.cart_change_url | append: '?line=' | append: index | append: '&quantity='
+    assign qty_down = item.quantity | minus: 1
+    assign qty_up = item.quantity | plus: 1
+    assign remove_label = 'cart.general.remove' | t
+  endunless
+-%}
+<div class="fc-bag" data-line data-key="{{ item.key }}"{% unless readonly %} data-line-index="{{ index }}"{% endunless %}>
+  <a class="fc-bag-art" href="{{ item.url }}" aria-label="{{ title_escaped }}" tabindex="-1">
+    {%- render 'product-photo', image: item.image, size: img_size, alt: art_label, kind: kind, metal: metal -%}
+  </a>
+  <div>
+    {%- if show_vendor and item.vendor != blank -%}
+      <p class="t-overline" style="margin:0">{{ item.vendor | escape }}</p>
+    {%- endif -%}
+    <p class="fc-bag-name"><a href="{{ item.url }}" style="color:inherit">{{ title_escaped }}</a></p>
+    {%- if show_material and material_line != blank -%}
+      <p class="fc-bag-detail">{{ material_line | escape }}</p>
+    {%- endif -%}
+    {%- if show_engraving and engraving != blank -%}
+      <p class="fc-bag-detail">{{ 'cart.general.engraving_line' | t: text: engraving }}</p>
+    {%- endif -%}
+    {%- if show_plan and plan_name != blank -%}
+      <p class="fc-bag-detail">{% if plan_prefix != blank %}{{ plan_prefix | escape }}: {% endif %}{{ plan_name | escape }}</p>
+    {%- endif -%}
+    {%- for allocation in item.line_level_discount_allocations -%}
+      <p class="fc-bag-detail">{{ allocation.discount_application.title | escape }} (−{{ allocation.amount | money }})</p>
+    {%- endfor -%}
+    {%- if show_delivery and delivery_text != blank -%}
+      <p class="fc-bag-detail">{{ delivery_text | escape }}</p>
+    {%- endif -%}
+    {%- unless readonly -%}
+      <div data-line-error></div>
+      <div class="fc-bag-actions">
+        <div class="dl-qty" role="group" aria-label="{{ 'cart.general.quantity_of' | t: title: line_title }}">
+          {%- if item.quantity == 1 -%}
+            {%- assign down_label = 'accessibility.remove_title' | t: title: line_title -%}
+          {%- else -%}
+            {%- assign down_label = 'accessibility.decrease_quantity' | t: title: line_title -%}
+          {%- endif -%}
+          <a href="{{ change_base }}{{ qty_down }}" data-act="qty" data-key="{{ item.key }}" data-d="-1" data-qty="{{ item.quantity }}" aria-label="{{ down_label }}">
+            {%- render 'icon', icon: 'minus', size: 16 -%}
+          </a>
+          <span aria-live="polite" aria-atomic="true">{{ item.quantity }}</span>
+          <a href="{{ change_base }}{{ qty_up }}" data-act="qty" data-key="{{ item.key }}" data-d="1" data-qty="{{ item.quantity }}"{% if max_qty != blank %} data-max="{{ max_qty }}"{% endif %} aria-label="{{ 'accessibility.increase_quantity' | t: title: line_title }}"{% if at_max %} aria-disabled="true"{% endif %}>
+            {%- render 'icon', icon: 'plus', size: 16 -%}
+          </a>
+        </div>
+        {%- capture remove_attrs -%}data-act="remove" data-key="{{ item.key }}" aria-label="{{ 'accessibility.remove_title' | t: title: line_title }}"{%- endcapture -%}
+        {%- capture remove_url -%}{{ change_base }}0{%- endcapture -%}
+        {%- render 'button', variant: 'link', size: 'sm', no_chev: true, label: remove_label, url: remove_url, attrs: remove_attrs -%}
+        {%- if can_edit -%}
+          {%- capture edit_attrs -%}data-act="edit-line" data-key="{{ item.key }}" data-url="{{ item.url }}" aria-label="{{ 'cart.general.edit_title' | t: title: line_title }}"{%- endcapture -%}
+          {%- render 'button', variant: 'link', size: 'sm', no_chev: true, label: edit_label, url: item.url, attrs: edit_attrs -%}
+        {%- endif -%}
+      </div>
+    {%- endunless -%}
+  </div>
+  <div class="fc-bag-price">
+    {{- item.final_line_price | money -}}
+    {%- if item.original_line_price > item.final_line_price -%}
+      <s class="fc-bag-qty" style="display:block;font-size:12px"><span class="fc-sr">{{ 'accessibility.was' | t }} </span>{{ item.original_line_price | money }}</s>
+    {%- endif -%}
+    {%- if item.quantity > 1 -%}
+      {%- assign unit_price = item.final_price | money -%}
+      <span class="fc-bag-qty" style="display:block;font-size:12px">{{ 'cart.general.price_each' | t: price: unit_price }}</span>
+    {%- endif -%}
+    {%- if settings.show_unit_price and item.unit_price_measurement -%}
+      {%- liquid
+        assign unit_ref = item.unit_price_measurement
+        assign unit_ref_value = unit_ref.reference_value
+        if unit_ref_value == 1
+          assign unit_ref_value = ''
+        endif
+      -%}
+      <span class="fc-bag-qty" style="display:block;font-size:12px">{{ item.unit_price | money }}<span aria-hidden="true">/</span><span class="fc-sr"> {{ 'accessibility.unit_price_separator' | t }} </span>{{ unit_ref_value }}{{ unit_ref.reference_unit }}</span>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  /* Quantity steppers are /cart/change links (no-JS path); base.css styles .dl-qty button only. */
+  .dl-qty a { width: 44px; height: 44px; border-radius: 50%; color: var(--ink); display: grid; place-items: center; text-decoration: none; }
+  .fc-bag .dl-qty a { width: 36px; height: 36px; }
+  .dl-qty a[aria-disabled="true"] { color: var(--ink-disabled); cursor: not-allowed; }
+  .dl-qty a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+{% endstylesheet %}

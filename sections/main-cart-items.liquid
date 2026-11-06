@@ -1,0 +1,250 @@
+{%- comment -%}
+  Bag page lines (pages-shop.mjs cartHtml). The kernel re-renders this section after every cart change
+  (data-cart-section), so it renders from `cart` alone. The summary is the next section (main-cart-footer).
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign show_material = true
+  assign show_engraving = true
+  assign show_delivery = false
+  assign delivery_text = ''
+  assign show_plan = true
+  assign plan_prefix = ''
+  assign plan_change = false
+  for block in section.blocks
+    case block.type
+      when 'line-details'
+        assign show_material = block.settings.show_material
+        assign show_engraving = block.settings.show_engraving
+        assign show_delivery = block.settings.show_delivery
+        assign delivery_text = block.settings.delivery_text
+      when 'selling-plan-line'
+        assign show_plan = block.settings.show
+        assign plan_prefix = block.settings.label_prefix
+        assign plan_change = block.settings.allow_change
+    endcase
+  endfor
+-%}
+<div class="band tight {{ scheme }}" data-section="main-cart-items" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}" data-cart-section data-section-id="{{ section.id }}">
+  <div class="wrap">
+    {%- if cart.item_count == 0 -%}
+      <div style="max-width:640px;margin:32px auto 0" data-undo-slot aria-live="polite"></div>
+      <div class="dl-empty">
+        {%- if section.settings.empty_title != blank -%}
+          <h1 class="t-headline">{{ section.settings.empty_title | escape }}</h1>
+        {%- endif -%}
+        {%- if section.settings.empty_text != blank -%}
+          <p class="t-lead">{{ section.settings.empty_text | escape }}</p>
+        {%- endif -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'empty-action' and block.settings.label != blank -%}
+            {%- assign action_url = block.settings.link | default: routes.all_products_collection_url -%}
+            {%- capture action_attrs -%}{% if block.settings.use_last_viewed %}data-last-collection {% endif %}{{ block.shopify_attributes }}{%- endcapture -%}
+            {%- render 'button', variant: 'link', label: block.settings.label, url: action_url, attrs: action_attrs -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- else -%}
+      <div class="inline" style="justify-content:space-between;align-items:flex-end;margin-bottom:24px">
+        {%- if section.settings.eyebrow != blank or section.settings.sub != blank -%}
+          <div>
+            {%- if section.settings.eyebrow != blank %}<p class="t-overline">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+            {%- if section.settings.headline != blank %}<h1 class="t-headline" style="margin:0">{{ section.settings.headline }}</h1>{% endif -%}
+            {%- if section.settings.sub != blank %}<p class="t-lead">{{ section.settings.sub }}</p>{% endif -%}
+          </div>
+        {%- elsif section.settings.headline != blank -%}
+          <h1 class="t-headline" style="margin:0">{{ section.settings.headline }}</h1>
+        {%- endif -%}
+        <span class="t-caption" role="status">{{ 'general.pieces' | t: count: cart.item_count }}</span>
+      </div>
+      <div style="border-top:1px solid var(--hairline);margin-top:-1px" data-cart-lines>
+        <div data-undo-slot aria-live="polite"></div>
+        {%- for item in cart.items -%}
+          {%- render 'bag-line',
+            item: item,
+            index: forloop.index,
+            show_material: show_material,
+            show_engraving: show_engraving,
+            show_delivery: show_delivery,
+            delivery_text: delivery_text,
+            show_plan: show_plan,
+            plan_prefix: plan_prefix,
+            plan_change: plan_change,
+            show_vendor: section.settings.show_vendor,
+            engrave_offer: section.settings.show_engraving_link
+          -%}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Cart items",
+  "tag": "section",
+  "class": "dl-section dl-main-cart-items",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Your Bag"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "empty_title",
+      "label": "Empty headline",
+      "default": "Your Bag is empty"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty text",
+      "default": "Pieces you add will wait here."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_engraving_link",
+      "label": "Show edit engraving link",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "line-details",
+      "name": "Line details",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_material",
+          "label": "Show material and size",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_engraving",
+          "label": "Show engraving text",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_delivery",
+          "label": "Show delivery text",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "delivery_text",
+          "label": "Delivery text",
+          "info": "Shown under each item, for example Ships in 2 to 3 days. Empty hides it."
+        }
+      ]
+    },
+    {
+      "type": "selling-plan-line",
+      "name": "Plan line",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show plan name",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "label_prefix",
+          "label": "Prefix",
+          "default": "Plan"
+        },
+        {
+          "type": "checkbox",
+          "id": "allow_change",
+          "label": "Allow change",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "empty-action",
+      "name": "Empty action",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Continue shopping"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "checkbox",
+          "id": "use_last_viewed",
+          "label": "Use last collection",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "cart"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

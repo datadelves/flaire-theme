@@ -1,0 +1,179 @@
+{%- comment -%}
+  Facet ProductCard: photo on the canvas-alt ground, name, material line, price, finish dots and two
+  link-style actions (Add to Bag, Quick view). Used by grids, rails, search and recommendations.
+
+  Accepts:
+  - product {Object} (blank renders a placeholder card for the theme editor)
+  - quick {Boolean} show Quick view (default true; also needs settings.quick_view_enabled)
+  - add {Boolean} show Add to Bag (default true)
+  - rating {Boolean} show the review rating (default settings.show_card_rating)
+  - dots {Boolean} show the finish dots
+  - size {Number} photo size in px (default 180)
+  - metal {String} finish handle to show (e.g. rose-gold); default the featured media
+  - heading_level {Number} (default 3)
+  - loading {String} lazy | eager
+  - show_material {Boolean} (default settings.card_show_material)
+  - show_price {Boolean} (default true)
+  - badge {String} badge text that replaces the product's own badge (product-data: badge metafield, Sale, New)
+  - attrs {String} raw extra attributes on the <article>
+
+  Usage: {% render 'product-card', product: product, dots: true %}
+{%- endcomment -%}
+{%- liquid
+  assign size = size | default: 180
+  assign heading_level = heading_level | default: 3
+  if quick == nil
+    assign quick = true
+  endif
+  if add == nil
+    assign add = true
+  endif
+  if rating == nil
+    assign rating = settings.show_card_rating
+  endif
+  unless settings.quick_view_enabled
+    assign quick = false
+  endunless
+  if settings.quick_add_mode == 'off'
+    assign add = false
+  endif
+  if show_material == nil
+    assign show_material = settings.card_show_material
+  endif
+  if show_price == nil
+    assign show_price = true
+  endif
+-%}
+{%- if product != blank -%}
+  {%- liquid
+    capture kind
+      render 'product-data', product: product, field: 'kind'
+    endcapture
+    assign kind = kind | strip | default: 'ring'
+    assign finish_option = product.options_with_values | where: 'name', 'Finish' | first
+    assign image = product.featured_media
+    assign shown_metal = ''
+    if metal != blank and finish_option
+      for value in finish_option.values
+        assign value_handle = value.name | handleize
+        if value_handle == metal
+          if value.variant.featured_media
+            assign image = value.variant.featured_media
+          endif
+          assign shown_metal = value.name
+        endif
+      endfor
+    endif
+    if shown_metal == blank and image.alt != blank
+      assign shown_metal = image.alt
+    endif
+
+    assign badge_text = badge
+    if badge_text == blank
+      capture badge_text
+        render 'product-data', product: product, field: 'badge', sale: true
+      endcapture
+      assign badge_text = badge_text | strip
+    endif
+
+    capture material
+      render 'product-data', product: product, field: 'material'
+    endcapture
+    assign material = material | strip
+
+    assign title_escaped = product.title | escape
+    assign art_label = product.title
+    if shown_metal != blank
+      assign art_label = 'products.product.title_in_finish' | t: title: product.title, finish: shown_metal
+    endif
+
+    comment
+      As in the prototype, Add to Bag adds straight away unless the piece has a size to choose; the finish
+      defaults to the product's own (snippets/product-base-variant).
+    endcomment
+    assign needs_choice = false
+    for option in product.options_with_values
+      assign option_down = option.name | downcase
+      if option_down != 'finish' and option_down != 'metal' and product.has_only_default_variant == false
+        assign needs_choice = true
+      endif
+    endfor
+    capture quick_variant_id
+      render 'product-base-variant', product: product, prefer_available: true
+    endcapture
+    assign quick_variant_id = quick_variant_id | strip
+    if settings.quick_add_mode == 'always_quick_view'
+      assign needs_choice = true
+    endif
+  -%}
+  <article class="fc-card{% unless product.available %} soldout{% endunless %}" data-card="{{ product.handle }}" data-product-handle="{{ product.handle }}"{% if attrs != blank %} {{ attrs }}{% endif %}>
+    <a class="fc-card-link" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+      <div class="fc-card-art">
+        {%- if settings.card_show_badge and badge_text != blank -%}
+          <span class="fc-card-badge">{{ badge_text | escape }}</span>
+        {%- endif -%}
+        {%- render 'product-photo', image: image, size: size, alt: art_label, loading: loading, kind: kind, metal: metal -%}
+      </div>
+    </a>
+    <div class="fc-card-body">
+      <h{{ heading_level }} class="fc-card-name"><a class="fc-card-title" href="{{ product.url }}">{{ title_escaped }}</a></h{{ heading_level }}>
+      {%- if show_material and material != blank -%}
+        <p class="fc-card-material">{{ material | escape }}</p>
+      {%- endif -%}
+      {%- if rating and product.metafields.reviews.rating.value != blank -%}
+        <div class="dl-meta">{% render 'icon', icon: 'star', size: 14 %} <span>{{ product.metafields.reviews.rating.value.rating | round: 1 }}</span> <span>({{ product.metafields.reviews.rating_count.value | default: 0 }})</span></div>
+      {%- endif -%}
+      {%- if show_price -%}{%- render 'price', product: product -%}{%- endif -%}
+      {%- if dots and finish_option -%}
+        <div class="dots-mini" aria-hidden="true">
+          {%- for value in finish_option.values -%}
+            {%- liquid
+              assign dot_handle = value.name | handleize
+              assign dot_style = 'background:var(--metal-' | append: dot_handle | append: ')'
+              if value.swatch.image
+                assign dot_image = value.swatch.image | image_url: width: 40
+                assign dot_style = 'background:url(' | append: dot_image | append: ') center/cover'
+              elsif value.swatch.color
+                assign dot_style = 'background:' | append: value.swatch.color
+              endif
+            -%}
+            <i style="{{ dot_style }}"></i>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      <div class="fc-card-actions">
+        {%- if product.available == false -%}
+          {%- assign label_sold_out = 'products.product.sold_out' | t -%}
+          {%- render 'button', variant: 'link', label: label_sold_out, attrs: 'disabled aria-disabled="true"' -%}
+        {%- else -%}
+          {%- if add -%}
+            {%- assign label_add = 'products.product.add_to_bag' | t -%}
+            {%- capture add_attrs -%}data-quick="{{ product.handle }}" data-url="{{ product.url }}" data-variant-id="{{ quick_variant_id }}" data-has-options="{{ needs_choice }}" aria-label="{{ 'accessibility.add_title' | t: title: title_escaped }}"{%- endcapture -%}
+            {%- render 'button', variant: 'link', label: label_add, no_chev: true, attrs: add_attrs -%}
+          {%- endif -%}
+          {%- if quick -%}
+            {%- assign label_quick = 'products.product.quick_view' | t -%}
+            {%- capture quick_attrs -%}data-open="quick-view" data-handle="{{ product.handle }}" data-url="{{ product.url }}"{% if metal != blank %} data-metal="{{ metal }}"{% endif %} aria-label="{{ 'accessibility.quick_view' | t: title: title_escaped }}"{%- endcapture -%}
+            {%- render 'button', variant: 'link', label: label_quick, url: product.url, attrs: quick_attrs -%}
+          {%- endif -%}
+        {%- endif -%}
+      </div>
+    </div>
+  </article>
+{%- else -%}
+  <article class="fc-card">
+    <span class="fc-card-link">
+      <div class="fc-card-art">{% render 'specimen', kind: 'ring', metal: 'rose-gold', size: size, label: '' %}</div>
+    </span>
+    <div class="fc-card-body">
+      <h{{ heading_level }} class="fc-card-name">{{ 'products.product.placeholder_title' | t }}</h{{ heading_level }}>
+      <p class="fc-card-material">{{ 'products.product.placeholder_material' | t }}</p>
+      <div class="fc-price"><div class="fc-price-main"><span class="fc-price-amount">{{ 129000 | money }}</span></div></div>
+    </div>
+  </article>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Card name links to the product (the photo link above it is skipped by keyboard and screen readers) */
+  .fc-card-name .fc-card-title { color: inherit; text-decoration: none; }
+{% endstylesheet %}

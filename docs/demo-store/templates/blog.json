@@ -1,0 +1,151 @@
+{
+  "sections": {
+    "blog-hero": {
+      "type": "blog-hero",
+      "settings": {
+        "eyebrow": "Journal",
+        "headline": "Notes on light",
+        "sub": "Care, craft and gifting.",
+        "color_scheme": "scheme-2",
+        "feature_latest": false
+      },
+      "blocks": {
+        "tag-link-1": {
+          "type": "tag-link",
+          "settings": {
+            "label": "Care",
+            "style": "secondary"
+          }
+        },
+        "tag-link-2": {
+          "type": "tag-link",
+          "settings": {
+            "label": "Craft",
+            "style": "secondary"
+          }
+        },
+        "tag-link-3": {
+          "type": "tag-link",
+          "settings": {
+            "label": "Gifting",
+            "style": "secondary"
+          }
+        },
+        "tag-link-4": {
+          "type": "tag-link",
+          "settings": {
+            "label": "Guide",
+            "style": "secondary"
+          }
+        },
+        "featured-1": {
+          "type": "featured",
+          "settings": {
+            "eyebrow": "Featured",
+            "show_excerpt": true
+          }
+        },
+        "note-1": {
+          "type": "note",
+          "settings": {
+            "text": "",
+            "show": false,
+            "align": "center"
+          }
+        }
+      },
+      "block_order": [
+        "tag-link-1",
+        "tag-link-2",
+        "tag-link-3",
+        "tag-link-4",
+        "featured-1",
+        "note-1"
+      ]
+    },
+    "main": {
+      "type": "main-blog",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "per_page": 6,
+        "show_excerpt": true,
+        "show_tags": false,
+        "show_author": false
+      },
+      "blocks": {
+        "article-options-1": {
+          "type": "article-options",
+          "settings": {
+            "show_date": true,
+            "show_read_time": false,
+            "image_ratio": "4:3"
+          }
+        },
+        "promo-1": {
+          "type": "promo",
+          "settings": {
+            "headline": "Engraved by hand"
+          }
+        },
+        "empty-1": {
+          "type": "empty",
+          "settings": {
+            "title": "No articles yet",
+            "text": "Check back soon."
+          }
+        }
+      },
+      "block_order": [
+        "article-options-1",
+        "promo-1",
+        "empty-1"
+      ]
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "eyebrow": "Journal",
+        "headline": "Notes on light",
+        "sub": "New pieces and care notes, once a month.",
+        "color_scheme": "scheme-1",
+        "button_label": "Subscribe",
+        "fine_print": "<p>Unsubscribe at any time.</p>",
+        "success_text": "Thank you. You are on the list."
+      },
+      "blocks": {
+        "heading-1": {
+          "type": "heading",
+          "settings": {
+            "text": "Notes on light",
+            "size": "display"
+          }
+        },
+        "email-field-1": {
+          "type": "email-field",
+          "settings": {
+            "label": "Email address",
+            "placeholder": "name@example.com",
+            "error": "Enter an email address like name@example.com."
+          }
+        },
+        "consent-1": {
+          "type": "consent",
+          "settings": {
+            "text": "<p>By subscribing you agree to our privacy policy.</p>",
+            "required": false
+          }
+        }
+      },
+      "block_order": [
+        "heading-1",
+        "email-field-1",
+        "consent-1"
+      ]
+    }
+  },
+  "order": [
+    "blog-hero",
+    "main",
+    "newsletter"
+  ]
+}

@@ -1,0 +1,281 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign c = collection | default: collections['rings']
+  assign kind_product = c.products.first
+  capture kind
+    render 'product-data', product: kind_product, field: 'kind'
+  endcapture
+  assign kind = kind | strip | default: 'ring'
+  assign details_done = false
+-%}
+{%- capture details_html -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'detail' and block.settings.label != blank and block.settings.value != blank -%}
+      <div class="fc-fact" {{ block.shopify_attributes }}><dt>{{ block.settings.label | escape }}</dt><dd>{{ block.settings.value | escape }}{% if block.settings.note != blank %}<span class="t-fine" style="display:block;margin-top:2px">{{ block.settings.note | escape }}</span>{% endif %}</dd></div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+<div class="band {{ scheme }}" data-section="collection-story" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-c split" style="align-items:start">
+    <div class="stack-lg">
+      {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, left: true -%}
+      {%- if section.settings.body != blank -%}
+        {{ section.settings.body | replace: '<p>', '<p class="t-lead" style="color:var(--ink)">' }}
+      {%- endif -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'detail' -%}
+          {%- if details_done == false and details_html != blank -%}
+            <dl class="fc-facts">{{ details_html }}</dl>
+            {%- assign details_done = true -%}
+          {%- endif -%}
+        {%- else -%}
+          {%- case block.type -%}
+            {%- when 'paragraph' -%}
+              {%- assign text_check = block.settings.text | strip_html | strip -%}
+              {%- if text_check != blank -%}
+                {%- liquid
+                  if block.settings.size == 'lead'
+                    assign p_open = '<p class="t-lead"'
+                  else
+                    assign p_open = '<p class="t-body'
+                    if block.settings.muted
+                      assign p_open = p_open | append: ' muted'
+                    endif
+                    assign p_open = p_open | append: '"'
+                  endif
+                  if block.settings.size == 'lead' and block.settings.muted == false
+                    assign p_open = p_open | append: ' style="color:var(--ink)"'
+                  else
+                    assign p_open = p_open | append: ' style="margin:0"'
+                  endif
+                  assign p_open = p_open | append: '>'
+                -%}
+                <div class="cs-text" {{ block.shopify_attributes }}>{{ block.settings.text | replace: '<p>', p_open }}</div>
+              {%- endif -%}
+            {%- when 'pull-quote' -%}
+              {%- if block.settings.text != blank -%}
+                <blockquote class="cs-quote{% if block.settings.divider %} has-divider{% endif %}" {{ block.shopify_attributes }}>
+                  <p class="t-lead" style="color:var(--ink);margin:0">{{ block.settings.text }}</p>
+                  {%- if block.settings.author != blank %}<p class="t-caption" style="margin:8px 0 0">{{ block.settings.author | escape }}</p>{% endif -%}
+                </blockquote>
+              {%- endif -%}
+          {%- endcase -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    <div style="background:var(--canvas-alt);border-radius:var(--radius-xl);aspect-ratio:4/5;display:grid;place-items:center">
+      {%- if section.settings.image != blank -%}
+        {%- render 'product-photo', image: section.settings.image, size: 360, alt: section.settings.image_alt, sizes: '(max-width: 734px) 80vw, 360px' -%}
+      {%- else -%}
+        {%- render 'specimen', kind: kind, metal: 'rose-gold', gem: 'diamond', size: 360, label: '' -%}
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .cs-text { display: contents; }
+  .cs-quote { margin: 0; }
+  .cs-quote.has-divider { border-top: 1px solid var(--hairline); padding-top: var(--space-6); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Collection story",
+  "tag": "section",
+  "class": "dl-section dl-collection-story",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "The story"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Cut to catch the room"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "richtext",
+      "id": "body",
+      "label": "Story",
+      "default": "<p>Each piece in this collection starts as a wax carving.</p>"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Detail image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "paragraph",
+      "name": "Paragraph",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p></p>"
+        },
+        {
+          "type": "select",
+          "id": "size",
+          "label": "Size",
+          "default": "body",
+          "options": [
+            {
+              "value": "body",
+              "label": "Regular (17px)"
+            },
+            {
+              "value": "lead",
+              "label": "Large (21px)"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "muted",
+          "label": "Use muted text",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "detail",
+      "name": "Detail",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Setting"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value",
+          "default": "Four-prong"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note"
+        }
+      ]
+    },
+    {
+      "type": "pull-quote",
+      "name": "Pull quote",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Quote"
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Attribution"
+        },
+        {
+          "type": "checkbox",
+          "id": "divider",
+          "label": "Show divider above",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "collection"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Collection story",
+      "blocks": [
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "detail"
+        },
+        {
+          "type": "pull-quote"
+        },
+        {
+          "type": "pull-quote"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

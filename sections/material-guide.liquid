@@ -1,0 +1,516 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  assign tabs = true
+  if s.layout == 'grid'
+    assign tabs = false
+  endif
+  assign metals = section.blocks | where: 'type', 'metal'
+  assign stones = section.blocks | where: 'type', 'stone'
+  assign first_metal = metals.first.settings.metal | default: 'yellow-gold'
+  assign first_stone = stones.first.settings.stone | default: 'diamond'
+  assign metal_cap = 'products.product.metal' | t
+  assign stone_cap = 'products.product.stone' | t
+
+  # photo: each metal and stone block can have its own; a block without one shows the section's close-up image
+  assign photo_size = 420
+  assign photo_sizes = '(max-width: 734px) 80vw, 420px'
+  assign section_alt = s.image_alt | default: s.image.alt | default: ''
+  capture fallback_attrs
+    render 'material-guide-photo', image: s.image, alt: section_alt, size: photo_size, sizes: photo_sizes
+  endcapture
+  assign block_photo = nil
+  for block in section.blocks
+    if block.type == 'metal' or block.type == 'stone'
+      if block.settings.image != blank
+        assign block_photo = block.settings.image
+        break
+      endif
+    endif
+  endfor
+-%}
+{%- capture metal_buttons -%}
+  {%- for block in metals -%}
+    {%- liquid
+      assign m = block.settings.metal
+      assign words = m | split: '-'
+      capture metal_name
+        for w in words
+          echo w | capitalize
+          unless forloop.last
+            echo ' '
+          endunless
+        endfor
+      endcapture
+      assign on = false
+      if forloop.first
+        assign on = true
+        assign first_metal_name = metal_name
+      endif
+      assign alt = block.settings.image_alt | default: block.settings.image.alt | default: block.settings.title | default: metal_name
+      if forloop.first
+        assign first_img = block.settings.image
+        assign first_alt = alt
+      endif
+      capture photo_attrs
+        if block.settings.image != blank
+          render 'material-guide-photo', image: block.settings.image, alt: alt, size: photo_size, sizes: photo_sizes
+        else
+          echo fallback_attrs
+        endif
+      endcapture
+    -%}
+    <button type="button" role="radio" aria-checked="{{ on }}" aria-label="{{ metal_name }}" class="fc-swatch-opt{% if on %} is-on{% endif %}" data-value="{{ m }}" data-label="{{ metal_name }}" {{ photo_attrs }} tabindex="{% if on %}0{% else %}-1{% endif %}"><span class="fc-swatch-dot" style="background:var(--metal-{{ m }})"></span></button>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture metal_panels -%}
+  {%- for block in metals -%}
+    {%- liquid
+      assign m = block.settings.metal
+      assign words = m | split: '-'
+      capture metal_name
+        for w in words
+          echo w | capitalize
+          unless forloop.last
+            echo ' '
+          endunless
+        endfor
+      endcapture
+      assign panel_title = block.settings.title | default: metal_name
+      assign rows = block.settings.facts | newline_to_br | split: '<br />'
+    -%}
+    <div class="stack" data-panel data-swatch-panel="{{ m }}" data-swatch-panel-group="metal"{% if tabs and forloop.first == false %} hidden{% endif %} {{ block.shopify_attributes }}>
+      {%- if tabs -%}
+        <p class="t-title" style="margin:0">{{ panel_title | escape }}</p>
+      {%- else -%}
+        <p class="t-title" style="margin:0;display:flex;align-items:center;gap:12px"><span class="fc-swatch-dot" style="background:var(--metal-{{ m }})" aria-hidden="true"></span>{{ panel_title | escape }}</p>
+      {%- endif -%}
+      {%- if block.settings.text != blank %}<p class="t-body muted" style="margin:0">{{ block.settings.text }}</p>{% endif -%}
+      {%- capture facts_html -%}
+        {%- for row in rows limit: 6 -%}
+          {%- assign parts = row | strip_newlines | split: '|' -%}
+          {%- assign k = parts[0] | strip -%}
+          {%- assign v = parts | slice: 1, 9 | join: '|' | strip -%}
+          {%- if k != blank -%}<div class="fc-fact"><dt>{{ k | escape }}</dt><dd>{{ v | escape }}</dd></div>{%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if facts_html != blank %}<dl class="fc-facts">{{ facts_html }}</dl>{% endif -%}
+    </div>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture stone_buttons -%}
+  {%- for block in stones -%}
+    {%- liquid
+      assign g = block.settings.stone
+      assign gem_name = g | capitalize
+      assign on = false
+      if forloop.first
+        assign on = true
+        assign first_stone_name = gem_name
+      endif
+      assign alt = block.settings.image_alt | default: block.settings.image.alt | default: gem_name
+      if forloop.first and metals.size == 0
+        assign first_img = block.settings.image
+        assign first_alt = alt
+      endif
+      capture photo_attrs
+        if block.settings.image != blank
+          render 'material-guide-photo', image: block.settings.image, alt: alt, size: photo_size, sizes: photo_sizes
+        else
+          echo fallback_attrs
+        endif
+      endcapture
+    -%}
+    <button type="button" role="radio" aria-checked="{{ on }}" aria-label="{{ gem_name }}" class="fc-swatch-opt{% if on %} is-on{% endif %}" data-value="{{ g }}" data-gem="{{ g }}" data-label="{{ gem_name }}" {{ photo_attrs }} tabindex="{% if on %}0{% else %}-1{% endif %}"><span class="fc-swatch-dot" style="background:var(--gem-{{ g }})"></span></button>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture stone_panels -%}
+  {%- for block in stones -%}
+    {%- liquid
+      assign g = block.settings.stone
+      assign rows = block.settings.facts | newline_to_br | split: '<br />'
+    -%}
+    {%- capture facts_html -%}
+      {%- for row in rows limit: 6 -%}
+        {%- assign parts = row | strip_newlines | split: '|' -%}
+        {%- assign k = parts[0] | strip -%}
+        {%- assign v = parts | slice: 1, 9 | join: '|' | strip -%}
+        {%- if k != blank -%}<div class="fc-fact"><dt>{{ k | escape }}</dt><dd>{{ v | escape }}</dd></div>{%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    <div class="stack" data-swatch-panel="{{ g }}" data-swatch-panel-group="stone"{% if tabs and forloop.first == false %} hidden{% endif %} {{ block.shopify_attributes }}>
+      {%- unless tabs -%}
+        <p class="t-title" style="margin:0;display:flex;align-items:center;gap:12px"><span class="fc-swatch-dot" style="background:var(--gem-{{ g }})" aria-hidden="true"></span>{{ g | capitalize }}</p>
+      {%- endunless -%}
+      {%- if block.settings.text != blank %}<p class="t-body muted" style="margin:0">{{ block.settings.text }}</p>{% endif -%}
+      {%- if facts_html != blank %}<dl class="fc-facts">{{ facts_html }}</dl>{% endif -%}
+    </div>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture extras -%}
+  {%- for block in section.blocks -%}
+    {%- case block.type -%}
+      {%- when 'certificate' -%}
+        {%- if block.settings.title != blank or block.settings.text != blank -%}
+          <div class="stack" style="gap:4px" {{ block.shopify_attributes }}>
+            {%- if block.settings.title != blank %}<p class="t-body" style="margin:0"><b>{{ block.settings.title | escape }}</b></p>{% endif -%}
+            {%- if block.settings.text != blank %}<p class="t-caption" style="margin:0">{{ block.settings.text | escape }}</p>{% endif -%}
+            {%- if block.settings.link != blank -%}
+              {%- assign learn = 'general.learn_more' | t -%}
+              <div>{% render 'button', variant: 'link', label: learn, url: block.settings.link %}</div>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      {%- when 'care-link' -%}
+        {%- if block.settings.label != blank and block.settings.link != blank -%}
+          <div {{ block.shopify_attributes }}>{% render 'button', variant: 'link', label: block.settings.label, url: block.settings.link %}</div>
+        {%- endif -%}
+    {%- endcase -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- liquid
+  # shown first: the first metal's photo (or the first stone's, with no metals) with swatches, else the section image
+  assign photo = s.image
+  assign photo_alt = section_alt
+  if first_img != blank
+    if tabs or s.image == blank
+      assign photo = first_img
+      assign photo_alt = first_alt
+    endif
+  endif
+  # with no section image, a swatch whose block has no photo shows the drawn placeholder instead
+  assign need_fallback = false
+  if tabs and s.image == blank and block_photo != blank
+    assign need_fallback = true
+  endif
+-%}
+<div class="band {{ scheme }}" data-section="material-guide" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap">
+  {%- render 'section-head', eyebrow: s.eyebrow, heading: s.headline, sub: s.sub -%}
+  <div class="split" style="align-items:start">
+    <div class="stack-lg">
+      {%- if tabs -%}
+        {%- if metals.size > 0 -%}
+          <div class="fc-swatch"><p class="fc-swatch-cap"><span class="fc-swatch-k">{{ metal_cap }}. </span><span class="fc-swatch-v" data-swatch-label>{{ first_metal_name }}</span></p><div role="radiogroup" aria-label="{{ metal_cap | escape }}" class="fc-swatch-row" data-panels="metal" data-swatches>{{ metal_buttons }}</div></div>
+        {%- endif -%}
+        {{ metal_panels }}
+        {%- if stones.size > 0 -%}
+          <div class="stack"><p class="fc-swatch-cap"><span class="fc-swatch-k">{{ stone_cap }}. </span><span class="fc-swatch-v" data-swatch-label>{{ first_stone_name }}</span></p><div class="fc-swatch-row" role="radiogroup" aria-label="{{ stone_cap }}" data-swatches data-panels="stone">{{ stone_buttons }}</div>{{ stone_panels }}</div>
+        {%- endif -%}
+      {%- else -%}
+        {%- if metals.size > 0 %}<div class="grid g2" style="gap:32px">{{ metal_panels }}</div>{% endif -%}
+        {%- if stones.size > 0 %}<div class="grid g2" style="gap:32px">{{ stone_panels }}</div>{% endif -%}
+      {%- endif -%}
+      {{ extras }}
+    </div>
+    <div class="scheme-2 mg-photo" style="background:var(--canvas-alt);border-radius:var(--radius-xl);aspect-ratio:1;display:grid;place-items:center"{% if tabs %} data-swatch-fade{% endif %}>
+      {%- if photo != blank -%}
+        {%- render 'product-photo', image: photo, size: photo_size, alt: photo_alt, sizes: photo_sizes, attrs: 'data-swatch-img' -%}
+      {%- elsif need_fallback -%}
+        {%- render 'product-photo', image: block_photo, size: photo_size, alt: '', sizes: photo_sizes, attrs: 'data-swatch-img hidden' -%}
+      {%- endif -%}
+      {%- if need_fallback -%}
+        <div class="mg-fallback" data-swatch-fallback{% if photo != blank %} hidden{% endif %}>{% render 'specimen', kind: 'ring', metal: first_metal, gem: first_stone, size: photo_size, label: s.image_alt %}</div>
+      {%- elsif photo == blank -%}
+        {%- render 'specimen', kind: 'ring', metal: first_metal, gem: first_stone, size: photo_size, label: s.image_alt -%}
+      {%- endif -%}
+    </div>
+  </div>
+</div></div>
+
+{% stylesheet %}
+  /* without JavaScript every metal and stone panel is shown */
+  html.no-js [data-section="material-guide"] [data-swatch-panel][hidden] { display: flex; }
+  /* the photo keeps its square box while it changes (no layout shift) and fades between materials */
+  .mg-photo > img.fc-photo { aspect-ratio: 1 / 1; }
+  .mg-photo > * { grid-area: 1 / 1; transition: opacity .16s var(--fc-ease, ease); }
+  .mg-photo.is-swapping > * { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { .mg-photo > * { transition: none; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Materials, plainly",
+  "tag": "section",
+  "class": "dl-section dl-material-guide",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Materials"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Made of what it says"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Every metal and stone, named and measured."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "default": "tabs",
+      "options": [
+        {
+          "value": "tabs",
+          "label": "Swatches with one panel"
+        },
+        {
+          "value": "grid",
+          "label": "All materials as columns"
+        }
+      ]
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Close-up image",
+      "info": "Shown when a metal or stone has no image of its own."
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "metal",
+      "name": "Metal",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "select",
+          "id": "metal",
+          "label": "Metal",
+          "default": "yellow-gold",
+          "options": [
+            {
+              "value": "yellow-gold",
+              "label": "18-karat yellow gold"
+            },
+            {
+              "value": "rose-gold",
+              "label": "18-karat rose gold"
+            },
+            {
+              "value": "white-gold",
+              "label": "18-karat white gold"
+            },
+            {
+              "value": "platinum",
+              "label": "Platinum 950"
+            }
+          ]
+        },
+        {
+          "type": "textarea",
+          "id": "facts",
+          "label": "Facts (label | value per line)",
+          "default": "Purity | 75% gold\nFinish | Polished by hand\nCare | Warm water, mild soap"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Description"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Panel heading",
+          "info": "Empty uses the metal name."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image",
+          "info": "Shown when this metal is selected. Empty uses the section's close-up image."
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        }
+      ]
+    },
+    {
+      "type": "stone",
+      "name": "Stone",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "select",
+          "id": "stone",
+          "label": "Stone",
+          "default": "diamond",
+          "options": [
+            {
+              "value": "diamond",
+              "label": "Diamond"
+            },
+            {
+              "value": "sapphire",
+              "label": "Sapphire"
+            },
+            {
+              "value": "emerald",
+              "label": "Emerald"
+            },
+            {
+              "value": "ruby",
+              "label": "Ruby"
+            },
+            {
+              "value": "pearl",
+              "label": "Pearl"
+            },
+            {
+              "value": "onyx",
+              "label": "Onyx"
+            }
+          ]
+        },
+        {
+          "type": "textarea",
+          "id": "facts",
+          "label": "Facts (label | value per line)",
+          "default": "Carat | 0.50\nColor | F\nClarity | VS1\nCut | Round brilliant"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Description"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image",
+          "info": "Shown when this stone is selected. Empty uses the section's close-up image."
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        }
+      ]
+    },
+    {
+      "type": "certificate",
+      "name": "Certificate",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Certified stones"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Stones above 0.30 carat ship with a grading report."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "care-link",
+      "name": "Care link",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Care guide"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Materials, plainly",
+      "blocks": [
+        {
+          "type": "metal"
+        },
+        {
+          "type": "metal"
+        },
+        {
+          "type": "metal"
+        },
+        {
+          "type": "metal"
+        },
+        {
+          "type": "stone"
+        },
+        {
+          "type": "stone"
+        },
+        {
+          "type": "stone"
+        },
+        {
+          "type": "stone"
+        },
+        {
+          "type": "certificate"
+        },
+        {
+          "type": "certificate"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

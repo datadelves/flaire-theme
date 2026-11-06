@@ -1,0 +1,540 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-2'
+  assign product = s.product
+  assign copy = section.blocks | where: 'type', 'copy' | first
+  assign actions = section.blocks | where: 'type', 'actions' | first
+
+  assign eyebrow = s.eyebrow
+  if copy and copy.settings.eyebrow != blank
+    assign eyebrow = copy.settings.eyebrow
+  endif
+  assign sub = s.sub
+  if copy and copy.settings.text != blank
+    assign sub = copy.settings.text
+  endif
+
+  if product != blank
+    assign headline = product.title | escape
+    if sub == blank
+      capture sub
+        render 'product-data', product: product, field: 'summary'
+      endcapture
+      assign sub = sub | strip | escape
+    endif
+    capture kind
+      render 'product-data', product: product, field: 'kind'
+    endcapture
+    assign kind = kind | strip | default: 'ring'
+    assign finish_option = nil
+    for option in product.options_with_values
+      assign option_name = option.name | downcase
+      if option_name == 'finish' or option_name == 'metal'
+        assign finish_option = option
+      endif
+    endfor
+    assign variant = product.selected_or_first_available_variant
+    assign finish = ''
+    if finish_option
+      assign finish = finish_option.selected_value | handleize
+      if s.finish != blank and s.finish != 'first'
+        for v in finish_option.values
+          assign vh = v.name | handleize
+          if vh == s.finish
+            assign finish = vh
+            if v.variant
+              assign variant = v.variant
+            endif
+          endif
+        endfor
+      endif
+    endif
+    assign art = variant.featured_media | default: product.featured_media
+    assign art_alt = art.alt | default: product.title
+  else
+    assign headline = 'products.product.placeholder_title' | t
+    assign kind = 'ring'
+    assign finish = s.finish | default: 'rose-gold'
+    if finish == 'first'
+      assign finish = 'yellow-gold'
+    endif
+    assign art = nil
+    assign art_alt = ''
+  endif
+  if copy and copy.settings.headline != blank
+    assign headline = copy.settings.headline | escape
+  endif
+  assign finish_cap = 'products.product.finish' | t
+  if finish_option
+    assign finish_cap = finish_option.name | escape
+  endif
+-%}
+{%- if product != blank or request.design_mode -%}
+  <div data-section="featured-product">
+    <div class="fc-tile {{ scheme }}{% if s.layout == 'split' %} is-split{% endif %}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+      <div class="fc-tile-copy">
+        {%- if eyebrow != blank %}<p class="fc-tile-eyebrow"{% if copy %} {{ copy.shopify_attributes }}{% endif %}>{{ eyebrow | escape }}</p>{% endif -%}
+        <h2 class="t-display">{{ headline }}</h2>
+        {%- if sub != blank %}<p class="fc-tile-sub">{{ sub }}</p>{% endif -%}
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+            {%- when 'price' -%}
+              {%- liquid
+                assign note = ''
+                if block.settings.show_note
+                  assign note = block.settings.note
+                  if note == blank
+                    if product != blank
+                      assign monthly = product.price | divided_by: 12 | money
+                    else
+                      assign monthly = 129000 | divided_by: 12 | money
+                    endif
+                    assign note = 'products.product.financing' | t: amount: monthly
+                  endif
+                endif
+              -%}
+              <div class="fc-tile-price" {{ block.shopify_attributes }}>
+                {%- if product != blank -%}
+                  {%- render 'price', product: product, note: note, show_unit: block.settings.show_unit -%}
+                {%- else -%}
+                  <div class="fc-price"><div class="fc-price-main"><span class="fc-price-from">{{ 'general.from' | t }} </span><span class="fc-price-amount">{{ 129000 | money }}</span></div>{% if note != blank %}<div class="fc-price-note">{{ note }}</div>{% endif %}</div>
+                {%- endif -%}
+              </div>
+          {%- endcase -%}
+        {%- endfor -%}
+        {%- capture facts -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'fact' and block.settings.label != blank -%}
+              <span class="fc-badge fc-badge-{{ block.settings.tone | default: 'neutral' }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}{% if block.settings.detail != blank %}<span class="fc-sr">, {{ block.settings.detail | escape }}</span>{% endif %}</span>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- if facts != blank %}<div class="facts">{{ facts }}</div>{% endif -%}
+        {%- if actions -%}
+          {%- liquid
+            assign a = actions.settings
+            assign title_escaped = headline | strip_html
+          -%}
+          {%- capture action_html -%}
+            {%- if s.show_buy and a.buy_label != blank -%}
+              {%- if product == blank -%}
+                {%- render 'button', label: a.buy_label -%}
+              {%- elsif product.available == false -%}
+                {%- assign sold_label = 'products.product.sold_out' | t -%}
+                {%- render 'button', label: sold_label, attrs: 'disabled aria-disabled="true"' -%}
+              {%- elsif product.has_only_default_variant and settings.quick_add_mode != 'always_quick_view' -%}
+                {%- capture buy_attrs -%}data-quick="{{ product.handle }}" data-url="{{ product.url }}" data-variant-id="{{ variant.id }}" data-has-options="false"{%- endcapture -%}
+                {%- render 'button', label: a.buy_label, attrs: buy_attrs -%}
+              {%- elsif settings.quick_view_enabled -%}
+                {%- capture buy_attrs -%}data-open="quick-view" data-handle="{{ product.handle }}" data-url="{{ product.url }}"{% if finish != blank %} data-metal="{{ finish }}"{% endif %} data-swatch-link{%- endcapture -%}
+                {%- render 'button', label: a.buy_label, url: variant.url, attrs: buy_attrs -%}
+              {%- else -%}
+                {%- render 'button', label: a.buy_label, url: variant.url, attrs: 'data-swatch-link' -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- if a.learn_label != blank -%}
+              {%- liquid
+                if product != blank
+                  assign learn_url = variant.url
+                else
+                  assign learn_url = routes.all_products_collection_url
+                endif
+              -%}
+              {%- render 'button', variant: 'link', label: a.learn_label, url: learn_url, attrs: 'data-swatch-link' -%}
+            {%- endif -%}
+            {%- if a.quick_view and product != blank and settings.quick_view_enabled -%}
+              {%- assign qv_label = 'products.product.quick_view' | t -%}
+              {%- capture qv_attrs -%}data-open="quick-view" data-handle="{{ product.handle }}" data-url="{{ product.url }}"{% if finish != blank %} data-metal="{{ finish }}"{% endif %} aria-label="{{ 'accessibility.quick_view' | t: title: title_escaped }}"{%- endcapture -%}
+              {%- render 'button', variant: 'link', label: qv_label, url: product.url, attrs: qv_attrs -%}
+            {%- endif -%}
+          {%- endcapture -%}
+          {%- if action_html != blank %}<div class="fc-tile-actions" {{ actions.shopify_attributes }}>{{ action_html }}</div>{% endif -%}
+          {%- if product != blank and s.show_buy -%}
+            {%- if a.show_dynamic_checkout or a.show_installments -%}
+              {%- liquid
+                assign fp_form_id = 'product-form-fp-' | append: section.id
+                assign fp_need = false
+                unless product.has_only_default_variant
+                  for option in product.options_with_values
+                    assign option_name = option.name | downcase
+                    if option_name != 'finish' and option_name != 'metal'
+                      assign fp_need = true
+                    endif
+                  endfor
+                endunless
+                assign pay_hidden = false
+                if product.available == false or variant.available == false
+                  assign pay_hidden = true
+                endif
+              -%}
+              {%- form 'product', product, id: fp_form_id, class: 'fc-tile-buy', novalidate: 'novalidate', data-product-form: '', data-ctx: 'fp' -%}
+                {%- render 'product-json', product: product -%}
+                <input type="hidden" name="id" value="{{ variant.id }}" data-variant-input>
+                {%- if a.show_installments -%}{{ form | payment_terms }}{%- endif -%}
+                {%- if a.show_dynamic_checkout -%}
+                  <div class="dl-pay{% if fp_need %} is-blocked{% endif %}" data-payment-button data-act="pay-blocked" data-url="{{ product.url }}"{% if pay_hidden %} hidden{% endif %}><div data-pay-inner{% if fp_need %} inert{% endif %}>{{ form | payment_button }}</div></div>
+                {%- endif -%}
+              {%- endform -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endif -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == '@app' %}{% render block %}{% endif -%}
+          {%- if block.type == 'custom_liquid' %}<div class="dl-custom-liquid" {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>{% endif -%}
+        {%- endfor -%}
+      </div>
+      {%- liquid
+        assign rich_count = 0
+        assign rich_types = ''
+        assign has_model = false
+        if product != blank
+          for media in product.media
+            if media.media_type != 'image'
+              assign rich_count = rich_count | plus: 1
+              assign rich_types = rich_types | append: media.media_type | append: ','
+              if media.media_type == 'model'
+                assign has_model = true
+              endif
+            endif
+          endfor
+        endif
+        assign rich_types = rich_types | split: ','
+        assign plate_count = rich_count | plus: 1
+      -%}
+      <div class="fc-tile-art"><div style="display:grid;justify-items:center;gap:16px;width:100%">
+        {%- if rich_count > 0 -%}
+          {%- comment -%} Videos and 3D models of the product follow the photo as extra plates {%- endcomment -%}
+          <div class="hero-art dl-fp-gallery" style="aspect-ratio:16/6" data-gallery data-ctx="fp" data-count="{{ plate_count }}" data-swipe>
+            <div class="media" data-plate="0">
+              {%- render 'product-photo', image: art, size: 560, alt: art_alt, sizes: '(max-width: 734px) 70vw, 400px', attrs: 'data-swatch-img', kind: kind, metal: finish -%}
+            </div>
+            {%- assign r = 1 -%}
+            {%- for media in product.media -%}
+              {%- if media.media_type != 'image' -%}
+                <div class="media media-rich" data-plate="{{ r }}" data-media-id="{{ media.id }}" hidden>{% render 'product-media', media: media, product: product, sizes: '(max-width: 734px) 100vw, 1100px' %}</div>
+                {%- assign r = r | plus: 1 -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- assign prev_label = 'accessibility.previous_image' | t -%}
+            {%- assign next_label = 'accessibility.next_image' | t -%}
+            <button type="button" class="fc-btn fc-btn-icon gal-nav prev" aria-label="{{ prev_label }}" data-act="gal" data-dir="-1">{% render 'icon', icon: 'caret-left' %}</button>
+            <button type="button" class="fc-btn fc-btn-icon gal-nav next" aria-label="{{ next_label }}" data-act="gal" data-dir="1">{% render 'icon', icon: 'caret-right' %}</button>
+            <div class="dots">
+              {%- for i in (1..plate_count) -%}
+                {%- liquid
+                  assign dot_label = 'accessibility.image_count' | t: index: i, count: plate_count
+                  if forloop.index0 > 0
+                    assign ri = forloop.index0 | minus: 1
+                    if rich_types[ri] == 'model'
+                      assign dot_label = 'products.media.model_count' | t: index: i, count: plate_count
+                    else
+                      assign dot_label = 'products.media.video_count' | t: index: i, count: plate_count
+                    endif
+                  endif
+                -%}
+                <button type="button"{% if forloop.first %} class="on"{% endif %} aria-label="{{ dot_label }}" aria-current="{{ forloop.first }}" data-act="gal-to" data-i="{{ forloop.index0 }}"></button>
+              {%- endfor -%}
+            </div>
+            {%- if has_model -%}
+              <script type="application/json" data-model-json>{{ product.media | where: 'media_type', 'model' | json }}</script>
+            {%- endif -%}
+          </div>
+        {%- else -%}
+          <div class="hero-art" style="aspect-ratio:16/6">
+            {%- render 'product-photo', image: art, size: 560, alt: art_alt, sizes: '(max-width: 734px) 70vw, 400px', attrs: 'data-swatch-img', kind: kind, metal: finish -%}
+          </div>
+        {%- endif -%}
+      </div></div>
+    </div>
+    {%- if s.show_swatches -%}
+      {%- liquid
+        if product != blank
+          assign swatch_values = ''
+        else
+          assign swatch_values = 'yellow-gold,rose-gold,white-gold,platinum'
+        endif
+      -%}
+      {%- capture swatch_html -%}{% render 'material-swatch', product: product, values: swatch_values, value: finish, cap: finish_cap, size: 560, center: true %}{%- endcapture -%}
+      {%- if swatch_html != blank -%}
+        <div class="{{ scheme }}" style="display:flex;justify-content:center;padding-bottom:0;margin-top:-40px;position:relative;z-index:1"><div style="background:var(--canvas-alt);padding:20px 0;display:flex;justify-content:center;width:100%">{{ swatch_html }}</div></div>
+      {%- endif -%}
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  @media (min-width: 1069px) {
+    .fc-tile.is-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; text-align: left; padding-bottom: max(var(--pad-top, var(--space-section)), var(--pad-bottom, 0px)); }
+    .fc-tile.is-split .fc-tile-copy { align-items: flex-start; justify-self: end; }
+    .fc-tile.is-split .fc-tile-actions, .fc-tile.is-split .facts { justify-content: flex-start; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Featured product",
+  "tag": "section",
+  "class": "dl-section dl-featured-product",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Product"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "default": "stacked",
+      "options": [
+        {
+          "value": "stacked",
+          "label": "Stacked (text over image)"
+        },
+        {
+          "value": "split",
+          "label": "Split (text left, image right)"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "New"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Support line"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_swatches",
+      "label": "Show finish swatches",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_buy",
+      "label": "Show buy button",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "finish",
+      "label": "Finish shown first",
+      "info": "The tile photo and swatch selected on load.",
+      "default": "first",
+      "options": [
+        {
+          "value": "first",
+          "label": "Selected or first available"
+        },
+        {
+          "value": "yellow-gold",
+          "label": "Yellow Gold"
+        },
+        {
+          "value": "rose-gold",
+          "label": "Rose Gold"
+        },
+        {
+          "value": "white-gold",
+          "label": "White Gold"
+        },
+        {
+          "value": "platinum",
+          "label": "Platinum"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "info": "In the side-by-side layout, at least the top padding."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "copy",
+      "name": "Copy",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "headline",
+          "label": "Headline override"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Text"
+        }
+      ]
+    },
+    {
+      "type": "price",
+      "name": "Price",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_note",
+          "label": "Show financing note",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Financing note",
+          "info": "Use {amount} for the monthly amount. Empty uses the theme default text."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_unit",
+          "label": "Show unit price",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "actions",
+      "name": "Actions",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "buy_label",
+          "label": "Buy label",
+          "default": "Buy"
+        },
+        {
+          "type": "text",
+          "id": "learn_label",
+          "label": "Learn more label",
+          "default": "Learn more"
+        },
+        {
+          "type": "checkbox",
+          "id": "quick_view",
+          "label": "Show quick view link",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "show_dynamic_checkout",
+          "label": "Show dynamic checkout buttons",
+          "default": true,
+          "info": "Customers see the payment methods your store offers, like Shop Pay or Apple Pay. Pieces that need a size open quick view first."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_installments",
+          "label": "Show Shop Pay Installments banner",
+          "default": true,
+          "info": "Shows when your store offers Shop Pay Installments."
+        }
+      ]
+    },
+    {
+      "type": "fact",
+      "name": "Fact",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "0.50 carat"
+        },
+        {
+          "type": "text",
+          "id": "detail",
+          "label": "Detail"
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "neutral",
+          "options": [
+            {
+              "value": "neutral",
+              "label": "Neutral"
+            },
+            {
+              "value": "inverse",
+              "label": "Dark (low stock)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "custom_liquid",
+      "name": "Custom Liquid",
+      "settings": [
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Custom Liquid",
+          "info": "Add app snippets or other Liquid code."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured product",
+      "blocks": [
+        {
+          "type": "copy"
+        },
+        {
+          "type": "price"
+        },
+        {
+          "type": "actions"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

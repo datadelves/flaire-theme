@@ -1,0 +1,338 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-2'
+  assign eyebrow = s.eyebrow
+  assign eyebrow_block = section.blocks | where: 'type', 'eyebrow' | first
+  if eyebrow_block and eyebrow_block.settings.text != blank
+    assign eyebrow = eyebrow_block.settings.text
+  endif
+  assign heading_tag = 'h2'
+  if section.index == 1
+    assign heading_tag = 'h1'
+  endif
+  assign second = section.blocks | where: 'type', 'image' | first
+  assign image_alt = s.image_alt | default: ''
+-%}
+{%- capture primary_art -%}
+  {%- if s.image != blank -%}
+    {%- capture img_tag -%}
+      {%- if s.priority -%}
+        {{ s.image | image_url: width: 1600 | image_tag: loading: 'eager', fetchpriority: 'high', preload: true, widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 734px) 70vw, 400px', alt: image_alt, class: 'fc-photo' }}
+      {%- else -%}
+        {{ s.image | image_url: width: 1600 | image_tag: loading: 'lazy', widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 734px) 70vw, 400px', alt: image_alt, class: 'fc-photo' }}
+      {%- endif -%}
+    {%- endcapture -%}
+    {%- if s.image_mobile != blank -%}
+      <picture><source media="(max-width: 734px)" srcset="{{ s.image_mobile | image_url: width: 480 }} 480w, {{ s.image_mobile | image_url: width: 960 }} 960w" sizes="70vw">{{ img_tag }}</picture>
+    {%- else -%}
+      {{ img_tag }}
+    {%- endif -%}
+  {%- else -%}
+    {%- render 'specimen', kind: 'ring', metal: 'rose-gold', gem: 'diamond', size: 520, label: image_alt -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture second_art -%}
+  {%- if second -%}
+    {%- if second.settings.image != blank -%}
+      {{ second.settings.image | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '360, 720, 1080', sizes: '360px', alt: second.settings.image_alt, class: 'fc-photo hide-m' }}
+    {%- else -%}
+      {%- render 'specimen', kind: 'earring', metal: 'yellow-gold', gem: 'pearl', size: 360, label: second.settings.image_alt, class: 'hide-m' -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endcapture -%}
+<div data-section="hero-tile">
+  <div class="fc-tile {{ scheme }}{% if s.height == 'tall' %} is-tall{% endif %}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="fc-tile-copy">
+      {%- if eyebrow != blank %}<p class="fc-tile-eyebrow"{% if eyebrow_block %} {{ eyebrow_block.shopify_attributes }}{% endif %}>{{ eyebrow | escape }}</p>{% endif -%}
+      {%- if s.headline != blank %}<{{ heading_tag }} class="t-hero">{{ s.headline }}</{{ heading_tag }}>{% endif -%}
+      {%- if s.sub != blank %}<p class="fc-tile-sub">{{ s.sub }}</p>{% endif -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'price-line' -%}
+          {%- if block.settings.product != blank -%}
+            <div class="fc-tile-price" {{ block.shopify_attributes }}>{% render 'price', product: block.settings.product, note: block.settings.note %}</div>
+          {%- elsif request.design_mode -%}
+            <div class="fc-tile-price" {{ block.shopify_attributes }}><div class="fc-price"><div class="fc-price-main"><span class="fc-price-from">{{ 'general.from' | t }} </span><span class="fc-price-amount">{{ 129000 | money }}</span></div>{% if block.settings.note != blank %}<div class="fc-price-note">{{ block.settings.note | escape }}</div>{% endif %}</div></div>
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- capture facts -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'badge-row' and block.settings.text != blank -%}
+            <span class="fc-badge fc-badge-{{ block.settings.tone | default: 'neutral' }}" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}</span>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if facts != blank %}<div class="facts">{{ facts }}</div>{% endif -%}
+      {%- liquid
+        assign show_cta = false
+        if s.cta_label != blank and s.cta_link != blank
+          assign show_cta = true
+        endif
+        assign show_link = false
+        if s.link_label != blank and s.link != blank
+          assign show_link = true
+        endif
+      -%}
+      {%- if show_cta or show_link -%}
+        <div class="fc-tile-actions">
+          {%- if show_cta %}{% render 'button', label: s.cta_label, size: 'lg', url: s.cta_link %}{% endif -%}
+          {%- if show_link %}{% render 'button', variant: 'link', label: s.link_label, url: s.link %}{% endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+    <div class="fc-tile-art"><div class="hero-art"><div class="hero-duo"{% if second %} {{ second.shopify_attributes }}{% endif %}>
+      {%- if second and second.settings.position == 'left' -%}{{ second_art }}{{ primary_art }}{%- else -%}{{ primary_art }}{{ second_art }}{%- endif -%}
+    </div></div></div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .fc-tile.is-tall { min-height: min(100dvh, 960px); justify-content: space-between; }
+  .hero-duo picture { display: contents; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Hero tile",
+  "tag": "section",
+  "class": "dl-section dl-hero-tile",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "New collection"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Light, held."
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Set by hand in 18-karat gold and platinum."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button link"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Hero image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Mobile image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "checkbox",
+      "id": "priority",
+      "label": "Load with priority",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "height",
+      "label": "Tile height",
+      "default": "auto",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto"
+        },
+        {
+          "value": "tall",
+          "label": "Tall"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "eyebrow",
+      "name": "Eyebrow",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "New collection"
+        }
+      ]
+    },
+    {
+      "type": "badge-row",
+      "name": "Fact chips",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "18-karat recycled gold"
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "neutral",
+          "options": [
+            {
+              "value": "neutral",
+              "label": "Neutral"
+            },
+            {
+              "value": "accent",
+              "label": "Accent (new)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "price-line",
+      "name": "Price line",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Financing note"
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "name": "Secondary image",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "default": "right",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero tile",
+      "settings": {
+        "cta_label": "Shop the collection",
+        "link_label": "Learn more"
+      },
+      "blocks": [
+        {
+          "type": "eyebrow"
+        },
+        {
+          "type": "badge-row",
+          "settings": {
+            "text": "18-karat recycled gold"
+          }
+        },
+        {
+          "type": "badge-row",
+          "settings": {
+            "text": "Platinum 950"
+          }
+        },
+        {
+          "type": "badge-row",
+          "settings": {
+            "text": "Hand-set stones"
+          }
+        },
+        {
+          "type": "image"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

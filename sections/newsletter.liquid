@@ -1,0 +1,242 @@
+{%- liquid
+  assign s = section.settings
+  assign scheme = s.color_scheme | default: 'scheme-1'
+  assign heading = s.headline
+  assign role = 't-display'
+  assign heading_block = section.blocks | where: 'type', 'heading' | first
+  if heading_block and heading_block.settings.text != blank
+    assign heading = heading_block.settings.text | escape
+    assign role = 't-' | append: heading_block.settings.size
+  endif
+  assign field_block = section.blocks | where: 'type', 'email-field' | first
+  assign field_label = field_block.settings.label
+  assign field_placeholder = field_block.settings.placeholder
+  comment
+    success_text "Thank you. You are on the list." becomes the notice title and line
+  endcomment
+  assign success_title = ''
+  assign success_line = s.success_text
+  if s.success_text contains '. '
+    assign success_parts = s.success_text | split: '. '
+    assign success_title = success_parts.first
+    assign success_line = s.success_text | remove_first: success_title | remove_first: '. '
+  endif
+  assign fine = s.fine_print | replace: '</p><p>', '<br>' | remove: '<p>' | remove: '</p>'
+-%}
+<div class="band {{ scheme }}" data-section="newsletter" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}"><div class="wrap-n center" style="text-align:center">
+  {%- render 'section-head', eyebrow: s.eyebrow, heading: heading, sub: s.sub, role: role -%}
+  <div data-news-sec{% if field_block %} {{ field_block.shopify_attributes }}{% endif %}>
+    {%- liquid
+      assign consent_block = section.blocks | where: 'type', 'consent' | first
+      assign consent_required = false
+      assign consent_html = ''
+      if consent_block and consent_block.settings.required and consent_block.settings.text != blank
+        assign consent_required = true
+        assign consent_html = consent_block.settings.text | replace: '</p><p>', '<br>' | remove: '<p>' | remove: '</p>'
+      endif
+    -%}
+    {%- render 'newsletter-form', id: section.id, layout: 'inline', button_label: s.button_label, label: field_label, placeholder: field_placeholder, success_title: success_title, success_text: success_line, error_text: field_block.settings.error, consent_html: consent_html, consent_required: consent_required -%}
+  </div>
+  {%- for block in section.blocks -%}
+    {%- case block.type -%}
+      {%- when 'consent' -%}
+        {%- if block.settings.text != blank and block.settings.required != true -%}
+          {%- assign consent = block.settings.text | replace: '</p><p>', '<br>' | remove: '<p>' | remove: '</p>' -%}
+          <p class="t-fine" style="margin-top:16px" {{ block.shopify_attributes }}>{{ consent }}</p>
+        {%- endif -%}
+      {%- when '@app' -%}
+        {% render block %}
+      {%- when 'custom-liquid' -%}
+        <div {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>
+    {%- endcase -%}
+  {%- endfor -%}
+  {%- if fine != blank %}<p class="t-fine" style="margin-top:16px">{{ fine }}</p>{% endif -%}
+</div></div>
+
+{% schema %}
+{
+  "name": "Newsletter",
+  "tag": "section",
+  "class": "dl-section dl-newsletter",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Journal"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Notes on light"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "New pieces and care notes, once a month."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Subscribe"
+    },
+    {
+      "type": "richtext",
+      "id": "fine_print",
+      "label": "Fine print",
+      "default": "<p>Unsubscribe at any time.</p>"
+    },
+    {
+      "type": "text",
+      "id": "success_text",
+      "label": "Success text",
+      "default": "Thank you. You are on the list."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Notes on light"
+        },
+        {
+          "type": "select",
+          "id": "size",
+          "label": "Size",
+          "default": "display",
+          "options": [
+            {
+              "value": "display",
+              "label": "Extra large (64px)"
+            },
+            {
+              "value": "headline",
+              "label": "Large (48px)"
+            },
+            {
+              "value": "title-lg",
+              "label": "Medium (32px)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "email-field",
+      "name": "Email field",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Email address"
+        },
+        {
+          "type": "text",
+          "id": "placeholder",
+          "label": "Placeholder",
+          "default": "name@example.com"
+        },
+        {
+          "type": "text",
+          "id": "error",
+          "label": "Error message",
+          "default": "Enter an email address like name@example.com."
+        }
+      ]
+    },
+    {
+      "type": "consent",
+      "name": "Consent line",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>By subscribing you agree to our privacy policy.</p>"
+        },
+        {
+          "type": "checkbox",
+          "id": "required",
+          "label": "Require checkbox",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "custom-liquid",
+      "name": "Custom Liquid",
+      "settings": [
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Liquid code",
+          "info": "Add app snippets or other Liquid code to create advanced customizations."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Newsletter",
+      "blocks": [
+        {
+          "type": "heading"
+        },
+        {
+          "type": "email-field"
+        },
+        {
+          "type": "consent"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

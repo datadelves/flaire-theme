@@ -1,0 +1,319 @@
+{%- comment -%}
+  Variant selector sheet: finish, size, purchase option and engraving with live price, photo, SKU and stock.
+  Opened over quick view (mode qv), from the product page sticky bar on phones (mode pdp) and from a Bag line
+  (mode cart). The kernel fetches {{ product.url }}?section_id={{ section.id }}, copies the opener's
+  selection into it, and on Done hands the selection back (or replaces the Bag line).
+{%- endcomment -%}
+{%- liquid
+  assign title_text = 'products.product.choose_finish_size' | t
+  assign close_text = 'accessibility.close_finish_size' | t
+  assign summary_block = section.blocks | where: 'type', 'live-summary' | first
+  assign engraving_block = section.blocks | where: 'type', 'engraving' | first
+  assign show_price = true
+  assign show_image = true
+  assign show_availability = true
+  if summary_block
+    assign show_price = summary_block.settings.show_price
+    assign show_image = summary_block.settings.show_image
+    assign show_availability = summary_block.settings.show_availability
+  endif
+
+  # performance: the panel renders only when the kernel fetches it (Section Rendering API, where section.index is
+  # nil) or in the theme editor, so product pages don't carry an unused copy of the product form
+  assign show_panel = false
+  if product != blank and request.page_type == 'product'
+    if section.index == blank or request.design_mode
+      assign show_panel = true
+    endif
+  endif
+-%}
+{%- capture skeleton -%}
+      <div class="bd" aria-busy="true">
+        <div class="inline" style="align-items:center;gap:16px;margin-bottom:24px"><div class="dl-skel" style="width:120px;height:120px;border-radius:var(--radius-lg)"></div><div style="flex:1"><div class="dl-skel" style="height:22px;width:60%"></div><div class="dl-skel" style="height:28px;width:40%;margin-top:12px"></div></div></div>
+        <div class="inline">{%- for i in (1..4) -%}<div class="dl-skel" style="width:44px;height:44px;border-radius:50%"></div>{%- endfor -%}</div>
+        <div class="dl-skel" style="height:120px;margin-top:24px;border-radius:var(--radius-md)"></div>
+      </div>
+      <div class="ft"><div class="dl-skel" style="height:52px;border-radius:980px"></div></div>
+{%- endcapture -%}
+<div class="app-ov" data-ov="variant" data-section-id="{{ section.id }}" hidden>
+  <div class="dl-scrim" data-act="scrim"></div>
+  <aside class="dl-drawer right nested scheme-1" data-place="right nested" data-place-mobile="bottom" role="dialog" aria-modal="true" aria-labelledby="ov-title-variant" data-ov-panel>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: title_text, close_label: close_text, id: 'ov-title-variant' -%}
+    {%- if show_panel -%}
+      {%- liquid
+        assign finish_index = -1
+        assign other_option = false
+        for option in product.options_with_values
+          assign option_name = option.name | downcase
+          if option_name == 'finish' or option_name == 'metal'
+            assign finish_index = forloop.index0
+          else
+            assign other_option = true
+          endif
+        endfor
+        if product.has_only_default_variant
+          assign other_option = false
+        endif
+        assign base = product.selected_or_first_available_variant
+        capture base_id
+          render 'product-base-variant', product: product
+        endcapture
+        assign base_id = base_id | strip
+        for v in product.variants
+          assign vid = v.id | append: ''
+          if vid == base_id
+            assign base = v
+            break
+          endif
+        endfor
+        assign selected_variant = product.selected_variant
+        if selected_variant == blank and other_option == false
+          assign selected_variant = base
+        endif
+        assign finish = ''
+        if finish_index >= 0
+          assign finish = base.options[finish_index]
+        endif
+        assign finish_media = product.featured_media
+        for variant in product.variants
+          if variant.options contains finish and variant.featured_media
+            assign finish_media = variant.featured_media
+            break
+          endif
+        endfor
+        assign photo_alt = 'products.product.title_in_finish' | t: title: product.title, finish: finish
+        capture kind
+          render 'product-data', product: product, field: 'kind'
+        endcapture
+        assign kind = kind | strip | default: 'ring'
+        assign confirm = section.settings.confirm_label
+        if confirm == blank
+          assign confirm = 'products.product.done' | t
+        endif
+        if finish_index < 0 and base.featured_media
+          assign finish_media = base.featured_media
+        endif
+        if finish == blank
+          assign photo_alt = finish_media.alt | default: product.title
+        endif
+      -%}
+      <div style="display:contents" data-product-form data-ctx="sheet">
+        {%- render 'product-json', product: product -%}
+        {%- render 'product-templates', stock_text: '{summary} · {ready}.' -%}
+        <div class="bd">
+          <div class="inline" style="align-items:center;gap:16px;margin-bottom:24px">
+            {%- if show_image -%}
+              <div style="width:120px;height:120px;background:var(--canvas-alt);border-radius:var(--radius-lg);display:grid;place-items:center;flex:none" data-gallery>{% render 'product-photo', image: finish_media, size: 96, alt: photo_alt, attrs: 'data-finish-img', kind: kind %}</div>
+            {%- endif -%}
+            <div>
+              <p class="t-title" style="margin:0">{{ product.title | escape }}</p>
+              {%- if show_price -%}{%- render 'price', product: product, variant: base, lg: true, show_unit: settings.show_unit_price, show_compare: settings.show_compare_at -%}{%- endif -%}
+              {%- if section.settings.show_sku -%}
+{%- liquid
+                assign sku_text = base.sku
+                if selected_variant == blank and base.sku contains '-'
+                  assign sku_tail = base.sku | split: '-' | last
+                  assign sku_text = base.sku | remove_last: sku_tail | append: 'OS'
+                endif
+              -%}
+                <p class="t-fine" style="margin:4px 0 0" data-sku{% if sku_text == blank %} hidden{% endif %}>{% if sku_text != blank %}{{ 'products.product.sku' | t: sku: sku_text }}{% endif %}</p>
+              {%- endif -%}
+            </div>
+          </div>
+          <div class="stack-lg">
+            {%- liquid
+              assign show_guide = false
+              for block in section.blocks
+                if block.type == 'option-group' and block.settings.show_guide
+                  assign show_guide = true
+                endif
+              endfor
+            -%}
+            {%- render 'product-options', product: product, ctx: 'sheet', finish: finish, selected_variant: selected_variant, show_size_guide: show_guide -%}
+            {%- if section.settings.show_selling_plans -%}
+              {%- render 'product-plans', product: product, variant: base, ctx: 'sheet' -%}
+            {%- endif -%}
+            {%- if section.settings.show_engraving -%}
+              {%- render 'product-engraving', product: product, ctx: 'sheet', finish: finish, max: engraving_block.settings.max_length, label: engraving_block.settings.label -%}
+            {%- endif -%}
+            {%- if show_availability -%}
+              <div data-stock style="display:contents">
+                {%- if selected_variant != blank -%}
+                  {%- if selected_variant.available -%}
+                    {%- assign in_stock = 'products.product.in_stock' | t -%}
+                    {%- assign ships = 'products.product.ships_tomorrow' | t -%}
+                    {%- capture summary_text %}{{ selected_variant.title }} · {{ ships }}.{% endcapture -%}
+                    {%- render 'notice', tone: 'success', title: in_stock, text: summary_text -%}
+                  {%- else -%}
+                    {%- assign combo_title = 'products.product.combination_sold_out' | t -%}
+                    {%- assign combo_text = 'products.product.combination_sold_out_text' | t -%}
+                    {%- render 'notice', tone: 'caution', title: combo_title, text: combo_text -%}
+                  {%- endif -%}
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+          </div>
+        </div>
+        <div class="ft">
+          {%- capture done_attrs %}data-act="sheet-done"{% if selected_variant == blank %} aria-disabled="true"{% endif %}{% endcapture -%}
+          {%- render 'button', label: confirm, size: 'lg', block: true, attrs: done_attrs -%}
+          <p class="t-fine" style="text-align:center;margin:0" role="status" data-line>{% if selected_variant == blank %}{{ 'products.product.select_size' | t }}{% else %}{{ 'products.product.returns_to_add' | t }}{% endif %}</p>
+        </div>
+      </div>
+    {%- else -%}
+      {{ skeleton }}
+    {%- endif -%}
+  </aside>
+  <template data-ov-loading>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: title_text, close_label: close_text, id: 'ov-title-variant' -%}
+    {{ skeleton }}
+  </template>
+  <template data-ov-error>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: title_text, close_label: close_text, id: 'ov-title-variant' -%}
+    <div class="bd" style="padding-top:24px">
+      <div class="fc-notice fc-notice-danger" role="alert">{% render 'icon', icon: 'warning-circle', size: 20, class: 'fc-notice-icon' %}<div><p class="fc-notice-title">{{ 'products.product.qv_error_title' | t }}</p><p class="fc-notice-text">{{ 'general.errors.network' | t }}</p><a href="#" data-act="ov-retry">{{ 'general.errors.try_again' | t }}</a></div></div>
+    </div>
+  </template>
+</div>
+
+{% schema %}
+{
+  "name": "Variant selector sheet",
+  "tag": "section",
+  "class": "dl-section dl-variant-sheet",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_sku",
+      "label": "Show SKU",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_engraving",
+      "label": "Show engraving",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_selling_plans",
+      "label": "Show purchase options",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "confirm_label",
+      "label": "Confirm label",
+      "default": "Done"
+    },
+    {
+      "type": "text",
+      "id": "unavailable_text",
+      "label": "Unavailable message",
+      "default": "This combination is sold out. Choose another finish or size."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "option-group",
+      "name": "Option group",
+      "settings": [
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "swatch",
+          "options": [
+            {
+              "value": "swatch",
+              "label": "Material swatches"
+            },
+            {
+              "value": "chips",
+              "label": "Size chips"
+            },
+            {
+              "value": "select",
+              "label": "Select"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "option_name",
+          "label": "Option name",
+          "default": "Finish"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_guide",
+          "label": "Show size guide link",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "live-summary",
+      "name": "Live summary",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_image",
+          "label": "Show image",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_availability",
+          "label": "Show availability",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "engraving",
+      "name": "Engraving",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "range",
+          "id": "max_length",
+          "label": "Max characters",
+          "default": 16,
+          "min": 4,
+          "max": 32,
+          "step": 1
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Field label",
+          "default": "Engraving (optional)"
+        },
+        {
+          "type": "text",
+          "id": "final_sale",
+          "label": "Final-sale note",
+          "default": "Engraved pieces are final sale."
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

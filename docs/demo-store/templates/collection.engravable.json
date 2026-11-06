@@ -1,0 +1,405 @@
+{
+  "sections": {
+    "collection-hero": {
+      "type": "collection-hero",
+      "settings": {
+        "show_title": true,
+        "show_description": true,
+        "show_image": true,
+        "color_scheme": "scheme-2",
+        "eyebrow": "Collection",
+        "link_label": "",
+        "show_size_guide": true,
+        "show_count": true
+      },
+      "blocks": {
+        "fact-1": {
+          "type": "fact",
+          "settings": {
+            "label": "16 characters"
+          }
+        },
+        "fact-2": {
+          "type": "fact",
+          "settings": {
+            "label": "Final sale"
+          }
+        }
+      },
+      "block_order": [
+        "fact-1",
+        "fact-2"
+      ]
+    },
+    "collection-facets": {
+      "type": "collection-facets",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "enable_filtering": true,
+        "enable_sorting": true,
+        "show_count": true,
+        "sticky": true,
+        "mobile_style": "drawer"
+      },
+      "blocks": {
+        "filter-1": {
+          "type": "filter",
+          "settings": {
+            "filter_label": "Finish",
+            "style": "swatch",
+            "show_count": true
+          }
+        },
+        "filter-2": {
+          "type": "filter",
+          "settings": {
+            "filter_label": "Stone",
+            "style": "list",
+            "show_count": true
+          }
+        },
+        "filter-3": {
+          "type": "filter",
+          "settings": {
+            "filter_label": "Price",
+            "style": "price",
+            "show_count": false
+          }
+        },
+        "quick-chip-1": {
+          "type": "quick-chip",
+          "settings": {
+            "label": "Engravable",
+            "param": "filter.p.m.custom.engravable=true",
+            "default_on": false
+          }
+        },
+        "sort-1": {
+          "type": "sort",
+          "settings": {
+            "label": "Sort",
+            "default": "manual",
+            "show_price_sorts": true
+          }
+        }
+      },
+      "block_order": [
+        "filter-1",
+        "filter-2",
+        "filter-3",
+        "quick-chip-1",
+        "sort-1"
+      ]
+    },
+    "collection-grid": {
+      "type": "collection-grid",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "products_per_page": 12,
+        "pagination": "load_more",
+        "columns_desktop": "4",
+        "empty_title": "No pieces match",
+        "empty_text": "Remove a filter to see more.",
+        "load_more_label": "Show more"
+      },
+      "blocks": {
+        "merch-tile-1": {
+          "type": "merch-tile",
+          "settings": {
+            "position": 6,
+            "eyebrow": "Engrave",
+            "headline": "Made yours",
+            "link": "shopify://collections/engravable",
+            "tone": "alt",
+            "text": "Add a few words, free, in the time it takes to order.",
+            "link_label": "Engrave",
+            "engraving_text": "Always, M.",
+            "image": "shopify://shop_images/aurora-band-rose-gold.webp"
+          }
+        },
+        "empty-links-1": {
+          "type": "empty-links",
+          "settings": {
+            "label": "Shop all rings",
+            "collection": "rings",
+            "show": true
+          }
+        },
+        "card-options-1": {
+          "type": "card-options",
+          "settings": {
+            "show_quick_view": true,
+            "show_swatches": true,
+            "show_rating": false
+          }
+        }
+      },
+      "block_order": [
+        "merch-tile-1",
+        "empty-links-1",
+        "card-options-1"
+      ]
+    },
+    "collection-material-guide": {
+      "type": "collection-material-guide",
+      "settings": {
+        "eyebrow": "Materials",
+        "headline": "Start with the metal",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "layout": "chips"
+      },
+      "blocks": {
+        "metal-link-1": {
+          "type": "metal-link",
+          "settings": {
+            "metal": "yellow-gold",
+            "line": ""
+          }
+        },
+        "metal-link-2": {
+          "type": "metal-link",
+          "settings": {
+            "metal": "rose-gold",
+            "line": ""
+          }
+        },
+        "metal-link-3": {
+          "type": "metal-link",
+          "settings": {
+            "metal": "white-gold",
+            "line": ""
+          }
+        },
+        "metal-link-4": {
+          "type": "metal-link",
+          "settings": {
+            "metal": "platinum",
+            "line": ""
+          }
+        },
+        "stone-link-1": {
+          "type": "stone-link",
+          "settings": {
+            "stone": "diamond",
+            "line": ""
+          }
+        },
+        "stone-link-2": {
+          "type": "stone-link",
+          "settings": {
+            "stone": "sapphire",
+            "line": ""
+          }
+        },
+        "stone-link-3": {
+          "type": "stone-link",
+          "settings": {
+            "stone": "emerald",
+            "line": ""
+          }
+        },
+        "stone-link-4": {
+          "type": "stone-link",
+          "settings": {
+            "stone": "ruby",
+            "line": ""
+          }
+        },
+        "guide-link-1": {
+          "type": "guide-link",
+          "settings": {
+            "label": "Materials guide",
+            "link": "shopify://pages/materials",
+            "note": ""
+          }
+        }
+      },
+      "block_order": [
+        "metal-link-1",
+        "metal-link-2",
+        "metal-link-3",
+        "metal-link-4",
+        "stone-link-1",
+        "stone-link-2",
+        "stone-link-3",
+        "stone-link-4",
+        "guide-link-1"
+      ]
+    },
+    "collection-story": {
+      "type": "collection-story",
+      "settings": {
+        "eyebrow": "The story",
+        "headline": "Cut to catch the room",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "body": "<p>Each ring in this collection starts as a wax carving.</p>",
+        "image_alt": "",
+        "image": "shopify://shop_images/aurora-band-rose-gold.webp"
+      },
+      "blocks": {
+        "paragraph-1": {
+          "type": "paragraph",
+          "settings": {
+            "text": "<p>The metal is cast, the stone set under magnification, and the surface polished by hand until it holds no marks.</p>",
+            "size": "body",
+            "muted": true
+          }
+        },
+        "detail-1": {
+          "type": "detail",
+          "settings": {
+            "label": "Setting",
+            "value": "Four-prong, low",
+            "note": ""
+          }
+        },
+        "detail-2": {
+          "type": "detail",
+          "settings": {
+            "label": "Band",
+            "value": "2.1 mm, comfort fit",
+            "note": ""
+          }
+        },
+        "detail-3": {
+          "type": "detail",
+          "settings": {
+            "label": "Finish",
+            "value": "High polish",
+            "note": ""
+          }
+        }
+      },
+      "block_order": [
+        "paragraph-1",
+        "detail-1",
+        "detail-2",
+        "detail-3"
+      ]
+    },
+    "collection-faq": {
+      "type": "collection-faq",
+      "settings": {
+        "eyebrow": "Help",
+        "headline": "Before you choose",
+        "sub": "",
+        "color_scheme": "scheme-2",
+        "single_open": true
+      },
+      "blocks": {
+        "faq-1": {
+          "type": "faq",
+          "settings": {
+            "title": "How do I choose?",
+            "answer": "<p>Start with the metal, then the stone. The size guide covers the rest.</p>"
+          }
+        },
+        "faq-2": {
+          "type": "faq",
+          "settings": {
+            "title": "Can I engrave a piece?",
+            "answer": "<p>Rings, bands and select pendants can be engraved.</p>"
+          }
+        },
+        "faq-3": {
+          "type": "faq",
+          "settings": {
+            "title": "How fast is delivery?",
+            "answer": "<p>Free overnight delivery on every order.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "faq-1",
+        "faq-2",
+        "faq-3"
+      ]
+    },
+    "collection-closing-tile": {
+      "type": "collection-closing-tile",
+      "settings": {
+        "eyebrow": "Engrave",
+        "headline": "Made yours",
+        "sub": "Add a few words, free, in the time it takes to order.",
+        "color_scheme": "scheme-3",
+        "cta_label": "Engrave",
+        "cta_link": "shopify://collections/engravable",
+        "link_label": "Send a gift card",
+        "link": "shopify://products/gift-card",
+        "image_alt": ""
+      }
+    },
+    "collection-recommendations": {
+      "type": "collection-recommendations",
+      "settings": {
+        "eyebrow": "",
+        "headline": "Keep exploring",
+        "sub": "",
+        "color_scheme": "scheme-1",
+        "show_recently_viewed": true
+      },
+      "blocks": {
+        "link-1": {
+          "type": "link",
+          "settings": {
+            "label": "All collections",
+            "link": "/collections",
+            "align": "end"
+          }
+        },
+        "recent-1": {
+          "type": "recent",
+          "settings": {
+            "limit": 4,
+            "title": "Recently viewed",
+            "show_price": true
+          }
+        },
+        "collection-1": {
+          "type": "collection",
+          "settings": {
+            "collection": "rings"
+          }
+        },
+        "collection-2": {
+          "type": "collection",
+          "settings": {
+            "collection": "necklaces"
+          }
+        },
+        "collection-3": {
+          "type": "collection",
+          "settings": {
+            "collection": "earrings"
+          }
+        },
+        "collection-4": {
+          "type": "collection",
+          "settings": {
+            "collection": "bracelets"
+          }
+        }
+      },
+      "block_order": [
+        "collection-1",
+        "collection-2",
+        "collection-3",
+        "collection-4",
+        "link-1",
+        "recent-1"
+      ]
+    }
+  },
+  "order": [
+    "collection-hero",
+    "collection-facets",
+    "collection-grid",
+    "collection-material-guide",
+    "collection-story",
+    "collection-faq",
+    "collection-closing-tile",
+    "collection-recommendations"
+  ]
+}

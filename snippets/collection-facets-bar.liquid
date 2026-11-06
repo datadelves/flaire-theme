@@ -1,0 +1,240 @@
+{%- comment -%}
+  The filter bar (prototype facetsHtml): link-style filter popovers, quick chips, the phone "Filter and sort"
+  button, live count, Sort popover and the active filter chips, all inside one GET <form data-facets-form>
+  so it works without JavaScript. Used by collection-facets and main-search.
+
+  Accepts:
+  - results {Object} collection or search
+  - action {String} form action (collection.url or routes.search_url)
+  - blocks {Array} section blocks (filter, sort, quick-chip). Filters no block names (whatever Search & Discovery
+    adds: availability, price, product type, vendor, variant options) still render: list/price filters as popovers,
+    boolean filters as chips
+  - enable_filtering {Boolean}
+  - enable_sorting {Boolean}
+  - show_count {Boolean}
+  - count {Number} filtered result count
+  - clear_url {String} "Clear all" destination
+  - mobile_label {String} phone button label (default "Filter and sort")
+  - hidden_html {String} extra hidden inputs (search terms)
+  - is_search {Boolean}
+{%- endcomment -%}
+{%- liquid
+  assign filter_blocks = blocks | where: 'type', 'filter'
+  assign chip_blocks = blocks | where: 'type', 'quick-chip'
+  assign sort_block = blocks | where: 'type', 'sort' | first
+
+  assign sort_label = sort_block.settings.label
+  if sort_label == blank
+    assign sort_label = 'products.facets.sort' | t
+  endif
+  assign show_price_sorts = true
+  if sort_block and sort_block.settings.show_price_sorts == false
+    assign show_price_sorts = false
+  endif
+
+  assign current_sort = results.sort_by | default: results.default_sort_by
+  if current_sort == blank
+    if is_search
+      assign current_sort = 'relevance'
+    else
+      assign current_sort = 'manual'
+    endif
+  endif
+  if is_search
+    assign sort_values = 'relevance,price-ascending,price-descending' | split: ','
+  else
+    assign sort_list = 'manual,best-selling'
+    assign sort_list = sort_list | append: ',created-descending,price-ascending,price-descending,title-ascending'
+    assign sort_values = sort_list | split: ','
+  endif
+
+  comment
+    Param names of the filters a block already renders (a filter block by label, a quick chip by param).
+  endcomment
+  assign handled = '|'
+  for block in filter_blocks
+    assign want = block.settings.filter_label | downcase | strip
+    for filter in results.filters
+      assign have = filter.label | downcase | strip
+      if have == want and filter.type != 'boolean'
+        assign handled = handled | append: filter.param_name | append: '|'
+      endif
+    endfor
+  endfor
+  for block in chip_blocks
+    if block.settings.label == blank
+      continue
+    endif
+    assign chip_param = block.settings.param | split: '='
+    assign chip_name = chip_param[0] | strip
+    assign chip_v = chip_param[1] | strip | downcase
+    for filter in results.filters
+      if filter.param_name == chip_name
+        assign chip_found = false
+        if filter.type == 'boolean'
+          assign chip_found = true
+        else
+          for value in filter.values
+            assign v1 = value.value | downcase
+            assign v2 = value.label | downcase
+            if v1 == chip_v or v2 == chip_v
+              assign chip_found = true
+            endif
+          endfor
+        endif
+        if chip_found
+          assign handled = handled | append: chip_name | append: '|'
+        endif
+      endif
+    endfor
+  endfor
+
+  assign active_total = 0
+  for filter in results.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value != nil or filter.max_value.value != nil
+        assign active_total = active_total | plus: 1
+      endif
+    else
+      assign active_total = active_total | plus: filter.active_values.size
+    endif
+  endfor
+
+  assign m_label = mobile_label | default: ''
+  if m_label == blank
+    assign m_label = 'products.facets.filter_and_sort' | t
+  endif
+-%}
+<form action="{{ action }}" method="get" data-facets-form>
+  {{- hidden_html -}}
+  <div class="wrap">
+    <div class="dl-filters">
+      {%- if enable_filtering -%}
+        <div class="group d dl-pop-anchor">
+          {%- for block in filter_blocks -%}
+            {%- assign want = block.settings.filter_label | downcase | strip -%}
+            {%- for filter in results.filters -%}
+              {%- assign have = filter.label | downcase | strip -%}
+              {%- if have == want and filter.type != 'boolean' -%}
+                {%- render 'collection-facets-pop', filter: filter, style: block.settings.style, show_count: block.settings.show_count, count: count -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {%- for filter in results.filters -%}
+            {%- assign f_key = '|' | append: filter.param_name | append: '|' -%}
+            {%- if handled contains f_key -%}{%- continue -%}{%- endif -%}
+            {%- if filter.type == 'list' or filter.type == 'price_range' -%}
+              {%- assign auto_style = 'list' -%}
+              {%- if filter.param_name contains 'option.finish' or filter.presentation == 'swatch' -%}{%- assign auto_style = 'swatch' -%}{%- endif -%}
+              {%- render 'collection-facets-pop', filter: filter, style: auto_style, show_count: true, count: count -%}
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- for block in chip_blocks -%}
+              {%- liquid
+                assign param = block.settings.param | split: '='
+                assign p_name = param[0] | strip
+                assign p_value = param[1] | strip | downcase
+                assign chip_value = nil
+                for filter in results.filters
+                  if filter.param_name == p_name
+                    if filter.type == 'boolean'
+                      if p_value == 'false' or p_value == '0'
+                        assign chip_value = filter.false_value
+                      else
+                        assign chip_value = filter.true_value
+                      endif
+                    else
+                      for value in filter.values
+                        assign v1 = value.value | downcase
+                        assign v2 = value.label | downcase
+                        if v1 == p_value or v2 == p_value
+                          assign chip_value = value
+                        endif
+                      endfor
+                    endif
+                  endif
+                endfor
+              -%}
+              {%- if block.settings.label != blank and chip_value != nil -%}
+                <label class="dl-chip sm{% if chip_value.active %} is-on{% endif %}" {{ block.shopify_attributes }}><input type="checkbox" class="fc-sr" name="{{ chip_value.param_name }}" value="{{ chip_value.value | escape }}"{% if chip_value.active %} checked{% endif %}><span>{{ block.settings.label | escape }}</span></label>
+              {%- elsif block.settings.label != blank and request.design_mode -%}
+                <span class="dl-chip sm" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</span>
+              {%- endif -%}
+          {%- endfor -%}
+          {%- for filter in results.filters -%}
+            {%- assign f_key = '|' | append: filter.param_name | append: '|' -%}
+            {%- if filter.type == 'boolean' and filter.true_value -%}
+              {%- unless handled contains f_key -%}
+                {%- assign tv = filter.true_value -%}
+                <label class="dl-chip sm{% if tv.active %} is-on{% endif %}"><input type="checkbox" class="fc-sr" name="{{ tv.param_name }}" value="{{ tv.value | escape }}"{% if tv.active %} checked{% endif %}><span>{{ filter.label | escape }}</span></label>
+              {%- endunless -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if enable_filtering or enable_sorting -%}
+        <button class="fc-btn fc-btn-secondary fc-btn-sm dl-filter-m js-only" type="button" data-open="filters">{% render 'icon', icon: 'sliders-horizontal', size: 16 %}<span>{{ m_label | escape }}{% if active_total > 0 %} ({{ active_total }}){% endif %}</span></button>
+      {%- endif -%}
+
+      <div class="group">
+        {%- if show_count -%}
+          <span class="count" role="status" aria-live="polite">{{ 'general.pieces' | t: count: count }}</span>
+        {%- endif -%}
+        {%- if enable_sorting -%}
+          {%- capture current_label -%}{%- render 'collection-facets-sort-name', value: current_sort, options: results.sort_options -%}{%- endcapture -%}
+          <span class="dl-pop-anchor"><button class="fc-btn fc-btn-link" type="button" style="font-size:14px" aria-expanded="false" aria-controls="pop-sort" data-act="pop" data-pop="sort"><span>{{ sort_label | escape }}:</span> <span>{{ current_label | strip }}</span> {% render 'icon', icon: 'caret-down', size: 14 %}</button>
+            <div class="dl-pop scheme-1" id="pop-sort" role="radiogroup" aria-label="{{ sort_label | escape }}" style="right:0;left:auto" hidden>
+              {%- assign sort_in_list = false -%}
+              {%- for sv in sort_values -%}
+                {%- if sv == 'price-ascending' or sv == 'price-descending' -%}
+                  {%- unless show_price_sorts -%}{%- continue -%}{%- endunless -%}
+                {%- endif -%}
+                {%- if sv == current_sort -%}{%- assign sort_in_list = true -%}{%- endif -%}
+                {%- capture sl -%}{%- render 'collection-facets-sort-name', value: sv, options: results.sort_options -%}{%- endcapture -%}
+                <label><input type="radio" name="sort_by" value="{{ sv }}"{% if sv == current_sort %} checked{% endif %} style="width:20px;height:20px;accent-color:var(--action)">{{ sl }}</label>
+              {%- endfor -%}
+              {%- unless sort_in_list -%}
+                <label><input type="radio" name="sort_by" value="{{ current_sort | escape }}" checked style="width:20px;height:20px;accent-color:var(--action)">{{ current_label | strip }}</label>
+              {%- endunless -%}
+            </div>
+          </span>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- if enable_filtering and active_total > 0 -%}
+      <div class="dl-active" aria-label="{{ 'products.facets.active_filters' | t }}">
+        {%- for filter in results.filters -%}
+          {%- if filter.type == 'price_range' -%}
+            {%- if filter.min_value.value != nil or filter.max_value.value != nil -%}
+              {%- liquid
+                assign p_min = filter.min_value.value | default: 0 | money_without_trailing_zeros
+                if filter.max_value.value != nil
+                  assign p_max = filter.max_value.value | money_without_trailing_zeros
+                else
+                  assign p_max = 'products.facets.price_any' | t
+                endif
+                assign chip_label = 'products.facets.price_range' | t: min: p_min, max: p_max
+              -%}
+              <a class="dl-chip sm" href="{{ filter.url_to_remove }}" data-facet-link>{{ chip_label }} {% render 'icon', icon: 'x', size: 14 %}<span class="fc-sr">{{ 'products.facets.remove' | t: label: chip_label }}</span></a>
+            {%- endif -%}
+          {%- else -%}
+            {%- for value in filter.active_values -%}
+              {%- liquid
+                assign chip_label = value.label
+                if filter.type == 'boolean'
+                  assign chip_label = filter.label
+                endif
+              -%}
+              <a class="dl-chip sm" href="{{ value.url_to_remove }}" data-facet-link>{{ chip_label | escape }} {% render 'icon', icon: 'x', size: 14 %}<span class="fc-sr">{{ 'products.facets.remove' | t: label: chip_label }}</span></a>
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endfor -%}
+        <a class="fc-btn fc-btn-link fc-btn-sm no-chev" href="{{ clear_url }}" data-facet-link><span>{{ 'products.facets.clear_all' | t }}</span></a>
+      </div>
+    {%- endif -%}
+    <div class="no-js-only coll-facets-apply">{%- assign apply_label = 'products.facets.apply' | t -%}{%- render 'button', label: apply_label, size: 'sm', type: 'submit' -%}</div>
+  </div>
+</form>

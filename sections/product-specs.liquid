@@ -1,0 +1,415 @@
+{%- capture base_id -%}{% render 'product-base-variant', product: product %}{%- endcapture -%}
+{%- liquid
+  assign base_id = base_id | strip
+  assign spec_variant = product.selected_or_first_available_variant
+  for v in product.variants
+    assign vid = v.id | append: ''
+    if vid == base_id
+      assign spec_variant = v
+      break
+    endif
+  endfor
+-%}
+{%- comment -%}
+  Values come from the blocks and section settings. Connect them to product metafields (dynamic sources) for
+  values per product: rows with an empty value are skipped, so unconnected products show only what they have.
+  Rows set to the stone group column are listed under the first stone group. A row value can give one value per
+  finish ("Yellow Gold: 18-karat yellow gold; Platinum: Platinum 950") or list entries that name the finish
+  ("18-karat yellow gold, Platinum 950"): the selected finish's entry is shown. {hallmark} is the fineness stamp of that finish: 950 for platinum, 750 for gold.
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign finish_name = ''
+  if product != blank
+    for option in product.options_with_values
+      assign option_name = option.name | downcase
+      if option_name == 'finish' or option_name == 'metal'
+        assign finish_name = spec_variant.options[forloop.index0]
+      endif
+    endfor
+  endif
+  assign finish_down = finish_name | downcase
+  assign hallmark = ''
+  if finish_down contains 'platinum'
+    assign hallmark = '950'
+  elsif finish_down contains 'gold'
+    assign hallmark = '750'
+  endif
+-%}
+
+{%- liquid
+  assign material_rows = ''
+  assign group_rows = ''
+-%}
+{%- for block in section.blocks -%}
+    {%- if block.type == 'spec-row' -%}
+      {%- liquid
+        assign row_label = block.settings.label
+        assign row_value = block.settings.value | default: '' | append: '' | strip
+        if row_value contains ': ' and row_value contains ';'
+          comment
+            One value per finish: "Yellow Gold: 18-karat yellow gold; Platinum: Platinum 950". No match hides the row.
+          endcomment
+          assign pairs = row_value | split: ';'
+          assign row_value = ''
+          for pair in pairs
+            assign pair_key = pair | split: ':' | first
+            assign pair_key_down = pair_key | strip | downcase
+            if finish_down != blank and pair_key_down == finish_down
+              assign row_value = pair | remove_first: pair_key | remove_first: ':' | strip
+              break
+            endif
+          endfor
+        elsif finish_down != blank and row_value contains ','
+          assign entries = row_value | split: ','
+          for entry in entries
+            assign entry_down = entry | downcase
+            if entry_down contains finish_down
+              assign row_value = entry | strip
+              break
+            endif
+          endfor
+        endif
+        if row_value contains '{hallmark}'
+          assign row_value = row_value | replace: '{hallmark}', hallmark | strip
+        endif
+      -%}
+      {%- capture row_html -%}
+        {%- if row_label != blank and row_value != blank -%}
+          <div class="fc-fact" {{ block.shopify_attributes }}><dt>{{ row_label | escape }}</dt><dd>{{ row_value | escape }}</dd></div>
+        {%- elsif row_label != blank and block.settings.hide_if_empty == false -%}
+          <div class="fc-fact" {{ block.shopify_attributes }}><dt>{{ row_label | escape }}</dt><dd></dd></div>
+        {%- endif -%}
+      {%- endcapture -%}
+      {%- if block.settings.column == 'group' -%}
+        {%- assign group_rows = group_rows | append: row_html -%}
+      {%- else -%}
+        {%- assign material_rows = material_rows | append: row_html -%}
+      {%- endif -%}
+    {%- endif -%}
+{%- endfor -%}
+
+{%- capture side_groups -%}
+  {%- assign group_done = false -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'stone-group' -%}
+      {%- capture stone_rows -%}
+        {%- assign lines = block.settings.rows | newline_to_br | split: '<br />' -%}
+        {%- for line in lines -%}
+          {%- assign line = line | strip -%}
+          {%- if line == blank %}{% continue %}{% endif -%}
+          {%- assign cell_label = line | split: '|' | first | strip -%}
+          {%- assign cell_value = line | remove_first: cell_label | remove_first: '|' | strip -%}
+          {%- if cell_label == blank or cell_value == blank %}{% continue %}{% endif -%}
+          <div class="fc-fact"><dt>{{ cell_label | escape }}</dt><dd>{{ cell_value | escape }}</dd></div>
+        {%- endfor -%}
+        {%- unless group_done %}{{ group_rows }}{% endunless -%}
+      {%- endcapture -%}
+      {%- assign group_done = true -%}
+      {%- if block.settings.title != blank -%}
+        <div {{ block.shopify_attributes }}>
+          <p class="t-overline" style="margin-bottom:8px">{{ block.settings.title | escape }}</p>
+          {%- if stone_rows != blank %}<dl class="fc-facts">{{ stone_rows }}</dl>{% endif -%}
+        </div>
+      {%- elsif stone_rows != blank -%}
+        <div {{ block.shopify_attributes }}><dl class="fc-facts">{{ stone_rows }}</dl></div>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if group_done == false and group_rows != blank %}<div><dl class="fc-facts">{{ group_rows }}</dl></div>{% endif -%}
+{%- endcapture -%}
+{%- if side_groups == blank -%}
+  {%- capture side_groups -%}
+    {%- assign dims_raw = section.settings.dimensions | default: '' | append: '' | strip -%}
+    {%- capture dim_rows -%}
+      {%- if dims_raw != blank -%}
+        {%- assign dim_parts = dims_raw | split: ';' -%}
+        {%- for part in dim_parts -%}
+          {%- assign part = part | strip -%}
+          {%- if part == blank %}{% continue %}{% endif -%}
+          {%- if part contains ':' -%}
+            {%- assign dim_label = part | split: ':' | first | strip -%}
+            {%- assign dim_value = part | remove_first: dim_label | remove_first: ':' | strip -%}
+            <div class="fc-fact"><dt>{{ dim_label | escape }}</dt><dd>{{ dim_value | escape }}</dd></div>
+          {%- else -%}
+            <div class="fc-fact"><dt>{{ 'products.specs.dimensions' | t }}</dt><dd>{{ part | escape }}</dd></div>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- else -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'dimensions' and block.settings.label != blank and block.settings.value != blank -%}
+            <div class="fc-fact" {{ block.shopify_attributes }}><dt>{{ block.settings.label | escape }}</dt><dd>{{ block.settings.value | escape }}{% if block.settings.note != blank %}<br><span class="t-fine">{{ block.settings.note | escape }}</span>{% endif %}</dd></div>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    {%- endcapture -%}
+    {%- if dim_rows != blank -%}
+      <div><p class="t-overline" style="margin-bottom:8px">{{ 'products.specs.dimensions' | t }}</p><dl class="fc-facts">{{ dim_rows }}</dl></div>
+    {%- endif -%}
+  {%- endcapture -%}
+{%- endif -%}
+
+{%- capture links -%}
+  {%- if section.settings.show_certificate and section.settings.certificate != blank -%}
+    {%- assign label_certificate = 'products.specs.certificate' | t -%}
+    <p style="margin-top:24px">{% render 'button', variant: 'link', label: label_certificate, url: section.settings.certificate, attrs: 'target="_blank" rel="noopener"' %}</p>
+  {%- endif -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'download' and block.settings.link != blank and block.settings.label != blank -%}
+      <p style="margin-top:24px" {{ block.shopify_attributes }}>{% render 'button', variant: 'link', label: block.settings.label, url: block.settings.link %}{% if block.settings.note != blank %} <span class="t-fine">{{ block.settings.note | escape }}</span>{% endif %}</p>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if material_rows != blank or side_groups != blank or links != blank -%}
+<div class="band {{ scheme }}" data-section="product-specs" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-c">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, role: 't-title-lg', left: true -%}
+    <div class="split" style="align-items:start">
+      {%- if material_rows != blank -%}
+        <div><p class="t-overline" style="margin-bottom:8px">{{ 'products.specs.material' | t }}</p><dl class="fc-facts">{{ material_rows }}</dl></div>
+      {%- endif -%}
+      {{ side_groups }}
+    </div>
+    {{- links -}}
+  </div>
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Specifications",
+  "tag": "section",
+  "class": "dl-section dl-product-specs",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Specifications"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "text",
+      "id": "dimensions",
+      "label": "Dimensions",
+      "info": "Label: value pairs separated by semicolons, for example Band width: 2.1 mm; Weight: 2.4 g. Shown when no stone group has values; replaces the dimension blocks."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_certificate",
+      "label": "Show certificate link",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "certificate",
+      "label": "Certificate",
+      "info": "Connect a product metafield for a grading report per product."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "spec-row",
+      "name": "Row",
+      "limit": 10,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Metal"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value",
+          "default": "18-karat rose gold",
+          "info": "Connect a product metafield for values per product, or give one value per finish as Finish: text pairs separated by semicolons. {hallmark} shows 750 or 950 for the selected finish."
+        },
+        {
+          "type": "checkbox",
+          "id": "hide_if_empty",
+          "label": "Hide if empty",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "column",
+          "label": "Column",
+          "default": "material",
+          "options": [
+            {
+              "value": "material",
+              "label": "Material"
+            },
+            {
+              "value": "group",
+              "label": "Stone group"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "stone-group",
+      "name": "Stone group",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Diamond"
+        },
+        {
+          "type": "textarea",
+          "id": "rows",
+          "label": "Rows (label | value)",
+          "default": "Carat | 0.50\nColor | F\nClarity | VS1\nCut | Round brilliant",
+          "info": "One row per line. Rows with an empty value are skipped. For values per product use rows set to the stone group column."
+        },
+        {
+          "type": "checkbox",
+          "id": "open",
+          "label": "Open",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "dimensions",
+      "name": "Dimensions",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Band width"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value",
+          "default": "2.1 mm"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note"
+        }
+      ]
+    },
+    {
+      "type": "download",
+      "name": "Download",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Grading report"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Specifications",
+      "blocks": [
+        {
+          "type": "spec-row"
+        },
+        {
+          "type": "spec-row"
+        },
+        {
+          "type": "spec-row"
+        },
+        {
+          "type": "spec-row"
+        },
+        {
+          "type": "stone-group"
+        },
+        {
+          "type": "stone-group"
+        },
+        {
+          "type": "stone-group"
+        },
+        {
+          "type": "dimensions"
+        },
+        {
+          "type": "dimensions"
+        },
+        {
+          "type": "dimensions"
+        },
+        {
+          "type": "dimensions"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

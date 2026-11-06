@@ -1,0 +1,63 @@
+{%- comment -%}
+  Facet Breadcrumb: Home > parent > current, built from the current template.
+
+  Accepts:
+  - items_html {String} raw links to place between Home and the current page (overrides the automatic parent)
+  - current {String} current page label (default from the template object)
+{%- endcomment -%}
+{%- liquid
+  assign label = current
+  assign parent_url = ''
+  assign parent_title = ''
+  case request.page_type
+    when 'product'
+      if label == blank
+        assign label = product.title
+      endif
+      if collection
+        assign parent_url = collection.url
+        assign parent_title = collection.title
+      elsif product.collections.size > 0
+        assign parent_url = product.collections.first.url
+        assign parent_title = product.collections.first.title
+        for c in product.collections
+          if c.handle == 'rings' or c.handle == 'necklaces' or c.handle == 'earrings' or c.handle == 'bracelets'
+            assign parent_url = c.url
+            assign parent_title = c.title
+            break
+          endif
+        endfor
+      endif
+    when 'collection'
+      if label == blank
+        assign label = collection.title
+      endif
+    when 'article'
+      if label == blank
+        assign label = article.title
+      endif
+      assign parent_url = blog.url
+      assign parent_title = blog.title
+    when 'blog'
+      if label == blank
+        assign label = blog.title
+      endif
+    when 'page'
+      if label == blank
+        assign label = page.title
+      endif
+    when 'search'
+      if label == blank
+        assign label = 'search.title' | t
+      endif
+  endcase
+-%}
+<nav class="dl-crumb" aria-label="{{ 'general.breadcrumb' | t }}">
+  <a href="{{ routes.root_url }}">{{ 'general.home' | t }}</a>{% render 'icon', icon: 'caret-right', size: 12 %}
+  {%- if items_html != blank -%}
+    {{ items_html }}
+  {%- elsif parent_url != blank -%}
+    <a href="{{ parent_url }}">{{ parent_title | escape }}</a>{% render 'icon', icon: 'caret-right', size: 12 %}
+  {%- endif -%}
+  <span aria-current="page">{{ label | escape }}</span>
+</nav>

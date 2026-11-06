@@ -1,0 +1,117 @@
+{%- comment -%}
+  Facet MaterialSwatch as a preview control (home sections): caption "Finish. Rose Gold" and a radiogroup of
+  metal or stone dots. The kernel's swatch preview (BUILD.md 8.6) reads data-value, data-label and, when a
+  product is given, data-img / data-srcset of that finish's variant image to swap img[data-swatch-img].
+  Product configurators use product-options instead.
+
+  Accepts:
+  - values {String} comma-separated handles (yellow-gold,rose-gold,...); default: the product's Finish values
+  - product {Object} optional; gives option value names, sold-out state and variant images per finish
+  - value {String} selected handle (default the first)
+  - cap {String} caption key, e.g. "Finish"
+  - token {String} metal | gem: dot colour token (default metal); an option value's swatch image or color wins
+  - size {Number} display px of the swapped photo, for data-srcset (default 560)
+  - center {Boolean} centred caption and row (featured product)
+  - panels {String} optional data-panels group name: the kernel then toggles only
+    [data-swatch-panel-group="{panels}"] panels
+
+  Usage: {% render 'material-swatch', product: product, value: 'rose-gold', cap: finish_cap, center: true %}
+{%- endcomment -%}
+{%- liquid
+  assign token = token | default: 'metal'
+  assign size = size | default: 560
+  assign finish_option = nil
+  if product != blank
+    for option in product.options_with_values
+      assign option_name = option.name | downcase
+      if option_name == 'finish' or option_name == 'metal'
+        assign finish_option = option
+      endif
+    endfor
+  endif
+  assign handle_list = values | default: ''
+  if values == blank and finish_option
+    capture handle_list
+      for v in finish_option.values
+        echo v.name | handleize
+        unless forloop.last
+          echo ','
+        endunless
+      endfor
+    endcapture
+  endif
+  assign handles = handle_list | split: ','
+  assign selected = value | default: handles.first | strip
+-%}
+{%- if handles.size > 0 -%}
+  {%- capture buttons -%}
+    {%- for raw in handles -%}
+      {%- liquid
+        assign handle = raw | strip
+        assign words = handle | split: '-'
+        capture name
+          for w in words
+            echo w | capitalize
+            unless forloop.last
+              echo ' '
+            endunless
+          endfor
+        endcapture
+        assign off = false
+        assign img = nil
+        assign href = ''
+        assign dot_bg = 'var(--' | append: token | append: '-' | append: handle | append: ')'
+        if finish_option
+          for v in finish_option.values
+            assign vh = v.name | handleize
+            if vh == handle
+              assign name = v.name
+              if v.available == false
+                assign off = true
+              endif
+              if v.variant.featured_media
+                assign img = v.variant.featured_media.preview_image
+              endif
+              if v.variant
+                assign href = v.variant.url
+              endif
+              if v.swatch.image
+                assign dot_image = v.swatch.image | image_url: width: 64
+                assign dot_bg = 'url(' | append: dot_image | append: ') center/cover'
+              elsif v.swatch.color
+                assign dot_bg = v.swatch.color
+              endif
+            endif
+          endfor
+        endif
+        assign on = false
+        if handle == selected
+          assign on = true
+          assign selected_name = name
+        endif
+      -%}
+      {%- capture img_attrs -%}
+        {%- if img != blank -%}
+          {%- liquid
+            assign w1 = size
+            assign w2 = size | times: 2
+            assign w3 = size | times: 3
+            if w3 > img.width
+              assign w3 = img.width
+            endif
+            if w2 > img.width
+              assign w2 = img.width
+            endif
+            if w1 > img.width
+              assign w1 = img.width
+            endif
+          -%}
+          {{- ' ' }}data-img="{{ img | image_url: width: w2 }}" data-srcset="{{ img | image_url: width: w1 }} {{ w1 }}w, {{ img | image_url: width: w2 }} {{ w2 }}w, {{ img | image_url: width: w3 }} {{ w3 }}w"{% if img.alt != blank %} data-alt="{{ img.alt | escape }}"{% endif %}
+        {%- endif -%}
+        {%- if href != blank %} data-href="{{ href }}"{% endif -%}
+      {%- endcapture -%}
+      <button type="button" role="radio" aria-checked="{{ on }}" aria-label="{{ name | escape }}{% if off %} {{ 'products.product.sold_out_suffix' | t }}{% endif %}"{% if off %} aria-disabled="true"{% endif %} class="fc-swatch-opt{% if on %} is-on{% endif %}{% if off %} is-off{% endif %}" data-value="{{ handle }}" data-label="{{ name | escape }}"{{ img_attrs }} tabindex="{% if on %}0{% else %}-1{% endif %}"><span class="fc-swatch-dot" style="background:{{ dot_bg }}"></span></button>
+    {%- endfor -%}
+  {%- endcapture -%}
+  <div class="fc-swatch"{% if center %} style="text-align:center"{% endif %}><p class="fc-swatch-cap"><span class="fc-swatch-k">{{ cap }}. </span><span class="fc-swatch-v" data-swatch-label>{{ selected_name | escape }}</span></p><div role="radiogroup" aria-label="{{ cap | escape }}" class="fc-swatch-row"{% if center %} style="justify-content:center"{% endif %}{% if panels != blank %} data-panels="{{ panels }}"{% endif %} data-swatches>{{ buttons }}</div></div>
+{%- endif -%}

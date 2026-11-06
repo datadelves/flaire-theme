@@ -1,0 +1,20 @@
+{%- comment -%}
+  Section head: overline eyebrow, one heading and an optional lead line. Empty parts are omitted.
+
+  Accepts:
+  - eyebrow {String}
+  - heading {String} (may contain inline rich text)
+  - sub {String}
+  - level {Number} heading level (default 2)
+  - role {String} type role class (default t-headline)
+  - left {Boolean} left-aligned
+  - class {String}
+{%- endcomment -%}
+{%- assign level = level | default: 2 -%}
+{%- if eyebrow != blank or heading != blank or sub != blank -%}
+  <div class="sec-head{% if left %} left{% endif %}{% if class != blank %} {{ class }}{% endif %}">
+    {%- if eyebrow != blank %}<p class="t-overline">{{ eyebrow }}</p>{% endif -%}
+    {%- if heading != blank %}<h{{ level }} class="{{ role | default: 't-headline' }}">{{ heading }}</h{{ level }}>{% endif -%}
+    {%- if sub != blank %}<p class="t-lead">{{ sub }}</p>{% endif -%}
+  </div>
+{%- endif -%}

@@ -1,0 +1,251 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign fact_blocks = section.blocks | where: 'type', 'fact'
+  assign link_blocks = section.blocks | where: 'type', 'link'
+  assign note_block = section.blocks | where: 'type', 'note' | first
+  assign has_facts = false
+  for block in fact_blocks
+    if block.settings.label != blank
+      assign has_facts = true
+    endif
+  endfor
+  assign has_links = false
+  assign links_start = false
+  for block in link_blocks
+    if block.settings.label != blank and block.settings.link != blank
+      assign has_links = true
+      if block.settings.align == 'start'
+        assign links_start = true
+      endif
+    endif
+  endfor
+-%}
+<div data-section="collections-hero">
+  <div class="fc-tile {{ scheme }}{% if section.settings.image == blank %} nopad-b{% endif %}" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+    <div class="fc-tile-copy">
+      {%- if section.settings.eyebrow != blank %}<p class="fc-tile-eyebrow">{{ section.settings.eyebrow | escape }}</p>{% endif -%}
+      {%- if section.settings.headline != blank %}<h1 class="t-hero">{{ section.settings.headline }}</h1>{% endif -%}
+      {%- if section.settings.sub != blank %}<p class="fc-tile-sub">{{ section.settings.sub }}</p>{% endif -%}
+      {%- if has_facts -%}
+        <div class="facts">
+          {%- for block in fact_blocks -%}
+            {%- if block.settings.label != blank -%}
+              {%- if block.settings.link != blank -%}
+                <a class="fc-badge fc-badge-neutral" href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}{% if block.settings.detail != blank %}<span class="fc-sr"> {{ block.settings.detail | escape }}</span>{% endif %}</a>
+              {%- else -%}
+                <span class="fc-badge fc-badge-neutral" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}{% if block.settings.detail != blank %}<span class="fc-sr"> {{ block.settings.detail | escape }}</span>{% endif %}</span>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      {%- if has_links -%}
+        <div class="fc-tile-actions"{% if links_start %} style="justify-content:flex-start"{% endif %}>
+          {%- for block in link_blocks -%}
+            {%- if block.settings.label != blank and block.settings.link != blank -%}
+              {%- assign link_label = block.settings.label | escape -%}
+              {%- capture link_attrs -%}{{ block.shopify_attributes }}{%- endcapture -%}
+              {%- render 'button', variant: 'link', label: link_label, url: block.settings.link, attrs: link_attrs -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      {%- if note_block and note_block.settings.show and note_block.settings.text != blank -%}
+        <p class="t-caption" style="margin:var(--space-4) 0 0{% if note_block.settings.tone == 'ink' %};color:var(--ink){% endif %}" {{ note_block.shopify_attributes }}>{{ note_block.settings.text | escape }}</p>
+      {%- endif -%}
+    </div>
+    {%- if section.settings.image != blank -%}
+      <div class="fc-tile-art"><div class="hero-art" style="aspect-ratio:16/6">
+        {%- render 'product-photo', image: section.settings.image, size: 400, alt: section.settings.image_alt, loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 734px) 70vw, 400px' -%}
+      </div></div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Collections hero",
+  "tag": "section",
+  "class": "dl-section dl-collections-hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Collections"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Every collection"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Named for the light they catch."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "info": "Without an image, at least the top padding."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "fact",
+      "name": "Fact",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "text",
+          "id": "detail",
+          "label": "Detail"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Link",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop all"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "Align",
+          "default": "center",
+          "options": [
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "start",
+              "label": "Start"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "name": "Note",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Tone",
+          "default": "muted",
+          "options": [
+            {
+              "value": "muted",
+              "label": "Muted"
+            },
+            {
+              "value": "ink",
+              "label": "Default"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collections hero",
+      "blocks": [
+        {
+          "type": "fact"
+        },
+        {
+          "type": "fact"
+        },
+        {
+          "type": "fact"
+        },
+        {
+          "type": "link"
+        },
+        {
+          "type": "link"
+        },
+        {
+          "type": "note"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

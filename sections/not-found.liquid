@@ -1,0 +1,276 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-2'
+  assign search_label = 'accessibility.search' | t
+  assign search_placeholder = 'search.placeholder' | t
+-%}
+<div class="band {{ scheme }}" data-section="not-found" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom %}">
+  <div class="wrap-n center" style="text-align:center">
+    {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, level: 1, role: 't-display' -%}
+
+    {%- if section.settings.show_search -%}
+      <form class="dl-search-field" style="max-width:480px;margin:0 auto 24px;text-align:left" action="{{ routes.search_url }}" method="get" data-form="search" role="search">
+        {%- render 'icon', icon: 'magnifying-glass', size: 20 -%}
+        <input class="fc-input" type="search" name="q" placeholder="{{ search_placeholder | escape }}" autocomplete="off" aria-label="{{ search_label | escape }}">
+        <input type="hidden" name="options[prefix]" value="last">
+        <input type="hidden" name="type" value="product,article,page">
+      </form>
+    {%- endif -%}
+
+    {%- capture chips -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'category-link' -%}
+          {%- assign col = block.settings.collection -%}
+          {%- if col != blank -%}
+            {%- assign chip_label = block.settings.label | default: col.title -%}
+            {%- capture chip_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+            {%- if block.settings.style == 'link' -%}
+              {%- render 'button', label: chip_label, variant: 'link', size: 'sm', url: col.url, attrs: chip_attrs -%}
+            {%- else -%}
+              {%- render 'button', label: chip_label, variant: 'secondary', size: 'sm', url: col.url, attrs: chip_attrs -%}
+            {%- endif -%}
+          {%- elsif request.design_mode -%}
+            {%- assign chip_label = 'general.shop_all' | t -%}
+            {%- if block.settings.label != blank %}{% assign chip_label = block.settings.label %}{% endif -%}
+            <span class="fc-btn fc-btn-secondary fc-btn-sm" {{ block.shopify_attributes }}><span>{{ chip_label | escape }}</span></span>
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if chips != blank -%}
+      <div class="fc-chips" style="justify-content:center">{{ chips }}</div>
+    {%- endif -%}
+
+    {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
+      <p style="margin-top:32px">{%- render 'button', label: section.settings.cta_label, size: 'lg', url: section.settings.cta_link -%}</p>
+    {%- endif -%}
+
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'help' and block.settings.label != blank and block.settings.link != blank -%}
+        {%- capture help_attrs %}{{ block.shopify_attributes }}{% endcapture -%}
+        <p style="margin-top:32px">{%- render 'button', label: block.settings.label, variant: 'link', url: block.settings.link, attrs: help_attrs -%}</p>
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'featured-product' -%}
+        {%- if block.settings.product != blank or request.design_mode -%}
+          <div class="stack{% unless block.settings.show_price %} dl-nf-noprice{% endunless %}" style="gap:12px;max-width:300px;margin:48px auto 0;text-align:left" {{ block.shopify_attributes }}>
+            {%- if block.settings.eyebrow != blank %}<p class="t-overline">{{ block.settings.eyebrow | escape }}</p>{% endif -%}
+            {%- render 'product-card', product: block.settings.product, size: 180 -%}
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .dl-not-found .dl-nf-noprice .fc-price { display: none; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Page not found",
+  "tag": "section",
+  "class": "dl-section dl-not-found",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "404"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "This page has slipped away"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line",
+      "default": "Search for a piece or start from a category."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search field",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button link"
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "Desktop sizes. Tablets, phones and Compact section spacing (Theme settings > Layout) scale them down in proportion."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 120,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "category-link",
+      "name": "Category link",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "default": "secondary",
+          "options": [
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "link",
+              "label": "Link"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "help",
+      "name": "Help link",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Contact us"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "chat-circle-dots",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "featured-product",
+      "name": "Featured product",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "Most loved"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "404"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

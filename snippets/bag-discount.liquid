@@ -1,0 +1,41 @@
+{%- comment -%}
+  Bag discount UI (parts.mjs discountHtml): applied code rows with Remove, or the "Add a discount code"
+  toggle and its hidden code form (kernel cart-discount, BUILD.md 8.3).
+
+  Accepts:
+  - ctx {String} drawer | cart (makes the ids unique)
+
+  Usage: {% render 'bag-discount', ctx: 'drawer' %}
+{%- endcomment -%}
+{%- liquid
+  assign form_id = 'code-form-' | append: ctx
+  assign input_id = 'code-' | append: ctx
+-%}
+{%- for discount_code in cart.discount_codes -%}
+  {%- liquid
+    assign code_amount = cart.discount_applications | where: 'title', discount_code.code | sum: 'total_allocated_amount'
+    assign code_escaped = discount_code.code | escape
+    assign remove_label = 'cart.general.remove' | t
+  -%}
+  {%- capture remove_attrs -%}data-act="code-remove" data-code="{{ code_escaped }}" aria-label="{{ 'cart.discount.remove_label' | t }}"{%- endcapture -%}
+  <div class="dl-sumrow">
+    <span class="m">{{ 'cart.discount.code' | t }} <b>{{ code_escaped }}</b> {% render 'button', variant: 'link', size: 'sm', no_chev: true, label: remove_label, attrs: remove_attrs %}</span>
+    <span>{% if discount_code.applicable and code_amount > 0 %}−{{ code_amount | money }}{% else %}{{ 'cart.discount.not_applied' | t }}{% endif %}</span>
+  </div>
+{%- else -%}
+  <button class="fc-btn fc-btn-link no-chev js-only" type="button" aria-expanded="false" aria-controls="{{ form_id }}" style="justify-self:start;font-size:14px" data-act="code-toggle" data-hide-when-open>
+    {%- render 'icon', icon: 'plus', size: 16 -%}
+    <span>{{ 'cart.discount.add' | t }}</span>
+  </button>
+  <form class="stack" style="gap:8px" data-form="code" data-ctx="{{ ctx }}" id="{{ form_id }}" novalidate hidden>
+    {%- assign code_label = 'cart.discount.field_label' | t -%}
+    {%- render 'field', label: code_label, name: 'discount', id: input_id, autocomplete: 'off' -%}
+    <div class="inline" style="gap:12px">
+      {%- assign apply_label = 'cart.discount.apply' | t -%}
+      {%- render 'button', label: apply_label, variant: 'secondary', size: 'sm', type: 'submit' -%}
+      {%- assign cancel_label = 'cart.discount.cancel' | t -%}
+      {%- capture cancel_attrs -%}data-act="code-toggle" aria-controls="{{ form_id }}"{%- endcapture -%}
+      {%- render 'button', variant: 'link', size: 'sm', no_chev: true, label: cancel_label, attrs: cancel_attrs -%}
+    </div>
+  </form>
+{%- endfor -%}

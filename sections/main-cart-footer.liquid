@@ -1,0 +1,377 @@
+{%- comment -%}
+  Bag page summary (pages-shop.mjs cartFooterHtml / cartSummaryInner). In the prototype the summary is its
+  own band under the lines, right-aligned at min(420px, 100%); this section reproduces that directly.
+  The kernel re-renders it after every cart change (data-cart-section), so it renders from `cart` alone.
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign checkout_label = section.settings.checkout_label
+  if checkout_label == blank
+    assign checkout_label = 'cart.general.checkout' | t
+  endif
+  assign summary_blocks = section.blocks | where: 'type', 'summary'
+  if cart.duties_included and cart.taxes_included
+    assign tax_note = 'cart.tax_note.duties_included' | t
+  elsif cart.taxes_included
+    assign tax_note = 'cart.tax_note.included' | t
+  else
+    assign tax_note = 'cart.tax_note.at_checkout' | t
+  endif
+-%}
+<div data-section="main-cart-footer" class="{{ scheme }}" data-cart-section data-section-id="{{ section.id }}">
+  {%- if cart.item_count > 0 or request.design_mode -%}
+    <div data-pad style="padding-left:var(--space-5);padding-right:var(--space-5);{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+      <div class="wrap" style="display:grid;justify-content:end">
+        <div class="stack" style="width:min(420px,100%)" data-cart-summary>
+          {%- if settings.show_gift_notice -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'gift-notice' and block.settings.show and block.settings.text != blank -%}
+                {%- liquid
+                  assign gift_title = block.settings.text | split: '. ' | first
+                  assign gift_text = block.settings.text | remove_first: gift_title | remove_first: '. ' | strip
+                  assign gift_link_label = ''
+                  if block.settings.link != blank
+                    assign gift_link_label = 'cart.general.gift_options' | t
+                  endif
+                -%}
+                {%- render 'notice', tone: 'gift', title: gift_title, text: gift_text, link_label: gift_link_label, link_url: block.settings.link, attrs: block.shopify_attributes -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+
+          {%- if settings.show_cart_note and section.settings.show_note -%}
+            {%- assign note_label = 'cart.general.order_note' | t -%}
+            {%- assign note_placeholder = 'cart.general.order_note_placeholder' | t -%}
+            {%- render 'field', label: note_label, name: 'note', id: 'order-note', textarea: true, value: cart.note, placeholder: note_placeholder, attrs: 'data-note form="cart-form"' -%}
+          {%- endif -%}
+
+          {%- if settings.show_discount_field and section.settings.show_discount -%}
+            {%- render 'bag-discount', ctx: 'cart' -%}
+          {%- endif -%}
+
+          {%- capture discount_rows -%}
+            {%- for application in cart.cart_level_discount_applications -%}
+              <div class="dl-sumrow"><span class="m">{{ application.title | escape }}</span><span>−{{ application.total_allocated_amount | money }}</span></div>
+            {%- endfor -%}
+          {%- endcapture -%}
+          <div data-totals>
+            {%- if summary_blocks.size == 0 -%}
+              <div class="dl-sumrow"><span class="m">{{ 'cart.general.subtotal' | t }}</span><span class="t-strong">{{ cart.items_subtotal_price | money }}</span></div>
+              {{- discount_rows -}}
+              {%- if settings.free_delivery_label != blank -%}
+                <div class="dl-sumrow"><span class="m">{{ 'cart.general.delivery' | t }}</span><span>{{ settings.free_delivery_label | escape }}</span></div>
+              {%- endif -%}
+              <div class="dl-sumrow total"><span>{{ 'cart.general.total' | t }}</span><span>{{ cart.total_price | money }}</span></div>
+            {%- else -%}
+              {%- assign discounts_done = false -%}
+              {%- for block in summary_blocks -%}
+                {%- if block.settings.kind != 'subtotal' and discounts_done == false -%}
+                  {{- discount_rows -}}
+                  {%- assign discounts_done = true -%}
+                {%- endif -%}
+                {%- if block.settings.label != blank -%}
+                  {%- case block.settings.kind -%}
+                    {%- when 'subtotal' -%}
+                      <div class="dl-sumrow" {{ block.shopify_attributes }}><span class="m">{{ block.settings.label | escape }}</span><span class="t-strong">{% if block.settings.override != blank %}{{ block.settings.override | escape }}{% else %}{{ cart.items_subtotal_price | money }}{% endif %}</span></div>
+                    {%- when 'delivery' -%}
+                      <div class="dl-sumrow" {{ block.shopify_attributes }}><span class="m">{{ block.settings.label | escape }}</span><span>{{ block.settings.override | default: settings.free_delivery_label | escape }}</span></div>
+                    {%- when 'total' -%}
+                      <div class="dl-sumrow total" {{ block.shopify_attributes }}><span>{{ block.settings.label | escape }}</span><span>{% if block.settings.override != blank %}{{ block.settings.override | escape }}{% else %}{{ cart.total_price | money }}{% endif %}</span></div>
+                  {%- endcase -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- unless discounts_done %}{{ discount_rows }}{% endunless -%}
+            {%- endif -%}
+          </div>
+
+          <form action="{{ routes.cart_url }}" method="post" id="cart-form">
+            <button type="submit" name="checkout" class="fc-btn fc-btn-primary fc-btn-lg fc-btn-block"><span>{{ checkout_label | escape }}</span></button>
+          </form>
+
+          {%- if section.settings.show_accelerated_checkout -%}
+            {%- render 'bag-checkout-buttons' -%}
+          {%- endif -%}
+
+          {%- capture fine_print -%}
+            {{- tax_note -}}
+            {%- if section.settings.terms != blank %} {% endif -%}
+            {%- if section.settings.terms != blank -%}
+              {{- section.settings.terms | replace: '</p><p>', ' ' | remove: '<p>' | remove: '</p>' -}}
+            {%- endif -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'trust' and block.settings.text != blank %} <span {{ block.shopify_attributes }}>
+                  {%- if block.settings.link != blank -%}
+                    <a href="{{ block.settings.link }}">{{ block.settings.text | escape }}</a>
+                  {%- else -%}
+                    {{ block.settings.text | escape }}
+                  {%- endif -%}
+                </span>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endcapture -%}
+          {%- assign fine_print = fine_print | strip -%}
+          {%- if fine_print != blank -%}
+            <p class="t-fine" style="margin:0;text-align:center">{{ fine_print }}</p>
+          {%- endif -%}
+
+          {%- if settings.show_shipping_estimate and section.settings.show_estimate -%}
+            <details class="js-only" data-estimate>
+              <summary class="t-caption" style="cursor:pointer;min-height:44px;display:flex;align-items:center">{{ 'cart.shipping.title' | t }}</summary>
+              <form class="stack" style="margin-top:8px" data-form="estimate" novalidate>
+                {%- capture country_options -%}{{ country_option_tags }}{%- endcapture -%}
+                {%- assign country_label = 'cart.shipping.country' | t -%}
+                {%- capture country_attrs %}data-default="{{ localization.country.name | escape }}"{% endcapture -%}
+                {%- render 'field', label: country_label, name: 'country', id: 'est-country', select_html: country_options, autocomplete: 'country-name', attrs: country_attrs -%}
+                {%- assign province_label = 'cart.shipping.province' | t -%}
+                {%- render 'field', label: province_label, name: 'province', id: 'est-province', select_html: '<option></option>', autocomplete: 'address-level1', class: 'js-only' -%}
+                {%- assign zip_label = 'cart.shipping.zip' | t -%}
+                {%- render 'field', label: zip_label, name: 'zip', id: 'est-zip', placeholder: '10001', autocomplete: 'postal-code' -%}
+                {%- assign estimate_label = 'cart.shipping.submit' | t -%}
+                {%- render 'button', label: estimate_label, variant: 'secondary', size: 'sm', type: 'submit' -%}
+                <div data-estimate-out></div>
+              </form>
+            </details>
+          {%- endif -%}
+
+          {%- for block in section.blocks -%}
+            {%- case block.type -%}
+              {%- when '@app' -%}
+                {% render block %}
+              {%- when 'custom-liquid' -%}
+                <div {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>
+            {%- endcase -%}
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "Cart summary",
+  "tag": "section",
+  "class": "dl-section dl-main-cart-footer",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_note",
+      "label": "Show order note",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_discount",
+      "label": "Show discount field",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_estimate",
+      "label": "Show shipping estimate",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "checkout_label",
+      "label": "Checkout button label",
+      "default": "Check out"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_accelerated_checkout",
+      "label": "Show accelerated checkout buttons",
+      "default": true,
+      "info": "Shop Pay, Apple Pay, PayPal and other wallets enabled in your payment settings."
+    },
+    {
+      "type": "richtext",
+      "id": "terms",
+      "label": "Terms line",
+      "info": "Shown after the taxes and shipping note."
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 0,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 48,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "summary",
+      "name": "Summary row",
+      "settings": [
+        {
+          "type": "select",
+          "id": "kind",
+          "label": "Row",
+          "default": "subtotal",
+          "options": [
+            {
+              "value": "subtotal",
+              "label": "Subtotal"
+            },
+            {
+              "value": "delivery",
+              "label": "Delivery"
+            },
+            {
+              "value": "total",
+              "label": "Total"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Subtotal"
+        },
+        {
+          "type": "text",
+          "id": "override",
+          "label": "Value"
+        }
+      ]
+    },
+    {
+      "type": "gift-notice",
+      "name": "Gift notice",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Gift notes. Add a note at checkout."
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": true
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "trust",
+      "name": "Trust row",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "seal-check",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Secure checkout."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "custom-liquid",
+      "name": "Custom Liquid",
+      "settings": [
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Liquid code",
+          "info": "Add app snippets or other Liquid code to create advanced customizations."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "cart"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

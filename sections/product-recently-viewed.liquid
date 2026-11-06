@@ -1,0 +1,220 @@
+{%- comment -%}
+  Hidden shell on the product page. The kernel reads the viewed handles from localStorage and fetches
+  {{ routes.search_url }}?q=handle:a OR handle:b&type=product&section_id={{ section.id }}; that response
+  (search.performed) carries the cards, which replace the inside of [data-recent].
+{%- endcomment -%}
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign limit = section.settings.limit | default: 4
+  assign options_block = section.blocks | where: 'type', 'card-options' | first
+  assign clear_block = section.blocks | where: 'type', 'clear' | first
+  assign show_quick = true
+  assign show_price = true
+  assign show_material = nil
+  if options_block
+    assign show_quick = options_block.settings.show_quick_view
+    assign show_price = options_block.settings.show_price
+    assign show_material = options_block.settings.show_material
+  endif
+  assign performed = false
+  if search.performed
+    assign performed = true
+  endif
+  assign demo = false
+  if performed == false and request.design_mode
+    assign demo = true
+  endif
+-%}
+<div class="band tight {{ scheme }}" data-section="product-recently-viewed" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}" data-recent data-section-id="{{ section.id }}" data-limit="{{ limit }}"{% if product != blank %} data-exclude="{{ product.handle }}"{% endif %}{% unless demo %} hidden{% endunless %}>
+  {%- if performed or demo -%}
+    <div class="wrap">
+      <div class="row-head">
+        {%- render 'section-head', eyebrow: section.settings.eyebrow, heading: section.settings.headline, sub: section.settings.sub, role: 't-title-lg', left: true -%}
+        {%- if clear_block and clear_block.settings.show and clear_block.settings.label != blank -%}
+          {%- capture clear_attrs %}data-act="clear-viewed" {{ clear_block.shopify_attributes }}{% endcapture -%}
+          {%- render 'button', variant: 'link', size: 'sm', no_chev: true, label: clear_block.settings.label, attrs: clear_attrs -%}
+        {%- endif -%}
+      </div>
+      <div class="rail" style="grid-auto-columns:calc((100% - 72px)/4)">
+        {%- if performed -%}
+          {%- assign shown = 0 -%}
+          {%- for item in search.results -%}
+            {%- if item.object_type != 'product' %}{% continue %}{% endif -%}
+            {%- if product != blank and item.handle == product.handle %}{% continue %}{% endif -%}
+            {%- render 'product-card', product: item, size: 150, quick: show_quick, show_price: show_price, show_material: show_material, attrs: 'data-recently-viewed-product-card' -%}
+            {%- assign shown = shown | plus: 1 -%}
+            {%- if shown >= limit %}{% break %}{% endif -%}
+          {%- endfor -%}
+        {%- else -%}
+          {%- for i in (1..limit) -%}
+            {%- render 'product-card', product: blank, size: 150 -%}
+          {%- endfor -%}
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "Recently viewed",
+  "tag": "section",
+  "class": "dl-section dl-product-recently-viewed",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Recently viewed"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "sub",
+      "label": "Supporting line"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Cards",
+      "default": 4,
+      "min": 2,
+      "max": 8,
+      "step": 1
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "card-options",
+      "name": "Card options",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_price",
+          "label": "Show price",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_material",
+          "label": "Show material line",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_quick_view",
+          "label": "Show quick view",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "empty-link",
+      "name": "Empty link",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop new arrivals"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "clear",
+      "name": "Clear history",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Clear"
+        },
+        {
+          "type": "checkbox",
+          "id": "show",
+          "label": "Show",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "confirm",
+          "label": "Confirmation text",
+          "default": "History cleared"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Recently viewed",
+      "blocks": [
+        {
+          "type": "card-options"
+        },
+        {
+          "type": "empty-link"
+        },
+        {
+          "type": "clear"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

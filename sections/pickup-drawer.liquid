@@ -1,0 +1,283 @@
+{%- comment -%}
+  Pickup availability for one variant. The kernel opens the shell and fetches
+  {{ product.url }}?variant={id}&section_id={{ section.id }}; without ?variant on a sized product the
+  shopper has not chosen a size yet, so the "Choose a size first" notice shows.
+{%- endcomment -%}
+{%- liquid
+  assign title_id = 'ov-title-pickup'
+  assign drawer_title = section.settings.title | escape
+  if drawer_title == blank
+    assign drawer_title = 'products.pickup.title' | t
+  endif
+  assign ready_block = section.blocks | where: 'type', 'ready-time' | first
+  assign help_block = section.blocks | where: 'type', 'help' | first
+
+  assign needs_choice = false
+  assign pickup_variant = nil
+  assign summary = ''
+  if product != blank
+    assign pickup_variant = product.selected_variant
+    if pickup_variant == blank
+      if product.has_only_default_variant or product.options.size == 1
+        assign pickup_variant = product.selected_or_first_available_variant
+      else
+        assign needs_choice = true
+      endif
+    endif
+    if pickup_variant != blank and product.has_only_default_variant == false
+      assign summary = pickup_variant.option1
+      if product.options.size > 1 and pickup_variant.option2 != blank
+        assign size_option = product.options[1] | downcase
+        assign size_value = pickup_variant.option2
+        if size_option contains 'ring'
+          assign size_value = 'products.pickup.size' | t: size: pickup_variant.option2
+        endif
+        assign summary = summary | append: ', ' | append: size_value
+      endif
+    endif
+  endif
+-%}
+
+{%- capture help_html -%}
+  {%- if help_block -%}
+    {%- assign help_text = help_block.settings.text | remove: '<p>' | replace: '</p>', ' ' | strip -%}
+    {%- if help_text != blank or help_block.settings.link != blank -%}
+      <p class="t-fine" style="margin-top:16px" {{ help_block.shopify_attributes }}>
+        {{- help_text -}}
+        {%- if help_block.settings.link != blank and help_block.settings.link_label != blank %} <a href="{{ help_block.settings.link }}">{{ help_block.settings.link_label | escape }}</a>{% endif -%}
+      </p>
+    {%- endif -%}
+  {%- endif -%}
+{%- endcapture -%}
+
+<div class="app-ov" data-ov="pickup" data-section="pickup-drawer" data-section-id="{{ section.id }}" hidden>
+  <div class="dl-scrim" data-act="scrim"></div>
+  <aside class="dl-drawer right scheme-1" data-place="right" data-place-mobile="bottom" role="dialog" aria-modal="true" aria-labelledby="{{ title_id }}" data-ov-panel>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: drawer_title, id: title_id -%}
+    <div class="bd">
+      {%- if product != blank -%}
+        <p class="t-caption" style="margin-bottom:16px">{{ product.title | escape }}{% if summary != blank %} · {{ summary | escape }}{% endif %}</p>
+        {%- if needs_choice -%}
+          {%- assign n_title = 'products.pickup.choose_size_title' | t -%}
+          {%- assign n_text = 'products.pickup.choose_size_text' | t -%}
+          {%- render 'notice', tone: 'info', title: n_title, text: n_text -%}
+        {%- else -%}
+          {%- liquid
+            assign locations = pickup_variant.store_availabilities | where: 'pick_up_enabled', true
+            assign available_count = 0
+            for availability in locations
+              if availability.available
+                assign available_count = available_count | plus: 1
+              endif
+            endfor
+          -%}
+          {%- if available_count == 0 or pickup_variant.available == false -%}
+            {%- assign n_title = 'products.pickup.unavailable_title' | t -%}
+            {%- assign n_text = 'products.pickup.unavailable_text' | t -%}
+            {%- render 'notice', tone: 'caution', title: n_title, text: n_text -%}
+          {%- else -%}
+            <div class="stack">
+              {%- for availability in locations -%}
+                {%- liquid
+                  assign location = availability.location
+                  assign ready = availability.pick_up_time | default: ''
+                  if ready_block
+                    if ready_block.settings.prefer_native == false or ready == blank
+                      assign ready = ready_block.settings.label
+                    endif
+                  endif
+                  assign address_parts = ''
+                  if location.address.address1 != blank
+                    assign address_parts = address_parts | append: location.address.address1 | append: '|'
+                  endif
+                  if location.address.city != blank
+                    assign address_parts = address_parts | append: location.address.city | append: '|'
+                  endif
+                  if location.address.province_code != blank
+                    assign address_parts = address_parts | append: location.address.province_code | append: '|'
+                  endif
+                  assign address_line = address_parts | split: '|' | join: ', '
+                -%}
+                <div class="stack" style="gap:2px;padding:16px 0;border-bottom:1px solid var(--hairline)">
+                  <p class="fc-bag-name" style="display:flex;gap:8px;align-items:center">{% if availability.available %}{% render 'icon', icon: 'check-circle', size: 20 %}{% endif %}{{ location.name | escape }}</p>
+                  <p class="t-caption">
+                    {%- if availability.available -%}
+                      {{ 'products.pickup.available' | t }}{% if ready != blank %} · {{ ready | escape }}{% endif %}
+                    {%- else -%}
+                      {{ 'products.pickup.location_unavailable' | t }}
+                    {%- endif -%}
+                  </p>
+                  {%- if section.settings.show_address -%}
+                    {%- if address_line != blank %}<p class="t-fine">{{ address_line | escape }}</p>{% endif -%}
+                    {%- if location.address.phone != blank %}<p class="t-fine">{{ location.address.phone | escape }}</p>{% endif -%}
+                  {%- endif -%}
+                  {%- liquid
+                    assign hours = ''
+                    assign hours_path = section.settings.hours_metafield | strip
+                    if hours_path contains '.'
+                      assign hours_ns = hours_path | split: '.' | first
+                      assign hours_key = hours_path | remove_first: hours_ns | remove_first: '.'
+                      assign hours_mf = location.metafields[hours_ns][hours_key]
+                      if hours_mf != blank
+                        assign hours = hours_mf | metafield_text | strip
+                      endif
+                    endif
+                  -%}
+                  {%- if hours != blank -%}
+                    <p class="t-fine">{{ hours | escape | newline_to_br }}</p>
+                  {%- endif -%}
+                  {%- for block in section.blocks -%}
+                    {%- if block.type == 'location-note' and block.settings.location_name != blank -%}
+                      {%- assign note_for = block.settings.location_name | strip | downcase -%}
+                      {%- assign here = location.name | strip | downcase -%}
+                      {%- if note_for == here and block.settings.note != blank -%}
+                        <p class="t-fine" {{ block.shopify_attributes }}>{{ block.settings.note | escape }}{% if block.settings.link != blank %} <a href="{{ block.settings.link }}">{{ 'general.learn_more' | t }}</a>{% endif %}</p>
+                      {%- endif -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                </div>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+        {%- endif -%}
+      {%- endif -%}
+      {{- help_html -}}
+    </div>
+  </aside>
+  <template data-ov-loading>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: drawer_title, id: title_id -%}
+    <div class="bd" aria-busy="true">
+      <div class="stack"><div class="dl-skel" style="height:16px;width:50%"></div><div class="dl-skel" style="height:18px;width:70%;margin-top:16px"></div><div class="dl-skel" style="height:14px;width:90%"></div><div class="dl-skel" style="height:18px;width:70%;margin-top:16px"></div><div class="dl-skel" style="height:14px;width:90%"></div></div>
+    </div>
+  </template>
+  <template data-ov-error>
+    <span class="dl-grab"></span>
+    {%- render 'drawer-head', title: drawer_title, id: title_id -%}
+    <div class="bd">
+      {%- assign e_title = 'general.errors.generic' | t -%}
+      {%- assign e_text = 'general.errors.network' | t -%}
+      {%- assign e_link = 'general.errors.try_again' | t -%}
+      {%- render 'notice', tone: 'danger', title: e_title, text: e_text, link_label: e_link, link_url: '#', link_attrs: 'data-act="ov-retry"' -%}
+    </div>
+  </template>
+</div>
+
+{% schema %}
+{
+  "name": "Pickup drawer",
+  "tag": "section",
+  "class": "dl-section dl-pickup-drawer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Pickup availability"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_address",
+      "label": "Show address",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "hours_metafield",
+      "label": "Opening hours metafield",
+      "info": "Optional. A location metafield as namespace.key, for example custom.hours. Shown under each store."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "location-note",
+      "name": "Location note",
+      "settings": [
+        {
+          "type": "text",
+          "id": "location_name",
+          "label": "Location name"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "default": "Appointments recommended for ring sizing."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Booking link"
+        }
+      ]
+    },
+    {
+      "type": "ready-time",
+      "name": "Ready time",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Usually ready in 24 hours"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "package",
+          "options": [
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "storefront",
+              "label": "Store"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "prefer_native",
+          "label": "Use the location pickup time when set",
+          "default": true,
+          "info": "Off: always use the label above."
+        }
+      ]
+    },
+    {
+      "type": "help",
+      "name": "Help",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>We email you when your order is ready for pickup.</p>"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "Pickup policy"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "custom.overlay"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

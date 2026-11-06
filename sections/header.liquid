@@ -1,0 +1,564 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-4'
+  assign menu = section.settings.menu
+  assign use_mega = section.settings.mega_menu
+  assign ps_enabled = settings.predictive_search_enabled
+  assign cart_count = cart.item_count
+  if cart_count == 0
+    assign bag_label = 'accessibility.bag' | t
+  elsif cart_count == 1
+    assign bag_label = 'accessibility.bag_count_one' | t
+  else
+    assign bag_label = 'accessibility.bag_count' | t: count: cart_count
+  endif
+  assign search_label = 'accessibility.search' | t
+  assign metals = section.settings.mega_metals | split: ','
+  assign stones = section.settings.mega_stones | split: ','
+  assign feature_max = section.settings.mega_featured_count
+  assign guide_url = pages['ring-sizing'].url | default: '#size-guide'
+-%}
+<header data-section="header" class="{{ scheme }}" style="position:sticky;top:0;z-index:20"{% if section.settings.logo_position == 'center' %} data-logo="center"{% endif %}>
+  <nav class="fc-nav" aria-label="{{ 'accessibility.global_nav' | t | escape }}" style="position:relative;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none">
+    <div class="fc-nav-in">
+      <button type="button" class="fc-nav-btn dl-menu-btn" aria-label="{{ 'accessibility.menu' | t | escape }}" aria-haspopup="dialog" data-open="mobile-nav">{% render 'icon', icon: 'list' %}</button>
+      <a class="fc-nav-brand" href="{{ routes.root_url }}">{% render 'header-brand', logo: section.settings.logo, width: section.settings.logo_width %}</a>
+      {%- if menu != blank and menu.links.size > 0 -%}
+        <ul class="fc-nav-list">
+          {%- for link in menu.links -%}
+            {%- liquid
+              assign is_current = false
+              if link.active or link.child_active
+                assign is_current = true
+              endif
+            -%}
+            {%- if use_mega and link.links.size > 0 -%}
+              <li data-mega-li="{{ link.handle }}"><button type="button" class="js-only{% if is_current %} is-current{% endif %}" aria-expanded="false" aria-controls="mega-{{ link.handle }}" data-act="mega" data-cat="{{ link.handle }}"{% if is_current %} aria-current="page"{% endif %}>{{ link.title | escape }}</button><a class="no-js-only" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- else -%}
+              <li><a href="{{ link.url }}" data-nav="{{ link.handle }}"{% if is_current %} class="is-current" aria-current="page"{% endif %}>{{ link.title | escape }}</a></li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+      <div class="fc-nav-tools">
+        {%- for block in section.blocks -%}
+          {%- if block.type == '@app' %}{% render block %}{% endif -%}
+          {%- if block.type == 'custom-liquid' %}<div class="dl-nav-custom" {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>{% endif -%}
+        {%- endfor -%}
+        {%- if section.settings.show_search -%}
+          {%- if ps_enabled -%}
+            <button type="button" class="fc-nav-btn js-only" aria-label="{{ search_label | escape }}" aria-expanded="false" aria-controls="ps" data-act="search-toggle">{% render 'icon', icon: 'magnifying-glass' %}</button>
+            <a class="fc-nav-btn no-js-only" href="{{ routes.search_url }}" aria-label="{{ search_label | escape }}">{% render 'icon', icon: 'magnifying-glass' %}</a>
+          {%- else -%}
+            <a class="fc-nav-btn" href="{{ routes.search_url }}" aria-label="{{ search_label | escape }}">{% render 'icon', icon: 'magnifying-glass' %}</a>
+          {%- endif -%}
+        {%- endif -%}
+        {%- if section.settings.show_account and shop.customer_accounts_enabled -%}
+          {%- assign account_menu = settings.customer_account_menu.handle | default: 'customer-account-main-menu' -%}
+          <shopify-account class="dl-account" menu="{{ account_menu }}">
+            <span slot="signed-out-avatar" class="dl-account-ic">{% render 'icon', icon: 'user' %}</span>
+            <span slot="signed-out-avatar" class="fc-sr">{{ 'accessibility.sign_in' | t }}</span>
+          </shopify-account>
+        {%- endif -%}
+        <a class="fc-nav-btn" href="{{ routes.cart_url }}" aria-label="{{ bag_label | escape }}" aria-haspopup="dialog" data-open="cart" data-bag-btn>
+          {%- render 'icon', icon: 'handbag' -%}
+          {%- if section.settings.show_bag_count -%}
+            <span class="fc-nav-count" aria-hidden="true" data-bag-count{% if cart_count == 0 %} hidden{% endif %}><span>{{ cart_count }}</span></span>
+          {%- endif -%}
+        </a>
+      </div>
+    </div>
+    {%- if use_mega and menu != blank -%}
+      {%- for link in menu.links -%}
+        {%- if link.links.size > 0 -%}
+          {%- liquid
+            assign coll = nil
+            if link.type == 'collection_link' and link.object != blank
+              assign coll = link.object
+            endif
+            assign base_url = link.url | split: '?' | first
+            assign style_count = 0
+            assign group_count = 0
+            for child in link.links
+              if child.links.size > 0
+                assign group_count = group_count | plus: 1
+              else
+                assign style_count = style_count | plus: 1
+              endif
+            endfor
+
+            # Size guide tab (product type) and stones on offer (the stone metafield named in theme settings) come
+            # from the collection's products; with no products (theme editor, empty store) the handle and full lists are used.
+            assign mf_stone_path = settings.product_stone_metafield | strip
+            assign stone_filter = ''
+            if mf_stone_path contains '.'
+              assign mf_stone_ns = mf_stone_path | split: '.' | first
+              assign mf_stone_key = mf_stone_path | remove_first: mf_stone_ns | remove_first: '.'
+              assign stone_filter = 'filter.p.m.' | append: mf_stone_path
+            endif
+            assign guide = ''
+            assign guide_label = ''
+            assign present_stones = ''
+            assign has_products = false
+            if coll != blank and coll.products_count > 0
+              assign has_products = true
+              for p in coll.products limit: 50
+                if guide == blank
+                  capture guide
+                    render 'product-data', product: p, field: 'guide'
+                  endcapture
+                  assign guide = guide | strip
+                endif
+                if stone_filter != blank
+                  assign p_stone_mf = p.metafields[mf_stone_ns][mf_stone_key]
+                  assign p_stone = ''
+                  if p_stone_mf != blank
+                    assign p_stone = p_stone_mf | metafield_text | downcase
+                  endif
+                  if p_stone != blank
+                    assign present_stones = present_stones | append: '|' | append: p_stone
+                  endif
+                endif
+              endfor
+            endif
+            if guide == blank and has_products == false
+              case link.handle
+                when 'rings', 'necklaces', 'bracelets'
+                  assign guide = link.handle
+              endcase
+            endif
+            case guide
+              when 'rings'
+                assign guide_label = 'navigation.ring_size_guide' | t
+              when 'necklaces'
+                assign guide_label = 'navigation.chain_length_guide' | t
+              when 'bracelets'
+                assign guide_label = 'navigation.bracelet_length_guide' | t
+              else
+                assign guide = ''
+            endcase
+          -%}
+          <div class="dl-mega scheme-1" id="mega-{{ link.handle }}" data-section="header-mega" hidden>
+            <div class="dl-mega-in">
+              {%- if style_count > 0 -%}
+                <div>
+                  {%- if section.settings.mega_style_heading != blank %}<h3>{{ section.settings.mega_style_heading | escape }}</h3>{% endif -%}
+                  <ul>
+                    {%- for child in link.links -%}
+                      {%- if child.links.size == 0 %}<li><a href="{{ child.url }}">{{ child.title | escape }}</a></li>{% endif -%}
+                    {%- endfor -%}
+                  </ul>
+                </div>
+              {%- endif -%}
+              {%- for child in link.links -%}
+                {%- if child.links.size > 0 -%}
+                  <div>
+                    <h3>{{ child.title | escape }}</h3>
+                    <ul>
+                      {%- for grandchild in child.links -%}
+                        <li><a href="{{ grandchild.url }}">{{ grandchild.title | escape }}</a></li>
+                      {%- endfor -%}
+                    </ul>
+                  </div>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if group_count == 0 -%}
+                {%- if section.settings.mega_metals != blank -%}
+                  <div>
+                    {%- if section.settings.mega_metal_heading != blank %}<h3>{{ section.settings.mega_metal_heading | escape }}</h3>{% endif -%}
+                    <ul>
+                      {%- for metal in metals -%}
+                        {%- assign metal_name = metal | strip -%}
+                        {%- if metal_name != blank %}<li><a href="{{ base_url }}?filter.v.option.finish={{ metal_name | url_param_escape }}">{{ metal_name | escape }}</a></li>{% endif -%}
+                      {%- endfor -%}
+                    </ul>
+                  </div>
+                {%- endif -%}
+                {%- capture stone_items -%}
+                  {%- for stone in stones -%}
+                    {%- liquid
+                      assign stone_name = stone | strip
+                      assign stone_key = stone_name | downcase
+                      assign show_stone = true
+                      if stone_filter == blank
+                        assign show_stone = false
+                      endif
+                      if has_products
+                        unless present_stones contains stone_key
+                          assign show_stone = false
+                        endunless
+                      endif
+                    -%}
+                    {%- if stone_name != blank and show_stone %}<li><a href="{{ base_url }}?{{ stone_filter }}={{ stone_name | url_param_escape }}">{{ stone_name | escape }}</a></li>{% endif -%}
+                  {%- endfor -%}
+                {%- endcapture -%}
+                {%- if stone_items != blank -%}
+                  <div>
+                    {%- if section.settings.mega_stone_heading != blank %}<h3>{{ section.settings.mega_stone_heading | escape }}</h3>{% endif -%}
+                    <ul>{{ stone_items }}</ul>
+                  </div>
+                {%- endif -%}
+              {%- endif -%}
+              {%- capture help_items -%}
+                {%- if section.settings.mega_size_guide and guide != blank -%}
+                  <li><a href="{{ guide_url }}" data-open="size-guide" data-tab="{{ guide }}">{{ guide_label }}</a></li>
+                {%- endif -%}
+                {%- for block in section.blocks -%}
+                  {%- if block.type == 'utility-link' and block.settings.label != blank and block.settings.link != blank -%}
+                    <li {{ block.shopify_attributes }}><a href="{{ block.settings.link }}">{{ block.settings.label | escape }}</a></li>
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- endcapture -%}
+              {%- if help_items != blank -%}
+                <div>
+                  {%- if section.settings.mega_help_heading != blank %}<h3>{{ section.settings.mega_help_heading | escape }}</h3>{% endif -%}
+                  <ul>{{ help_items }}</ul>
+                </div>
+              {%- endif -%}
+              {%- if feature_max > 0 -%}
+                {%- capture features -%}
+                  {%- assign feature_count = 0 -%}
+                  {%- assign link_key = link.title | strip | downcase -%}
+                  {%- for block in section.blocks -%}
+                    {%- if block.type == 'mega-feature' and feature_count < feature_max -%}
+                      {%- assign parent_key = block.settings.parent | strip | downcase -%}
+                      {%- if parent_key == link_key -%}
+                        {%- if block.settings.product != blank -%}
+                          {%- render 'header-mega-feature', product: block.settings.product, eyebrow: block.settings.eyebrow, attrs: block.shopify_attributes -%}
+                          {%- assign feature_count = feature_count | plus: 1 -%}
+                        {%- elsif request.design_mode -%}
+                          {%- render 'header-mega-feature', product: nil, eyebrow: block.settings.eyebrow, attrs: block.shopify_attributes -%}
+                          {%- assign feature_count = feature_count | plus: 1 -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- if feature_count == 0 and has_products -%}
+                    {%- for p in coll.products limit: feature_max -%}
+                      {%- liquid
+                        capture feature_eyebrow
+                          render 'product-data', product: p, field: 'badge'
+                        endcapture
+                        assign feature_eyebrow = feature_eyebrow | strip
+                        if feature_eyebrow == blank
+                          assign now_s = 'now' | date: '%s' | minus: 0
+                          assign created_s = p.created_at | date: '%s' | minus: 0
+                          assign age_days = now_s | minus: created_s | divided_by: 86400
+                          if age_days <= settings.badge_new_days
+                            assign feature_eyebrow = 'products.product.new' | t
+                          else
+                            assign feature_eyebrow = 'search.predictive.most_loved' | t
+                          endif
+                        endif
+                      -%}
+                      {%- render 'header-mega-feature', product: p, eyebrow: feature_eyebrow -%}
+                    {%- endfor -%}
+                  {%- endif -%}
+                {%- endcapture -%}
+                {%- if features != blank %}<div class="grid g2" style="gap:12px">{{ features }}</div>{% endif -%}
+              {%- endif -%}
+            </div>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    {%- if section.settings.show_search and ps_enabled -%}
+      <div class="dl-ps-panel scheme-1" id="ps" data-section="predictive-search" role="dialog" aria-label="{{ search_label | escape }}" hidden>
+        <div class="dl-search-field wrap-c">
+          {%- render 'icon', icon: 'magnifying-glass' -%}
+          <input class="fc-input" id="ps-input" type="search" role="combobox" aria-expanded="true" aria-controls="ps-list" aria-autocomplete="list" aria-label="{{ search_label | escape }}" placeholder="{{ 'search.placeholder' | t | escape }}" autocomplete="off" data-ps-input>
+        </div>
+        <div data-ps-body></div>
+      </div>
+    {%- endif -%}
+  </nav>
+</header>
+
+{% stylesheet %}
+  /* Shopify glue: logo image sizing, and logo position "centre" (menu on the left, wordmark on the centre line) */
+  .fc-nav-brand img { display: block; max-width: none; }
+  @media (min-width: 1069px) {
+    header[data-logo="center"] .fc-nav-in > .fc-nav-list { order: -1; justify-self: start; }
+    header[data-logo="center"] .fc-nav-in > .fc-nav-brand { justify-self: center; }
+  }
+
+  /* Account component (<shopify-account>, Shopify's own sign-in sheet): its avatar button matches .fc-nav-btn,
+     the sheet takes the theme's fonts, colors and radius */
+  .dl-account {
+    display: grid; place-items: center; width: 36px; height: 36px; color: var(--ink);
+    --shopify-account-avatar-size: 36px;
+    --shopify-account-signed-in-avatar-size: 26px;
+    --shopify-account-signed-in-avatar-color-background: var(--ink);
+    --shopify-account-signed-in-avatar-color-text: var(--canvas);
+    --shopify-account-color-accent: var(--action);
+    --shopify-account-color-background: var(--canvas);
+    --shopify-account-color-text: var(--ink);
+    --shopify-account-font-body: var(--font-sans);
+    --shopify-account-font-heading: var(--font-heading);
+    --shopify-account-radius-base: var(--radius-md);
+    --shopify-account-dialog-position-top: var(--account-dialog-top, var(--nav-height));
+  }
+  .dl-account-ic { display: grid; place-items: center; color: var(--ink); }
+  .dl-account::part(signed-out-avatar) { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: 0; border-radius: var(--radius-pill); background: none; color: var(--ink); cursor: pointer; }
+  .dl-account::part(signed-out-avatar):hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .dl-account::part(signed-out-avatar):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  @media (max-width: 1068px) {
+    .dl-account { width: 40px; height: 40px; --shopify-account-avatar-size: 40px; }
+    .dl-account::part(signed-out-avatar) { width: 40px; height: 40px; }
+  }
+  .dl-nav-custom { display: flex; align-items: center; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Header",
+  "tag": "section",
+  "class": "dl-section dl-header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image",
+      "info": ".svg or .png with a transparent background. Empty uses the logo in Theme settings > Brand and logo, then the wordmark text."
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Logo width",
+      "default": 96,
+      "min": 64,
+      "max": 220,
+      "step": 4,
+      "unit": "px",
+      "info": "Applies to the logo image above."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-4",
+      "info": "Scheme 4 is made for the header."
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Main menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "select",
+      "id": "logo_position",
+      "label": "Logo position",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center (menu splits around it)"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "Show account link",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "mega_menu",
+      "label": "Show mega menu",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bag_count",
+      "label": "Show cart count",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mega menu columns"
+    },
+    {
+      "type": "paragraph",
+      "content": "Child links of a top-level item fill the first column. A child link with its own links becomes a column of its own (heading = its title) and replaces the metal and stone columns."
+    },
+    {
+      "type": "text",
+      "id": "mega_style_heading",
+      "label": "Child links heading",
+      "default": "Shop by style"
+    },
+    {
+      "type": "text",
+      "id": "mega_metal_heading",
+      "label": "Metal column heading",
+      "default": "Shop by metal"
+    },
+    {
+      "type": "text",
+      "id": "mega_metals",
+      "label": "Metals",
+      "default": "Yellow Gold, Rose Gold, White Gold, Platinum",
+      "info": "Comma separated Finish option values; each links to the collection filtered by that finish."
+    },
+    {
+      "type": "text",
+      "id": "mega_stone_heading",
+      "label": "Stone column heading",
+      "default": "Shop by stone"
+    },
+    {
+      "type": "text",
+      "id": "mega_stones",
+      "label": "Stones",
+      "default": "Diamond, Sapphire, Emerald, Ruby, Pearl, Onyx",
+      "info": "Comma separated stone names, in display order. Only stones found in the collection, through the stone metafield in Theme settings > Product cards and quick view, are shown."
+    },
+    {
+      "type": "text",
+      "id": "mega_help_heading",
+      "label": "Help column heading",
+      "default": "Help"
+    },
+    {
+      "type": "checkbox",
+      "id": "mega_size_guide",
+      "label": "Show size guide link in the Help column",
+      "default": true,
+      "info": "Opens the size guide drawer on the collection's tab (rings, necklaces or bracelets). Utility link blocks follow it."
+    },
+    {
+      "type": "range",
+      "id": "mega_featured_count",
+      "label": "Featured products per panel",
+      "default": 2,
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "info": "Mega menu product blocks for this item, or the collection's first products."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "mega-feature",
+      "name": "Mega menu product",
+      "limit": 8,
+      "settings": [
+        {
+          "type": "text",
+          "id": "parent",
+          "label": "Parent menu item title",
+          "default": "Rings"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "New"
+        }
+      ]
+    },
+    {
+      "type": "utility-link",
+      "name": "Utility link",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Gift guide"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "gift",
+          "options": [
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "diamond",
+              "label": "Diamond"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "promo-tile",
+      "name": "Mobile drawer promo",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Engraved by hand, in the time it takes to order."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "custom-liquid",
+      "name": "Custom Liquid",
+      "settings": [
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Liquid code",
+          "info": "Shown next to the header icons. Add app snippets or other Liquid code to create advanced customizations."
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "header"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

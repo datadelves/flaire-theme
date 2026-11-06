@@ -1,0 +1,293 @@
+{%- liquid
+  assign scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign wrap = 'wrap-n'
+  if section.settings.width == 'content'
+    assign wrap = 'wrap-c'
+  endif
+
+  comment
+    Table of contents: give every h2 in page.content an id and list them.
+  endcomment
+  assign body = page.content
+  assign toc = ''
+  if section.settings.show_toc and body contains '<h2'
+    assign parts = body | split: '<h2'
+    assign body = ''
+    for part in parts
+      if forloop.first
+        assign body = part
+        continue
+      endif
+      assign head = part | split: '</h2>' | first | prepend: '<h2' | strip_html | strip
+      assign anchor = head | handleize | prepend: 'h-'
+      assign body = body | append: '<h2 id="' | append: anchor | append: '"' | append: part
+      assign toc = toc | append: '<li><a href="#' | append: anchor | append: '">' | append: head | append: '</a></li>'
+    endfor
+  endif
+-%}
+<div class="band tight {{ scheme }}" data-section="main-page" style="{% render 'section-padding', top: section.settings.padding_top, bottom: section.settings.padding_bottom, fixed: true %}">
+  <div class="{{ wrap }} dl-rich stack-lg" style="gap:24px">
+    {%- if toc != blank -%}
+      <nav class="dl-toc" aria-label="{{ 'general.on_this_page' | t }}">
+        <p class="t-overline">{{ 'general.on_this_page' | t }}</p>
+        <ul class="stack" style="gap:8px;list-style:none;margin:8px 0 0;padding:0">{{ toc }}</ul>
+      </nav>
+    {%- endif -%}
+
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+        {%- when 'content' -%}
+          {%- if block.settings.show_title and page.title != blank -%}
+            <h2 class="t-headline" style="margin:0" {{ block.shopify_attributes }}>{{ page.title | escape }}</h2>
+          {%- endif -%}
+          {%- if body != blank -%}
+            <div class="dl-prose rte has-lead{% if block.settings.size == 'lead' %} is-lead{% endif %}{% if block.settings.drop_hairlines %} has-rule{% endif %}" style="display:contents" {{ block.shopify_attributes }}>
+              {{- body -}}
+            </div>
+          {%- endif -%}
+
+        {%- when 'callout' -%}
+          {%- assign callout_text = block.settings.text | strip_html | strip -%}
+          {%- if callout_text != blank -%}
+            <div class="fc-notice fc-notice-info" role="status" {{ block.shopify_attributes }}>
+              {%- render 'icon', icon: block.settings.icon, size: 20, class: 'fc-notice-icon' -%}
+              <div>
+                {%- if block.settings.title != blank %}<p class="fc-notice-title">{{ block.settings.title | escape }}</p>{% endif -%}
+                <div class="fc-notice-text dl-callout-text">{{ block.settings.text }}</div>
+              </div>
+            </div>
+          {%- endif -%}
+
+        {%- when 'image' -%}
+          {%- if block.settings.image != blank or request.design_mode -%}
+            <figure style="margin:0" {{ block.shopify_attributes }}>
+              <div style="background:var(--canvas-alt);border-radius:var(--radius-xl);overflow:hidden;display:grid;place-items:center{% if block.settings.image == blank %};aspect-ratio:16/9{% endif %}">
+                {%- if block.settings.image != blank -%}
+                  {{- block.settings.image | image_url: width: 1960 | image_tag: loading: 'lazy', widths: '692, 980, 1384, 1960', sizes: '(min-width: 1100px) 980px, 100vw', alt: block.settings.image_alt, style: 'display:block;width:100%;height:auto' -}}
+                {%- else -%}
+                  {%- render 'specimen', kind: 'ring', metal: 'yellow-gold', size: 240, label: '' -%}
+                {%- endif -%}
+              </div>
+              {%- if block.settings.caption != blank -%}
+                <figcaption class="t-caption" style="margin-top:8px">{{ block.settings.caption | escape }}</figcaption>
+              {%- endif -%}
+            </figure>
+          {%- endif -%}
+      {%- endcase -%}
+    {%- endfor -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  /* page.content is merchant HTML: give its elements the prototype's type roles (t-lead, t-title-lg, t-body muted) */
+  .dl-main-page .dl-prose > * { margin: 0; }
+  .dl-main-page .dl-prose > p, .dl-main-page .dl-prose > ul, .dl-main-page .dl-prose > ol { font: 400 17px/1.47 var(--font-sans); color: var(--ink-muted); }
+  .dl-main-page .dl-prose > ul, .dl-main-page .dl-prose > ol { padding-left: 20px; }
+  .dl-main-page .dl-prose > h2 { font: 600 var(--type-title-lg-size)/var(--type-title-lg-lh) var(--font-heading); letter-spacing: var(--type-title-lg-ls); color: var(--ink); margin: 16px 0 0; scroll-margin-top: calc(var(--nav-offset, 0px) + 24px); }
+  .dl-main-page .dl-prose > h3 { font: 600 var(--type-title-size)/var(--type-title-lh) var(--font-heading); letter-spacing: var(--type-title-ls); color: var(--ink); margin: 8px 0 0; }
+  /* h1, h4-h6, blockquote and tables take the shared .rte scale (theme.css) */
+  .dl-main-page .dl-prose > h1 { margin: 16px 0 0; }
+  .dl-main-page .dl-prose > h4, .dl-main-page .dl-prose > h5, .dl-main-page .dl-prose > h6 { margin: 8px 0 0; }
+  .dl-main-page .dl-prose.has-lead > p:first-child, .dl-main-page .dl-prose.is-lead > p { font: 400 var(--type-lead-size)/var(--type-lead-lh) var(--font-sans); letter-spacing: var(--type-lead-ls); color: var(--ink); }
+  .dl-main-page .dl-prose.has-rule > h2 { padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
+  .dl-main-page .dl-prose a { text-decoration: underline; text-underline-offset: 3px; }
+  .dl-main-page .dl-prose img { max-width: 100%; height: auto; border-radius: var(--radius-xl); }
+  .dl-main-page .dl-callout-text > * { margin: 0; }
+  .dl-main-page .dl-toc a { font-size: 14px; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Page content",
+  "tag": "section",
+  "class": "dl-section dl-main-page",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "info": "Alternate schemes 1 and 2 down the page. Scheme 3 is dark."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_toc",
+      "label": "Show table of contents",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Width",
+      "default": "narrow",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "Narrow (692px)"
+        },
+        {
+          "value": "content",
+          "label": "Medium (980px)"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding",
+      "info": "The same on every screen size."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 64,
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "content",
+      "name": "Page content",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_title",
+          "label": "Show page title",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "size",
+          "label": "Body size",
+          "default": "body",
+          "options": [
+            {
+              "value": "body",
+              "label": "Regular (17px)"
+            },
+            {
+              "value": "lead",
+              "label": "Large (21px)"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "drop_hairlines",
+          "label": "Show dividers under headings",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "callout",
+      "name": "Callout",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "info",
+          "options": [
+            {
+              "value": "info",
+              "label": "Info"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "seal-check",
+              "label": "Seal check"
+            },
+            {
+              "value": "storefront",
+              "label": "Storefront"
+            },
+            {
+              "value": "ruler",
+              "label": "Ruler"
+            },
+            {
+              "value": "envelope-simple",
+              "label": "Envelope"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat-circle-dots",
+              "label": "Chat"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Good to know"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p></p>"
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "name": "Inline image",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        },
+        {
+          "type": "text",
+          "id": "caption",
+          "label": "Caption"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "page"
+    ]
+  },
+  "limit": 1
+}
+{% endschema %}

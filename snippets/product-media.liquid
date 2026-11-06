@@ -1,0 +1,64 @@
+{%- comment -%}
+  One rich media plate (video, YouTube/Vimeo video, 3D model) for the product gallery, quick view and the
+  featured product tile. It starts as a poster button; the kernel's media module swaps in the player from
+  the <template> when the shopper presses it (so no player loads until asked), pauses it when the slide
+  changes, and loads Shopify's model viewer UI and AR (shopify-xr) through Shopify.loadFeatures.
+  Images are not handled here: they use product-photo.
+
+  Accepts:
+  - media {Object} a video, external_video or model media
+  - product {Object}
+  - sizes {String} sizes attribute for the poster (default "(max-width: 734px) 100vw, 640px")
+  - thumb {Boolean} render the thumbnail content instead (poster image and a type badge)
+{%- endcomment -%}
+{%- liquid
+  assign title = media.alt | default: product.title
+  assign poster = media.preview_image
+  assign sizes_attr = sizes | default: '(max-width: 734px) 100vw, 640px'
+  if media.media_type == 'model'
+    assign load_label = 'products.media.load_model' | t: title: title
+  else
+    assign load_label = 'products.media.play_video' | t: title: title
+  endif
+-%}
+{%- capture badge -%}
+  <span class="dl-media-badge" aria-hidden="true">
+    {%- if media.media_type == 'model' -%}
+      <svg class="dl-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"/></svg>
+    {%- else -%}
+      {%- render 'icon', icon: 'play', size: 20 -%}
+    {%- endif -%}
+  </span>
+{%- endcapture -%}
+{%- if thumb -%}
+  {%- if poster -%}{{ poster | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', alt: '', class: 'dl-media-thumb' }}{%- endif -%}
+  {{ badge }}
+{%- else -%}
+  <div class="dl-media" data-media data-media-type="{{ media.media_type }}"{% if media.media_type == 'external_video' %} data-host="{{ media.host }}"{% endif %}>
+    <button type="button" class="dl-media-poster" data-act="media-load" aria-label="{{ load_label | escape }}">
+      {%- if poster -%}{{ poster | image_url: width: 1040 | image_tag: widths: '360, 540, 720, 1040', sizes: sizes_attr, loading: 'lazy', alt: '', class: 'dl-media-img' }}{%- endif -%}
+      {{ badge }}
+    </button>
+    <template data-media-tpl>
+      {%- case media.media_type -%}
+        {%- when 'video' -%}
+          {{ media | video_tag: image_size: '1040x', autoplay: true, controls: true, muted: false, loop: false, class: 'dl-media-el' }}
+        {%- when 'external_video' -%}
+          {%- if media.host == 'youtube' -%}
+            {{ media | external_video_url: autoplay: true, rel: 0, playsinline: 1 | external_video_tag: class: 'dl-media-el', loading: 'lazy', title: title }}
+          {%- else -%}
+            {{ media | external_video_url: autoplay: true | external_video_tag: class: 'dl-media-el', loading: 'lazy', title: title }}
+          {%- endif -%}
+        {%- when 'model' -%}
+          {{ media | model_viewer_tag: image_size: '1040x', reveal: 'auto', toggleable: true, class: 'dl-media-el', data-model-id: media.id }}
+      {%- endcase -%}
+    </template>
+    {%- if media.media_type == 'model' -%}
+      {%- assign xr_label = 'products.media.view_in_space_label' | t: title: product.title -%}
+      <button type="button" class="fc-btn fc-btn-secondary fc-btn-sm dl-xr" aria-label="{{ xr_label | escape }}" data-shopify-xr data-shopify-model3d-id="{{ media.id }}" data-shopify-title="{{ product.title | escape }}" data-shopify-xr-hidden>
+        <svg class="dl-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"/></svg>
+        <span>{{ 'products.media.view_in_space' | t }}</span>
+      </button>
+    {%- endif -%}
+  </div>
+{%- endif -%}
