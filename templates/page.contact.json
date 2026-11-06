@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "page-header": {
@@ -45,12 +54,12 @@
       "type": "contact-form",
       "settings": {
         "eyebrow": "Contact",
-        "headline": "Ask a jeweler",
-        "sub": "We reply as soon as we can.",
+        "headline": "Ask a jeweller",
+        "sub": "We reply within one working day.",
         "color_scheme": "scheme-2",
         "button_label": "Send",
         "success_title": "Message sent",
-        "success_text": "Thank you. We will reply as soon as we can.",
+        "success_text": "We will reply within one working day.",
         "show_topic": true
       },
       "blocks": {
@@ -113,7 +122,9 @@
         "store-info-1": {
           "type": "store-info",
           "settings": {
-            "icon": "storefront"
+            "icon": "storefront",
+            "title": "Studio",
+            "text": "<p>21 Mercer Lane, Portland, OR 97209</p>"
           }
         },
         "store-info-2": {
@@ -121,7 +132,7 @@
           "settings": {
             "icon": "envelope-simple",
             "title": "Email",
-            "text": "<p>Add your email address.</p>"
+            "text": "<p>hello@facet.example</p>"
           }
         }
       },

@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "collection-hero": {
@@ -71,6 +80,8 @@
         "quick-chip-1": {
           "type": "quick-chip",
           "settings": {
+            "label": "Engravable",
+            "param": "filter.p.m.custom.engravable=true",
             "default_on": false
           }
         },
@@ -109,17 +120,19 @@
             "position": 6,
             "eyebrow": "Engrave",
             "headline": "Made yours",
-            "link": "shopify://collections/all",
+            "link": "shopify://collections/engravable",
             "tone": "alt",
-            "text": "Add a few words before you order.",
+            "text": "Add a few words, free, in the time it takes to order.",
             "link_label": "Engrave",
-            "engraving_text": "Always, M."
+            "engraving_text": "Always, M.",
+            "image": "shopify://shop_images/aurora-band-rose-gold.webp"
           }
         },
         "empty-links-1": {
           "type": "empty-links",
           "settings": {
             "label": "Shop all rings",
+            "collection": "rings",
             "show": true
           }
         },
@@ -208,6 +221,7 @@
           "type": "guide-link",
           "settings": {
             "label": "Materials guide",
+            "link": "shopify://pages/materials",
             "note": ""
           }
         }
@@ -232,7 +246,8 @@
         "sub": "",
         "color_scheme": "scheme-1",
         "body": "<p>Each ring in this collection starts as a wax carving.</p>",
-        "image_alt": ""
+        "image_alt": "",
+        "image": "shopify://shop_images/vesper-ring-yellow-gold.webp"
       },
       "blocks": {
         "paragraph-1": {
@@ -303,7 +318,7 @@
           "type": "faq",
           "settings": {
             "title": "How fast is delivery?",
-            "answer": "<p>Shipping options and costs are shown at checkout.</p>"
+            "answer": "<p>Free overnight delivery on every order.</p>"
           }
         }
       },
@@ -318,11 +333,12 @@
       "settings": {
         "eyebrow": "Engrave",
         "headline": "Made yours",
-        "sub": "Add a few words before you order.",
+        "sub": "Add a few words, free, in the time it takes to order.",
         "color_scheme": "scheme-3",
         "cta_label": "Engrave",
-        "cta_link": "shopify://collections/all",
+        "cta_link": "shopify://collections/engravable",
         "link_label": "Send a gift card",
+        "link": "shopify://products/gift-card",
         "image_alt": ""
       }
     },
@@ -339,30 +355,35 @@
         "collection-1": {
           "type": "collection",
           "settings": {
+            "collection": "rings",
             "line": ""
           }
         },
         "collection-2": {
           "type": "collection",
           "settings": {
+            "collection": "necklaces",
             "line": ""
           }
         },
         "collection-3": {
           "type": "collection",
           "settings": {
+            "collection": "earrings",
             "line": ""
           }
         },
         "collection-4": {
           "type": "collection",
           "settings": {
+            "collection": "bracelets",
             "line": ""
           }
         },
         "collection-5": {
           "type": "collection",
           "settings": {
+            "collection": "gifts",
             "line": ""
           }
         },

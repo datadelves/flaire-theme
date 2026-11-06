@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "collections-hero": {
@@ -22,36 +31,42 @@
         "collection-tile-1": {
           "type": "collection-tile",
           "settings": {
+            "collection": "rings",
             "line": ""
           }
         },
         "collection-tile-2": {
           "type": "collection-tile",
           "settings": {
+            "collection": "necklaces",
             "line": ""
           }
         },
         "collection-tile-3": {
           "type": "collection-tile",
           "settings": {
+            "collection": "earrings",
             "line": ""
           }
         },
         "collection-tile-4": {
           "type": "collection-tile",
           "settings": {
+            "collection": "bracelets",
             "line": ""
           }
         },
         "collection-tile-5": {
           "type": "collection-tile",
           "settings": {
+            "collection": "gifts",
             "line": ""
           }
         },
         "collection-tile-6": {
           "type": "collection-tile",
           "settings": {
+            "collection": "engravable",
             "line": ""
           }
         }

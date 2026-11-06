@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "main": {
@@ -15,6 +24,7 @@
         "badge-1": {
           "type": "badge",
           "settings": {
+            "text": "{{ product.metafields.custom.badge.value }}",
             "tone": "accent"
           }
         },
@@ -29,6 +39,7 @@
         "lead-1": {
           "type": "lead",
           "settings": {
+            "text": "{{ product.metafields.custom.tagline.value }}",
             "max_words": 18,
             "muted": true
           }
@@ -38,6 +49,7 @@
           "settings": {
             "show_compare_at": true,
             "show_unit_price": true,
+            "financing_note": "or {amount}/mo for 12 months, with 0% APR",
             "financing_min": 600,
             "show_installments": true,
             "show_tax_note": true
@@ -88,14 +100,16 @@
           "type": "availability",
           "settings": {
             "show_stock": true,
-            "show_pickup": true
+            "show_pickup": true,
+            "delivery_text": "Order by 3 pm for delivery tomorrow.",
+            "arrival_text": "Arrives Thursday. Free overnight delivery."
           }
         },
         "gift-note-1": {
           "type": "gift-note",
           "settings": {
-            "title": "Gift notes",
-            "text": "Add a note at checkout.",
+            "title": "Gift wrap is free",
+            "text": "Add a note at check out.",
             "show": true
           }
         },
@@ -170,7 +184,9 @@
         "headline": "Specifications",
         "sub": "",
         "color_scheme": "scheme-1",
-        "show_certificate": true
+        "dimensions": "{{ product.metafields.custom.dimensions.value }}",
+        "show_certificate": true,
+        "certificate": "{{ product.metafields.custom.certificate.value }}"
       },
       "blocks": {
         "spec-row-1": {
@@ -201,7 +217,7 @@
           "type": "spec-row",
           "settings": {
             "label": "Made in",
-            "value": "",
+            "value": "{{ product.metafields.custom.made_in.value }}",
             "hide_if_empty": true
           }
         },
@@ -209,7 +225,7 @@
           "type": "spec-row",
           "settings": {
             "label": "Carat",
-            "value": "",
+            "value": "{{ product.metafields.custom.carat.value }}",
             "hide_if_empty": true,
             "column": "group"
           }
@@ -217,8 +233,8 @@
         "spec-row-6": {
           "type": "spec-row",
           "settings": {
-            "label": "Color",
-            "value": "",
+            "label": "Colour",
+            "value": "{{ product.metafields.custom.colour.value }}",
             "hide_if_empty": true,
             "column": "group"
           }
@@ -227,7 +243,7 @@
           "type": "spec-row",
           "settings": {
             "label": "Clarity",
-            "value": "",
+            "value": "{{ product.metafields.custom.clarity.value }}",
             "hide_if_empty": true,
             "column": "group"
           }
@@ -236,7 +252,7 @@
           "type": "spec-row",
           "settings": {
             "label": "Cut",
-            "value": "",
+            "value": "{{ product.metafields.custom.cut.value }}",
             "hide_if_empty": true,
             "column": "group"
           }
@@ -244,7 +260,7 @@
         "stone-group-1": {
           "type": "stone-group",
           "settings": {
-            "title": "",
+            "title": "{{ product.metafields.custom.stone.value }}",
             "rows": "",
             "open": true
           }
@@ -270,7 +286,8 @@
         "sub": "Drawn at 1:1 for a size 6.5.",
         "color_scheme": "scheme-2",
         "image_alt": "",
-        "mode": "drawing"
+        "mode": "drawing",
+        "dimensions": "{{ product.metafields.custom.dimensions.value }}"
       },
       "blocks": {
         "scale-view-1": {
@@ -354,7 +371,8 @@
         "color_scheme": "scheme-1",
         "single_open": true,
         "use_description": true,
-        "description_title": "Materials and craft"
+        "description_title": "Materials and craft",
+        "description_text": "<p>{{ product.metafields.custom.craft_notes.value }}</p>"
       },
       "blocks": {
         "tab-1": {
@@ -368,7 +386,7 @@
           "type": "tab",
           "settings": {
             "title": "Delivery and returns",
-            "body": "<p>Shipping options and costs are shown at checkout. See our refund policy for returns.</p>"
+            "body": "<p>Free overnight delivery. Return within 30 days for a full refund, engraved pieces excepted.</p>"
           }
         }
       },
@@ -381,6 +399,7 @@
       "type": "product-fulfilment",
       "settings": {
         "eyebrow": "Delivery",
+        "headline": "Arrives when you need it",
         "sub": "",
         "color_scheme": "scheme-2",
         "show_pickup_stores": true
@@ -390,8 +409,8 @@
           "type": "delivery",
           "settings": {
             "icon": "truck",
-            "title": "Delivery",
-            "text": "Shipping options and costs are shown at checkout."
+            "title": "Free overnight",
+            "text": "Order by 3 pm and it arrives Thursday. Signature required."
           }
         },
         "pickup-1": {
@@ -405,8 +424,8 @@
         "gifting-1": {
           "type": "gifting",
           "settings": {
-            "title": "Gifting",
-            "text": "Add a handwritten note at checkout."
+            "title": "Gift wrap, free",
+            "text": "Add a handwritten note at check out. We wrap every order."
           }
         }
       },

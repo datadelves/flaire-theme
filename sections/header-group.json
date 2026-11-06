@@ -1,52 +1,46 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "type": "header",
   "name": "Header group",
   "sections": {
     "announcement-bar": {
       "type": "announcement-bar",
-      "settings": {
-        "color_scheme": "scheme-2",
-        "dismissible": true,
-        "rotate_seconds": 6,
-        "show_localization": false
-      },
       "blocks": {
         "message-1": {
           "type": "message",
           "settings": {
-            "text": "Welcome to our store.",
-            "link_label": "Learn more"
+            "text": "Free overnight delivery. Order by 3 pm for delivery tomorrow.",
+            "link_label": "Learn more",
+            "link": "shopify://pages/delivery"
           }
         }
       },
       "block_order": [
         "message-1"
-      ]
+      ],
+      "settings": {
+        "color_scheme": "scheme-2",
+        "dismissible": true,
+        "rotate_seconds": 6,
+        "show_localization": true
+      }
     },
     "header": {
       "type": "header",
-      "settings": {
-        "color_scheme": "scheme-4",
-        "menu": "main-menu",
-        "logo_position": "left",
-        "show_search": true,
-        "show_account": true,
-        "mega_menu": true,
-        "show_bag_count": true,
-        "mega_style_heading": "Shop by style",
-        "mega_metal_heading": "Shop by metal",
-        "mega_metals": "Yellow Gold, Rose Gold, White Gold, Platinum",
-        "mega_stone_heading": "Shop by stone",
-        "mega_stones": "Diamond, Sapphire, Emerald, Ruby, Pearl, Onyx",
-        "mega_help_heading": "Help",
-        "mega_size_guide": true,
-        "mega_featured_count": 2
-      },
       "blocks": {
         "mega-feature-1": {
           "type": "mega-feature",
           "settings": {
             "parent": "Rings",
+            "product": "aurora-band",
             "eyebrow": "New"
           }
         },
@@ -54,6 +48,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Rings",
+            "product": "vesper-ring",
             "eyebrow": "Most loved"
           }
         },
@@ -61,6 +56,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Necklaces",
+            "product": "meridian-pendant",
             "eyebrow": "Most loved"
           }
         },
@@ -68,6 +64,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Necklaces",
+            "product": "solis-pendant",
             "eyebrow": "Limited edition"
           }
         },
@@ -75,6 +72,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Earrings",
+            "product": "lumen-drop",
             "eyebrow": "Most loved"
           }
         },
@@ -82,6 +80,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Earrings",
+            "product": "gleam-hoops",
             "eyebrow": "New"
           }
         },
@@ -89,6 +88,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Bracelets",
+            "product": "orbit-bracelet",
             "eyebrow": "Most loved"
           }
         },
@@ -96,6 +96,7 @@
           "type": "mega-feature",
           "settings": {
             "parent": "Bracelets",
+            "product": "tennis-line",
             "eyebrow": "New"
           }
         },
@@ -103,6 +104,7 @@
           "type": "utility-link",
           "settings": {
             "label": "Engraving",
+            "link": "shopify://pages/engraving",
             "icon": "diamond"
           }
         },
@@ -110,6 +112,7 @@
           "type": "utility-link",
           "settings": {
             "label": "Care guide",
+            "link": "shopify://pages/care-guide",
             "icon": "diamond"
           }
         },
@@ -134,7 +137,25 @@
         "utility-link-1",
         "utility-link-2",
         "utility-link-3"
-      ]
+      ],
+      "settings": {
+        "logo_width": 96,
+        "color_scheme": "scheme-4",
+        "menu": "main-menu",
+        "logo_position": "left",
+        "show_search": true,
+        "show_account": true,
+        "mega_menu": true,
+        "show_bag_count": true,
+        "mega_style_heading": "Shop by style",
+        "mega_metal_heading": "Shop by metal",
+        "mega_metals": "Yellow Gold, Rose Gold, White Gold, Platinum",
+        "mega_stone_heading": "Shop by stone",
+        "mega_stones": "Diamond, Sapphire, Emerald, Ruby, Pearl, Onyx",
+        "mega_help_heading": "Help",
+        "mega_size_guide": true,
+        "mega_featured_count": 2
+      }
     }
   },
   "order": [

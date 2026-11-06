@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "type": "footer",
   "name": "Footer group",
@@ -9,7 +18,8 @@
         "show_localization": true,
         "show_payment_icons": true,
         "show_social": true,
-        "legal": ""
+        "legal": "",
+        "legal_menu": "legal"
       },
       "blocks": {
         "brand-note-1": {
@@ -31,57 +41,60 @@
           "type": "link-list",
           "settings": {
             "heading": "Shop",
-            "menu": "main-menu"
+            "menu": "footer-shop"
           }
         },
         "link-list-2": {
           "type": "link-list",
           "settings": {
-            "heading": "Make it yours"
+            "heading": "Make it yours",
+            "menu": "footer-make"
           }
         },
         "link-list-3": {
           "type": "link-list",
           "settings": {
-            "heading": "Help"
+            "heading": "Help",
+            "menu": "footer-help"
           }
         },
         "link-list-4": {
           "type": "link-list",
           "settings": {
-            "heading": "Company"
+            "heading": "Company",
+            "menu": "footer-company"
           }
         },
         "promise-1": {
           "type": "promise",
           "settings": {
             "icon": "truck",
-            "title": "Shipping",
-            "text": "Options and costs are shown at checkout."
+            "title": "Free overnight delivery",
+            "text": "Signature required."
           }
         },
         "promise-2": {
           "type": "promise",
           "settings": {
             "icon": "arrow-counter-clockwise",
-            "title": "Returns",
-            "text": "See our refund policy."
+            "title": "30-day returns",
+            "text": "Engraved pieces excepted."
           }
         },
         "promise-3": {
           "type": "promise",
           "settings": {
             "icon": "gift",
-            "title": "Gift notes",
-            "text": "Add a note at checkout."
+            "title": "Gift wrap, free",
+            "text": "Add a note at check out."
           }
         },
         "promise-4": {
           "type": "promise",
           "settings": {
             "icon": "ruler",
-            "title": "Sizing help",
-            "text": "Contact us for sizing advice."
+            "title": "Complimentary sizing",
+            "text": "Book a visit at our studio."
           }
         }
       },

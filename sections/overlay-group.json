@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "type": "custom.overlay",
   "name": "Overlays",
@@ -17,7 +26,8 @@
           "settings": {
             "show_material": true,
             "show_engraving": true,
-            "show_delivery": true
+            "show_delivery": true,
+            "delivery_text": "Arrives Thursday"
           }
         },
         "summary-row-1": {
@@ -25,14 +35,14 @@
           "settings": {
             "kind": "delivery",
             "label": "Delivery",
-            "value": "Calculated at checkout"
+            "value": "Free overnight"
           }
         },
         "trust-note-1": {
           "type": "trust-note",
           "settings": {
             "icon": "seal-check",
-            "text": "Secure checkout."
+            "text": "30-day returns. Engraved pieces are final sale."
           }
         }
       },
@@ -146,6 +156,7 @@
         "featured-product-1": {
           "type": "featured-product",
           "settings": {
+            "product": "aurora-band",
             "eyebrow": "Most loved",
             "show_price": true
           }
@@ -154,6 +165,7 @@
           "type": "help-link",
           "settings": {
             "label": "Ring size guide",
+            "link": "shopify://pages/ring-sizing",
             "icon": "ruler",
             "size_guide_tab": "rings"
           }
@@ -178,6 +190,7 @@
           "type": "featured-link",
           "settings": {
             "label": "Engrave",
+            "link": "shopify://pages/engraving",
             "badge": ""
           }
         },
@@ -275,7 +288,7 @@
             "rows": "US 5 | 49.3 mm · EU 49\nUS 6 | 51.9 mm · EU 52\nUS 7 | 54.4 mm · EU 54.5\nUS 8 | 57.0 mm · EU 57\nUS 9 | 59.5 mm · EU 59.5",
             "striped": false,
             "tab": "rings",
-            "note": "Measurements are approximate."
+            "note": "Demo values. A real store would use its own measured sizing table."
           }
         },
         "how-to-2": {
@@ -293,7 +306,7 @@
             "rows": "Small | 15 cm · fits wrists to 13.5 cm\nMedium | 17 cm · fits wrists to 15.5 cm\nLarge | 19 cm · fits wrists to 17.5 cm",
             "striped": false,
             "tab": "bracelets",
-            "note": "Measurements are approximate."
+            "note": "Demo values. A real store would use its own measured sizing table."
           }
         },
         "how-to-3": {
@@ -311,7 +324,7 @@
             "rows": "40 cm | Choker, sits at the base of the neck\n45 cm | Princess, sits at the collarbone\n50 cm | Matinee, sits just below the collarbone",
             "striped": false,
             "tab": "necklaces",
-            "note": "Measurements are approximate."
+            "note": "Demo values. A real store would use its own measured sizing table."
           }
         },
         "book-visit-1": {
@@ -358,7 +371,7 @@
         "help-1": {
           "type": "help",
           "settings": {
-            "text": "<p>We email you when your order is ready for pickup.</p>",
+            "text": "<p>Bring photo ID. Engraved pieces need two working days.</p>",
             "link_label": "Pickup policy"
           }
         }

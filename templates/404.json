@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "not-found": {
@@ -14,6 +23,7 @@
         "category-link-1": {
           "type": "category-link",
           "settings": {
+            "collection": "rings",
             "label": "",
             "style": "secondary"
           }
@@ -21,6 +31,7 @@
         "category-link-2": {
           "type": "category-link",
           "settings": {
+            "collection": "necklaces",
             "label": "",
             "style": "secondary"
           }
@@ -28,6 +39,7 @@
         "category-link-3": {
           "type": "category-link",
           "settings": {
+            "collection": "earrings",
             "label": "",
             "style": "secondary"
           }
@@ -35,6 +47,7 @@
         "category-link-4": {
           "type": "category-link",
           "settings": {
+            "collection": "bracelets",
             "label": "",
             "style": "secondary"
           }
@@ -79,29 +92,37 @@
         "form-tile-1": {
           "type": "form-tile",
           "settings": {
+            "collection": "rings",
             "title": "",
-            "line": ""
+            "line": "",
+            "image": "shopify://shop_images/aurora-band-rose-gold.webp"
           }
         },
         "form-tile-2": {
           "type": "form-tile",
           "settings": {
+            "collection": "necklaces",
             "title": "",
-            "line": ""
+            "line": "",
+            "image": "shopify://shop_images/verdant-ring-yellow-gold.webp"
           }
         },
         "form-tile-3": {
           "type": "form-tile",
           "settings": {
+            "collection": "earrings",
             "title": "",
-            "line": ""
+            "line": "",
+            "image": "shopify://shop_images/aurora-band-platinum.webp"
           }
         },
         "form-tile-4": {
           "type": "form-tile",
           "settings": {
+            "collection": "bracelets",
             "title": "",
-            "line": ""
+            "line": "",
+            "image": "shopify://shop_images/aurora-band-white-gold.webp"
           }
         },
         "link-1": {
